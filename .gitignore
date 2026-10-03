@@ -1,0 +1,10 @@
+# Local-only tooling and planning notes.
+_*/
+.agents/
+.cursor/skills/
+.claude/skills/
+
+# OS and editor noise
+.DS_Store
+*.log
+node_modules/
