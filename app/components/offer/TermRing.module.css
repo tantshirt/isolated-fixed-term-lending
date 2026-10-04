@@ -1,0 +1,39 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.track {
+  fill: none;
+  stroke: var(--color-background-muted);
+  stroke-width: 6;
+}
+
+.arc {
+  fill: none;
+  stroke: var(--color-brass);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dasharray 1s linear;
+}
+
+[data-done] .arc {
+  stroke: var(--color-text-red);
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.count {
+  font-size: var(--text-2xl);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.deadline {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}

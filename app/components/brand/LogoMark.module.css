@@ -1,0 +1,68 @@
+.mark {
+  flex: none;
+  display: block;
+  overflow: visible;
+}
+
+.ring {
+  fill: none;
+  stroke-width: 3;
+}
+
+.arc {
+  fill: none;
+  stroke: var(--color-brass);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray var(--duration-slow) var(--ease-out);
+}
+
+.ink .ring {
+  stroke: var(--color-accent);
+}
+
+.ink .stem,
+.ink .bar {
+  fill: var(--color-text-primary);
+}
+
+.panel .ring {
+  stroke: rgb(246 242 234 / 0.22);
+}
+
+.panel .arc {
+  stroke: var(--color-on-panel-brass);
+}
+
+.panel .stem,
+.panel .bar {
+  fill: var(--color-on-panel);
+}
+
+.spinning .arc {
+  stroke-dasharray: 20 62 !important;
+  transform-origin: 16px 16px;
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(-90deg);
+  }
+  to {
+    transform: rotate(270deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinning .arc {
+    animation: pulse 1.2s ease-in-out infinite !important;
+    animation-duration: 1.2s !important;
+    animation-iteration-count: infinite !important;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.4;
+    }
+  }
+}

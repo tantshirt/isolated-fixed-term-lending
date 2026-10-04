@@ -8,3 +8,9 @@ _*/
 .DS_Store
 *.log
 node_modules/
+app/.next/
+app/.local/
+isolated_loan/.local/
+isolated_loan/target/
+isolated_loan/node_modules/
+app/node_modules/

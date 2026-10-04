@@ -1,0 +1,361 @@
+use crate::constants::{OFFER_SEED, USDC_VAULT_SEED, WSOL_VAULT_SEED};
+use crate::error::LoanError;
+use crate::state::{Offer, OfferStatus};
+use anchor_lang::prelude::*;
+use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::token::{Mint, Token, TokenAccount};
+
+#[derive(Accounts)]
+#[instruction(offer_id: u64)]
+pub struct CreateOffer<'info> {
+    #[account(mut)]
+    pub lender: Signer<'info>,
+
+    #[account(
+        init,
+        payer = lender,
+        space = 8 + Offer::INIT_SPACE,
+        seeds = [OFFER_SEED, lender.key().as_ref(), &offer_id.to_le_bytes()],
+        bump,
+    )]
+    pub offer: Box<Account<'info, Offer>>,
+
+    #[account(constraint = usdc_mint.decimals == 6 @ LoanError::InvalidUsdcMint)]
+    pub usdc_mint: Account<'info, Mint>,
+    #[account(
+        constraint = wsol_mint.decimals == 9 @ LoanError::InvalidWsolMint,
+        constraint = wsol_mint.key() != usdc_mint.key() @ LoanError::SameMint,
+    )]
+    pub wsol_mint: Account<'info, Mint>,
+
+    #[account(
+        init,
+        payer = lender,
+        token::mint = usdc_mint,
+        token::authority = offer,
+        seeds = [USDC_VAULT_SEED, offer.key().as_ref()],
+        bump,
+    )]
+    pub usdc_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = lender,
+    )]
+    pub lender_usdc: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct CancelOffer<'info> {
+    #[account(mut)]
+    pub lender: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [OFFER_SEED, lender.key().as_ref(), &offer.offer_id.to_le_bytes()],
+        bump = offer.bump,
+        has_one = lender @ LoanError::UnauthorizedLender,
+        constraint = offer.status == OfferStatus::Open @ LoanError::WrongStatus,
+    )]
+    pub offer: Box<Account<'info, Offer>>,
+
+    #[account(
+        mut,
+        seeds = [USDC_VAULT_SEED, offer.key().as_ref()],
+        bump,
+        token::mint = offer.usdc_mint,
+        token::authority = offer,
+    )]
+    pub usdc_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        token::mint = offer.usdc_mint,
+        token::authority = lender,
+    )]
+    pub lender_usdc: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct AcceptOffer<'info> {
+    #[account(mut)]
+    pub borrower: Signer<'info>,
+
+    #[account(
+        mut,
+        constraint = offer.status == OfferStatus::Open @ LoanError::WrongStatus,
+        has_one = lender @ LoanError::UnauthorizedLender,
+    )]
+    pub offer: Box<Account<'info, Offer>>,
+
+    /// Receives the USDC vault rent the lender paid at create.
+    #[account(mut)]
+    pub lender: SystemAccount<'info>,
+
+    /// CHECK: Pyth price update account owned by the receiver program.
+    pub price_update: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [USDC_VAULT_SEED, offer.key().as_ref()],
+        bump,
+        token::mint = offer.usdc_mint,
+        token::authority = offer,
+    )]
+    pub usdc_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        constraint = wsol_mint.key() == offer.wsol_mint @ LoanError::InvalidTerms,
+    )]
+    pub wsol_mint: Account<'info, Mint>,
+
+    #[account(
+        init,
+        payer = borrower,
+        token::mint = wsol_mint,
+        token::authority = offer,
+        seeds = [WSOL_VAULT_SEED, offer.key().as_ref()],
+        bump,
+    )]
+    pub wsol_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        associated_token::mint = offer.usdc_mint,
+        associated_token::authority = borrower,
+    )]
+    pub borrower_usdc: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        associated_token::mint = offer.wsol_mint,
+        associated_token::authority = borrower,
+    )]
+    pub borrower_wsol: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct RepayLoan<'info> {
+    #[account(mut)]
+    pub borrower: Signer<'info>,
+
+    #[account(
+        mut,
+        constraint = offer.status == OfferStatus::Filled @ LoanError::WrongStatus,
+        has_one = borrower @ LoanError::UnauthorizedBorrower,
+    )]
+    pub offer: Box<Account<'info, Offer>>,
+
+    #[account(
+        mut,
+        seeds = [WSOL_VAULT_SEED, offer.key().as_ref()],
+        bump,
+        token::mint = offer.wsol_mint,
+        token::authority = offer,
+    )]
+    pub wsol_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        token::mint = offer.usdc_mint,
+        token::authority = borrower,
+    )]
+    pub borrower_usdc: Account<'info, TokenAccount>,
+
+    /// CHECK: Lender pubkey from the offer.
+    #[account(address = offer.lender)]
+    pub lender: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        token::mint = offer.usdc_mint,
+        token::authority = lender,
+    )]
+    pub lender_usdc: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        token::mint = offer.wsol_mint,
+        token::authority = borrower,
+    )]
+    pub borrower_wsol: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimExpiredLoan<'info> {
+    #[account(mut)]
+    pub caller: Signer<'info>,
+
+    #[account(
+        mut,
+        constraint = offer.status == OfferStatus::Filled @ LoanError::WrongStatus,
+    )]
+    pub offer: Box<Account<'info, Offer>>,
+
+    #[account(
+        mut,
+        seeds = [WSOL_VAULT_SEED, offer.key().as_ref()],
+        bump,
+        token::mint = offer.wsol_mint,
+        token::authority = offer,
+    )]
+    pub wsol_vault: Account<'info, TokenAccount>,
+
+    /// CHECK: Lender from offer.
+    #[account(address = offer.lender)]
+    pub lender: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        token::mint = offer.wsol_mint,
+        token::authority = lender,
+    )]
+    pub lender_wsol: Account<'info, TokenAccount>,
+
+    /// Receives the wSOL vault rent the borrower paid at accept.
+    #[account(mut, address = offer.borrower)]
+    pub borrower: SystemAccount<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct LiquidateLoan<'info> {
+    #[account(mut)]
+    pub caller: Signer<'info>,
+
+    #[account(
+        mut,
+        constraint = offer.status == OfferStatus::Filled @ LoanError::WrongStatus,
+    )]
+    pub offer: Box<Account<'info, Offer>>,
+
+    /// CHECK: Pyth price update owned by receiver.
+    pub price_update: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [WSOL_VAULT_SEED, offer.key().as_ref()],
+        bump,
+        token::mint = offer.wsol_mint,
+        token::authority = offer,
+    )]
+    pub wsol_vault: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        token::mint = offer.usdc_mint,
+        token::authority = caller,
+    )]
+    pub caller_usdc: Box<Account<'info, TokenAccount>>,
+
+    /// CHECK: Lender from offer.
+    #[account(address = offer.lender)]
+    pub lender: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        token::mint = offer.usdc_mint,
+        token::authority = lender,
+    )]
+    pub lender_usdc: Box<Account<'info, TokenAccount>>,
+
+    /// Receives the wSOL vault rent the borrower paid at accept.
+    #[account(mut, address = offer.borrower)]
+    pub borrower: SystemAccount<'info>,
+
+    #[account(
+        mut,
+        token::mint = offer.wsol_mint,
+        token::authority = borrower,
+    )]
+    pub borrower_wsol: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        token::mint = offer.wsol_mint,
+        token::authority = caller,
+    )]
+    pub caller_wsol: Box<Account<'info, TokenAccount>>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct CloseOffer<'info> {
+    #[account(mut)]
+    pub lender: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [OFFER_SEED, lender.key().as_ref(), &offer.offer_id.to_le_bytes()],
+        bump = offer.bump,
+        has_one = lender @ LoanError::UnauthorizedLender,
+        constraint = matches!(
+            offer.status,
+            OfferStatus::Repaid | OfferStatus::Expired | OfferStatus::Liquidated | OfferStatus::Cancelled
+        ) @ LoanError::OfferNotSettled,
+        close = lender,
+    )]
+    pub offer: Box<Account<'info, Offer>>,
+}
+
+#[event]
+pub struct OfferClosed {
+    pub offer: Pubkey,
+}
+
+#[event]
+pub struct OfferCreated {
+    pub offer: Pubkey,
+    pub lender: Pubkey,
+    pub offer_id: u64,
+    pub principal: u64,
+}
+
+#[event]
+pub struct OfferCancelled {
+    pub offer: Pubkey,
+}
+
+#[event]
+pub struct OfferAccepted {
+    pub offer: Pubkey,
+    pub borrower: Pubkey,
+    pub start_ts: i64,
+    pub expiry_ts: i64,
+}
+
+#[event]
+pub struct LoanRepaid {
+    pub offer: Pubkey,
+    pub debt: u64,
+}
+
+#[event]
+pub struct LoanExpiredEvent {
+    pub offer: Pubkey,
+    pub collateral: u64,
+}
+
+#[event]
+pub struct LoanLiquidated {
+    pub offer: Pubkey,
+    pub caller: Pubkey,
+    pub debt: u64,
+    pub to_caller: u64,
+    pub to_borrower: u64,
+}

@@ -21,7 +21,7 @@ You do not need any extra planning tools. The work queue is in this repo.
 
 Week 1 does not start the frontend. If the story is Epic 7, or the person explicitly asks for the interface, follow [docs/design-and-experience.md](docs/design-and-experience.md).
 
-That file is a light fintech layout on Astryx semantic tokens, Neutral theme, light mode only. One primary action per screen. Figures use the code font and line up. Use the words in that file's copy deck. Do not switch the app to a dark canvas.
+That file describes Tenor: Astryx semantic token names pointed at an ivory, deep-green and brass palette, in light mode only. Each screen has one primary action. Figures use the code font and line up. Create is a four-step wizard with a live preview. Use the words in that file's copy deck. Do not switch the app to a dark canvas, and do not hardcode hex outside the token block in `app/app/globals.css`.
 
 ## Leave these alone
 

@@ -1,0 +1,108 @@
+.wrap {
+  position: relative;
+}
+
+.connect {
+  height: 2.25rem;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  height: 2.5rem;
+  padding: 0 0.75rem 0 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-background-surface);
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.account:hover,
+.account[aria-expanded="true"] {
+  border-color: var(--color-border-emphasized);
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.key {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+@media (max-width: 520px) {
+  .who {
+    display: none;
+  }
+  .account {
+    padding: 0 0.25rem;
+  }
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: var(--z-popover);
+  width: min(320px, calc(100vw - 2rem));
+  padding: 1rem;
+  border-radius: var(--radius-container);
+  background: var(--color-background-popover);
+  box-shadow: var(--shadow-high), 0 0 0 1px var(--color-border);
+  transform-origin: top right;
+}
+
+.menuHead {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.copy {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.copy:hover {
+  color: var(--color-text-accent);
+}
+
+.balances {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 0.875rem 0;
+  border-block: 1px solid var(--color-border);
+}
+
+.balances div {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+}
+
+.balances dt {
+  color: var(--color-text-secondary);
+}
+
+.balances dd {
+  margin: 0;
+}
+
+.actions {
+  display: grid;
+  gap: 0.5rem;
+}

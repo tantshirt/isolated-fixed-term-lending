@@ -1,0 +1,83 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.control {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border-emphasized);
+  border-radius: var(--radius-element);
+  background: var(--color-background-surface);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.control:hover {
+  border-color: var(--color-text-tertiary);
+}
+
+.control:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: var(--ring-brass);
+}
+
+.input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: var(--text-lg);
+  font-weight: 500;
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.unit {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.xl .control {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+}
+
+.xl .input {
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.xl .unit {
+  font-size: var(--text-lg);
+}
+
+.hint,
+.error {
+  min-height: 1.25rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
+.error {
+  color: var(--color-text-red);
+}
+
+.invalid .control {
+  border-color: var(--color-text-red);
+}

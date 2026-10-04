@@ -1,0 +1,16 @@
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: var(--radius-element);
+}
+
+.name {
+  font-size: 1.1875rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.wordmark:hover :global(circle:nth-child(2)) {
+  stroke-dasharray: 60 82 !important;
+}
