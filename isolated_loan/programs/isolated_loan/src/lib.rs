@@ -63,4 +63,38 @@ pub mod isolated_loan {
     pub fn close_offer(ctx: Context<CloseOffer>) -> Result<()> {
         instructions::close_offer::handler(ctx)
     }
+
+    pub fn create_request(
+        ctx: Context<CreateRequest>,
+        request_id: u64,
+        principal: u64,
+        interest_bps: u16,
+        duration_seconds: i64,
+        collateral_amount: u64,
+        max_ltv_bps: u16,
+        liquidation_ltv_bps: u16,
+    ) -> Result<()> {
+        instructions::create_request::handler(
+            ctx,
+            request_id,
+            principal,
+            interest_bps,
+            duration_seconds,
+            collateral_amount,
+            max_ltv_bps,
+            liquidation_ltv_bps,
+        )
+    }
+
+    pub fn cancel_request(ctx: Context<CancelRequest>) -> Result<()> {
+        instructions::cancel_request::handler(ctx)
+    }
+
+    pub fn fund_request(ctx: Context<FundRequest>, offer_id: u64) -> Result<()> {
+        instructions::fund_request::handler(ctx, offer_id)
+    }
+
+    pub fn close_request(ctx: Context<CloseRequest>) -> Result<()> {
+        instructions::close_request::handler(ctx)
+    }
 }

@@ -325,3 +325,36 @@ Acceptance:
 - Private transfers and gas sponsorship are bounded and never change approved financial contents.
 - `/devnet/private/lab` VRF scenarios and SOAR achievements are opt-in and confer no loan advantage.
 - Keyboard, mobile, wallet switching, and rejected signatures all work on `/devnet/private`.
+
+## Epic 14. Discover marketplace
+
+### Story 14.1. Borrower requests
+
+Acceptance:
+
+- A borrower can post a request that locks collateral, cancel it while open, and close it once funded or cancelled.
+- A lender funds a request in one instruction. Funding checks Pyth and the max LTV, pays the borrower, and creates an ordinary filled offer.
+- Repay, claim, liquidate, and close work on that offer unchanged. The `Offer` layout does not change.
+- Rent returns to whoever paid it, in amount.
+
+### Story 14.2. Client and live reads
+
+Acceptance:
+
+- The client lists open requests, offers, and discovery cards from Devnet.
+- Lists update within seconds through account subscriptions and fall back to polling when the socket drops. The interface says which.
+
+### Story 14.3. Discover page
+
+Acceptance:
+
+- `/devnet/discover` is in the main navigation. Borrowers asking and Lenders offering each show Public and Private.
+- Private borrower cards keep the selected-fields rule from 11.1. Lenders offering in private is explained, not invented.
+- A lender can fund a public request from the page, and is told first when a price update needs extra signatures.
+
+### Story 14.4. Request a loan
+
+Acceptance:
+
+- A borrower chooses Public or Private. Public posts a request through a four-step wizard with a live summary. Private goes through a room and a discovery card.
+- Wrapping SOL is an explicit step, never silent.
