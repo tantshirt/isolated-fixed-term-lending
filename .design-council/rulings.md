@@ -73,3 +73,22 @@ Source methods restored from the pinned upstream repositories; actual verificati
 | Lab figures derive from `scenarioFrom` constants, not literals in the JSX or explanation copy | Plumb | "1.1 wSOL at $150", "5%", and "80%" are duplicated, so changing a constant would leave wrong copy. Low priority. |
 
 Coverage note: signed-in balance and the real VRF/SOAR round-trip were not screenshot-verified (headless browsers cannot sign). The `zz-lab-preview` harness must be deleted before commit.
+
+## Final council: whole product (2026-10-05)
+
+Evidence: final 390/820/1440 captures plus live checks on the dev server (computed styles, target sizes, console). The final captures were taken with reduced motion on, which exposed the first finding.
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Restore the reduced-motion block in `private.module.css` to `transition: none` only; the stray `.heroLinks`/`.secondaryLink` copies go | Plumb / Fovea | Measured: with `prefers-reduced-motion: reduce`, `.panel` and `.stepMarker` compute `display: flex` (default: `block` / `grid`). Panels wrap their headers sideways and step numbers sit off-centre, so reduced-motion users get the blocky private page Phase 1 ruled out. Introduced by a misplaced Phase 3 insert. |
+| The proof summary may not say "Private loans: Not open yet" while its own evidence list marks 10.1 "Proven on Devnet" | Plumb / Sol | Two claims on one page contradict each other; the evidence file wins (Phase 1 ruling). |
+| Every Devnet and simulation route carries the shared footer | Sol / Kestrel | Phase 6 ruled every surface reachable without the header; the footer currently renders only on `/` and `/use-cases`. |
+| The loan lab belongs to Private: breadcrumb "Private / Loan lab" and the Private tab marked current | Sally / Ravi | It is entered from the private home, but its breadcrumb says Devnet and no tab is active, which breaks landing → private → lab continuity. |
+| The proof page gets the same breadcrumb and pill eyebrow as its siblings | Indigo / Kestrel | It is the only private route with an uppercase eyebrow and no breadcrumb. |
+| The setup bar keeps the page gutter at tablet width | Indigo | At 820px `.setup` runs edge to edge with rounded corners, out of line with the header and content gutters. |
+| Lab figures use `.num`; `.tabular` is not a defined class | Indigo / Plumb | Four lab values silently lose tabular figures. |
+| Small inline links on private, landing and footer reach 44px tap height on touch | Fovea | Measured 17–24px. Passes the WCAG 2.2 AA spacing exception, but PRODUCT.md sets 44px targets. Fix with padding, not larger type. |
+| "Use Devnet" loses the ↗ | Sol / Kestrel | It is an internal route in the same tab; the arrow promises an external link. |
+| Earlier rulings verified as honored: no colour literals in component CSS, lab figures derive from `scenarioFrom`, the `zz-lab-preview` source is gone (only a stale `.next` artifact remains), status pills carry words | Plumb | Checked in source. |
+
+Coverage note: signed-in states remain unverified (unchanged). The "1 issue" dev overlay on the landing capture did not reproduce; the console is clean on `/`, `/use-cases`, and `/devnet/lab`. Desktop private-chapter images were blank only because full-page capture skipped lazy loading; the 820px capture shows them.

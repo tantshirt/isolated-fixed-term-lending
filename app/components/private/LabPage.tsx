@@ -100,7 +100,7 @@ export function LabPage() {
   return (
     <div className="page page-narrow">
       <nav className={styles.crumbs} aria-label="Breadcrumb">
-        <Link href="/devnet">Devnet</Link>
+        <Link href="/devnet/private">Private</Link>
         <span aria-hidden>/</span>
         <span>Loan lab</span>
       </nav>
@@ -142,10 +142,10 @@ export function LabPage() {
           </div>
           <div className={styles.panelBody}>
             <dl className={styles.summary}>
-              <div><dt>Borrowed</dt><dd className="tabular">{formatUsdc(s.principal)} USDC</dd></div>
-              <div><dt>Collateral</dt><dd className="tabular">{formatWsol(s.collateral)} wSOL at ${fmt.usd(Number(s.startPrice) / 1e8)}</dd></div>
-              <div><dt>Term</dt><dd className="tabular">{s.durationDays} days, {fmt.pct0(s.interestBps)} flat</dd></div>
-              <div><dt>Liquidates at</dt><dd className="tabular">{fmt.pct(s.liquidationLtvBps)} LTV</dd></div>
+              <div><dt>Borrowed</dt><dd className="num">{formatUsdc(s.principal)} USDC</dd></div>
+              <div><dt>Collateral</dt><dd className="num">{formatWsol(s.collateral)} wSOL at ${fmt.usd(Number(s.startPrice) / 1e8)}</dd></div>
+              <div><dt>Term</dt><dd className="num">{s.durationDays} days, {fmt.pct0(s.interestBps)} flat</dd></div>
+              <div><dt>Liquidates at</dt><dd className="num">{fmt.pct(s.liquidationLtvBps)} LTV</dd></div>
             </dl>
             <ol className={lab.timeline}>
               <li><span className={lab.day}>Day {s.dropDay}</span> SOL falls {s.dropPercent}%. LTV is now {fmt.pct(s.ltvAfterDropBps)}.</li>

@@ -92,7 +92,7 @@ export function DevnetSetup() {
                 "The network is unavailable. Check your connection and try again."}
             </p>
             <Button variant="ghost" onClick={bumpRefresh}>
-              Retry connection
+              {readiness?.errors?.length ? "Check again" : "Retry connection"}
             </Button>
           </div>
         )}

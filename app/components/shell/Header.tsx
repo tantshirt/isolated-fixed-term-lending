@@ -28,7 +28,9 @@ export function Header() {
               n.href === "/devnet"
                 ? pathname === "/devnet" ||
                   pathname.startsWith("/devnet/offers")
-                : pathname.startsWith(n.href);
+                : n.href === "/devnet/private"
+                  ? pathname.startsWith("/devnet/private") || pathname.startsWith("/devnet/lab")
+                  : pathname.startsWith(n.href);
             return (
               <Link
                 key={n.href}
