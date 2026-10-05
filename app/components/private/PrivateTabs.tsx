@@ -7,7 +7,6 @@ import styles from "./PrivateTabs.module.css";
 
 const MAIN = [
   { href: "/devnet/private", label: "Overview" },
-  { href: "/devnet/private/discover", label: "Discover" },
   { href: "/devnet/private/liquidate", label: "Liquidations" },
   { href: "/devnet/private/lab", label: "Loan lab" },
 ];

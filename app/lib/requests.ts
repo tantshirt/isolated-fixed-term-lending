@@ -1,5 +1,6 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import type { RequestAccount } from "./program";
+import type { Offer } from "./offers";
 import { offerStatusKey } from "./program";
 import { readOnlyProgram, supportedOfferMints } from "./offers";
 
@@ -106,4 +107,33 @@ export function decodeRequest(
   } catch {
     return null;
   }
+}
+
+/** The offer this request would become if funded now. For risk math only. */
+export function requestAsOffer(r: LoanRequest): Offer {
+  return {
+    publicKey: r.publicKey,
+    lender: r.lender ?? DEFAULT_KEY,
+    borrower: r.borrower,
+    offerId: 0n,
+    usdcMint: r.usdcMint,
+    wsolMint: r.wsolMint,
+    principal: r.principal,
+    interestBps: r.interestBps,
+    durationSeconds: r.durationSeconds,
+    collateralAmount: r.collateralAmount,
+    maxLtvBps: r.maxLtvBps,
+    liquidationLtvBps: r.liquidationLtvBps,
+    startTs: 0,
+    expiryTs: 0,
+    status: "open",
+  };
+}
+
+export function requestHref(r: Pick<LoanRequest, "borrower" | "requestId">) {
+  return `/devnet/requests/${r.borrower}/${r.requestId.toString()}`;
+}
+
+export function requestStatusTitle(s: RequestStatusKey) {
+  return { open: "Open request", funded: "Funded", cancelled: "Cancelled" }[s];
 }

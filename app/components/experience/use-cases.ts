@@ -28,7 +28,7 @@ export const USE_CASES: UseCase[] = [
   },
   {
     intent: "Compare competing offers without lenders seeing each other",
-    start: { label: "Publish a request card", href: "/devnet/private/discover" },
+    start: { label: "Publish a request card", href: "/devnet/private" },
     who: "A borrower who wants the best terms, not the first ones.",
     problem: "In an open order book, lenders undercut each other only after seeing every bid.",
     how: "Publish a card with only the fields you choose. Each lender's offer is readable only by that lender and you. Accept one, and the others are locked out and can cancel.",

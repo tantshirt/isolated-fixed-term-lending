@@ -7,7 +7,7 @@ import idl from "@/idl/isolated_loan.json";
 import privateIdl from "@/idl/private_loan.json";
 import { PROGRAM_ID } from "@/lib/constants";
 import { decodeOffer, fetchAllOffers, type Offer } from "@/lib/offers";
-import { decodeRequest, fetchAllRequests, byNewest, type LoanRequest } from "@/lib/requests";
+import { decodeRequest, fetchAllRequests, fetchRequestByKey, byNewest, type LoanRequest } from "@/lib/requests";
 import { decodeCard, listCards, type Card } from "@/lib/private/discovery";
 import { PRIVATE_PROGRAM_ID } from "@/lib/private/room-codec";
 import { getConnection } from "@/lib/program";
@@ -166,3 +166,49 @@ const CARD_SPEC: Spec<Card> = {
 export const useLiveOffers = () => useLiveAccounts(OFFER_SPEC);
 export const useLiveRequests = () => useLiveAccounts(REQUEST_SPEC);
 export const useLiveCards = () => useLiveAccounts(CARD_SPEC);
+
+/**
+ * One request, refreshed on every change to its account and every 10 s.
+ * `undefined` while loading, `null` once closed.
+ */
+export function useRequest(key: string | null) {
+  const { refreshKey } = useSigner();
+  const [state, setState] = useState<{ key: string | null; request: LoanRequest | null | undefined; error: string | null }>({
+    key: null,
+    request: undefined,
+    error: null,
+  });
+  useEffect(() => {
+    if (!key) return;
+    const c = getConnection();
+    const pk = new PublicKey(key);
+    let alive = true;
+    const load = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const request = await sharedRead(`request:${key}:${refreshKey}:${Math.floor(Date.now() / 3_000)}`, () =>
+          fetchRequestByKey(c, pk)
+        );
+        if (alive) setState({ key, request, error: null });
+      } catch (e) {
+        if (alive) setState((s) => ({ key, request: s.key === key ? s.request : undefined, error: e instanceof Error ? e.message : "Could not read request" }));
+      }
+    };
+    let sub: number | null = null;
+    try {
+      sub = c.onAccountChange(pk, () => void load(), "confirmed");
+    } catch {
+      sub = null;
+    }
+    void load();
+    const id = setInterval(load, 10_000);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      alive = false;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", load);
+      if (sub !== null) void c.removeAccountChangeListener(sub).catch(() => {});
+    };
+  }, [key, refreshKey]);
+  return state.key === key ? state : { key, request: undefined, error: null };
+}
