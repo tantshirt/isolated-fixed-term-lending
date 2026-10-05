@@ -645,7 +645,7 @@ span.receiptLink {
 
 @media (min-width: 960px) {
   .roomLayout {
-    grid-template-columns: minmax(0, 1fr) 20rem;
+    grid-template-columns: minmax(0, 1fr) 24rem;
     align-items: start;
   }
 
@@ -868,4 +868,84 @@ span.receiptLink {
   .proofLink span {
     transition: none;
   }
+}
+
+/* Loans */
+
+.propose {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.propose > label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-border);
+}
+
+.summary > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--color-background-card);
+}
+
+.summary dt {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.summary dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.loanCard {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-background-card);
+}
+
+.loanCard[data-status="active"] {
+  border-color: var(--color-accent);
+}
+
+.loanHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.loanStatus {
+  font-weight: 600;
+}
+
+.loanCard[data-status="repaid"] .loanStatus {
+  color: var(--color-text-green);
+}
+
+.loanCard[data-status="expired"] .loanStatus,
+.loanCard[data-status="cancelled"] .loanStatus {
+  color: var(--color-text-secondary);
+}
+
+.loanRef {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
 }

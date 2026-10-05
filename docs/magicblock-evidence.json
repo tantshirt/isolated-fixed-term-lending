@@ -588,6 +588,82 @@
           }
         }
       }
+    },
+    "10.1": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "loans": {
+        "A": "3nRTi9nFNf65ARdJcAwmF2CddeQTcDpMq8YZP2JE2qor",
+        "B": "DZwALp5fKY8MSVsqTGKJeWG6gLxJi3Nndrr49pPgPDsX",
+        "C": "EJR9mkmtjEhfboQ1oPWognULG1sWAaZEAkgdPFB7GUQC"
+      },
+      "room": "RtwyX5vRxXyY7Get8WhEreJ5VQPGFzXJdMTDYTUcLUx",
+      "failed": [],
+      "checks": {
+        "collateral": {
+          "lamports": "1737681",
+          "price": "12086494620",
+          "exponent": -8
+        },
+        "borrower-reads-terms": {
+          "ok": true,
+          "detail": {
+            "revision": 1
+          }
+        },
+        "outsider-cannot-read-terms": {
+          "ok": true,
+          "detail": "terms hidden"
+        },
+        "funding-an-old-revision-rejected": {
+          "ok": true,
+          "detail": "Error: 5B7kxzdtyWcgFyq67V9x4eYxEMeQBHiYGjPpK4cz7bQdFRzsfbyMxeCc2LZqN7UJ95GA3uR4EcDp395QiYdCmpEi failed: {\"InstructionError\":[0,{\"Custom\":6026}]}"
+        },
+        "accepted-on-same-revision": {
+          "ok": true,
+          "detail": {
+            "status": "active",
+            "expiry": 1791205358
+          }
+        },
+        "second-repay-rejected": {
+          "ok": true,
+          "detail": "Error: 46awM6CW2r7L1LcKJD4e6Y3uTRM7d3rq1kiTZSf2JGPX2Lqgj428Tywg8BhaDDWojj6JBomqkTkR5y3XmzgvDZtp failed: {\"InstructionError\":[0,{\"Custom\":6025}]}"
+        },
+        "claim-after-repay-is-noop": {
+          "ok": true,
+          "detail": "still repaid"
+        },
+        "accept-after-cancel-rejected": {
+          "ok": true,
+          "detail": "Error: 3bTQZwVza6mqB7LPnS9a9PqPFUjvrMCwpiLg3dB87cRH15TnX9Ei5QZ6Eo38qV2dkagPtyZuNULuZhyGkUVumpCN failed: {\"InstructionError\":[0,{\"Custom\":6025}]}"
+        },
+        "claim-before-deadline": {
+          "ok": true,
+          "detail": "Error: 4LtPeW1eX9Jw9QyPoYFSmDgW2AKvvd2prCxKVgzbjiX8QM7dsHidTXB4vGDArKX5QJXK7jTk8jAkkynHbotiXCDc failed: {\"InstructionError\":[0,{\"Custom\":6030}]}"
+        },
+        "repay-after-deadline-rejected": {
+          "ok": true,
+          "detail": "Error: 2StDqpLRPGHR3Jg9nHEXAaaoqcsr6rXmExeRZ4XbCE3kTRVFtaoFyXZbUN6T4DRLauPUe1M1jsdaRZ8euFBJccX6 failed: {\"InstructionError\":[0,{\"Custom\":6029}]}"
+        },
+        "outsider-claims-for-lender-once": {
+          "ok": true,
+          "detail": "expired; second claim no-op"
+        },
+        "exact-private-balances": {
+          "ok": true,
+          "detail": {
+            "lenderUsdc": "154000 / 154000",
+            "lenderWsol": "1737681 / 1737681",
+            "borrowerUsdc": "116000 / 116000",
+            "borrowerWsol": "1737681 / 1737681"
+          }
+        },
+        "terms-never-on-solana": {
+          "ok": true,
+          "detail": "LoanTerms absent on base"
+        }
+      }
     }
   }
 }

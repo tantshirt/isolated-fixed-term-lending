@@ -14,6 +14,8 @@ const NEXT = [
   { id: "9.3", title: "Private balances with reviewed deposits and withdrawals" },
   { id: "9.4", title: "Execution receipts and recovery" },
   { id: "10.1", title: "The full private loan: fund, accept, repay, expire, withdraw" },
+  { id: "11.1", title: "Discovery cards and competing proposals" },
+  { id: "11.2", title: "AI request and callback" },
 ];
 
 function explorer(sig: string) {

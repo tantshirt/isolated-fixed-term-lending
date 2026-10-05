@@ -160,6 +160,7 @@ Decisions:
 - **Cranks.** Hydra cranks are created inside the ER by the program, with a delegated PDA as sponsor and as cancel authority. Lendspan's worker runs the cranker; no hosted cranker was observed on the Devnet TEE.
 - **Rooms.** `RoomAnchor` is the only delegated room account. It holds the room id, the creator (already public as the `open_room` signer), and 0.02 SOL to sponsor records. `RoomState`, `RoomThread`, and `SessionScope` are ER-only with member-only permissions; invite and revoke rewrite those permissions. Large ER-only records are edited in place, never deserialized whole.
 - **Sessions.** Lendspan's own `SessionScope` binds a session key to one room, a scope bitmask with no financial bits, an expiry of at most one day, and a revoked flag. The key lives only in browser memory.
+- **Private loans.** `LoanAnchor` (delegated) owns the loan's USDC and wSOL eATAs, and their base ATAs exist so the ER can mirror them. `LoanTerms` is ER-only and readable by the lender and borrower. Funding and acceptance bind the same revision; any edit bumps it. Acceptance uses the canonical Pyth check. `claim_expired` is signer-free and does nothing once settled. Parties' private balances carry no explicit eATA permission, because one would block the program (gateway 403).
 - **Gates.** Each MagicBlock capability needs a passing Epic 8 gate in [magicblock-evidence.md](magicblock-evidence.md). A failed gate leaves the feature off.
 
 Pinned ids (verified 2026-10-05):
