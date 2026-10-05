@@ -9,6 +9,9 @@ import { minCollateralLamports } from "@/lib/risk";
 
 export type Cushion = 0 | 10 | 25 | 50;
 
+/** Who is filling in the terms. Lenders create offers; borrowers post requests. */
+export type Perspective = "lender" | "borrower";
+
 export type WizardDraft = OfferDraft & {
   /** "auto" derives collateral from max LTV, the live price and the cushion. */
   collateralMode: "auto" | "manual";
@@ -26,7 +29,7 @@ export const DEFAULT_DRAFT: WizardDraft = {
   cushion: 10,
 };
 
-const KEY = "lendspan-devnet-create-draft-v1";
+const CREATE_KEY = "lendspan-devnet-create-draft-v1";
 
 function lamportsToString(l: bigint): string {
   const whole = l / 1_000_000_000n;
@@ -42,7 +45,7 @@ function lamportsToString(l: bigint): string {
  * minimum that meets max LTV at the live price, plus a cushion against a falling price,
  * rounded up to 4 decimals so it reads cleanly.
  */
-export function useDraft(price: LivePrice | null) {
+export function useDraft(price: LivePrice | null, KEY = CREATE_KEY) {
   const [draft, setDraft] = useState<WizardDraft>(DEFAULT_DRAFT);
   const [hydrated, setHydrated] = useState(false);
 
@@ -62,14 +65,14 @@ export function useDraft(price: LivePrice | null) {
       }
     } catch {}
     setHydrated(true);
-  }, []);
+  }, [KEY]);
 
   useEffect(() => {
     if (!hydrated) return;
     try {
       sessionStorage.setItem(KEY, JSON.stringify({ version: 1, draft }));
     } catch {}
-  }, [draft, hydrated]);
+  }, [draft, hydrated, KEY]);
 
   const principal = parseAmount(draft.principal, 6);
   const owed =

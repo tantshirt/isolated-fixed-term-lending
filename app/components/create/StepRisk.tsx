@@ -9,7 +9,7 @@ import { formatWsol } from "@/lib/format";
 import { parseAmount, type DraftErrors } from "@/lib/offer-validation";
 import { priceUsd, solPriceAtLtv } from "@/lib/risk";
 import { PriceLadder } from "./PriceLadder";
-import type { Cushion, WizardDraft } from "./useDraft";
+import type { Cushion, Perspective, WizardDraft } from "./useDraft";
 import styles from "./CreateWizard.module.css";
 
 const CUSHIONS: { value: string; label: string }[] = [
@@ -26,13 +26,16 @@ export function StepRisk({
   errors,
   price,
   owed,
+  perspective = "lender",
 }: {
   draft: WizardDraft;
   update: (p: Partial<WizardDraft>) => void;
   errors: DraftErrors;
   price: LivePrice | null;
   owed: bigint | null;
+  perspective?: Perspective;
 }) {
+  const borrower = perspective === "borrower";
   const lamports = parseAmount(draft.collateral, 9);
   const acceptBelow = owed && lamports ? solPriceAtLtv(owed, lamports, draft.maxLtvBps) : null;
   const liqBelow = owed && lamports ? solPriceAtLtv(owed, lamports, draft.liquidationLtvBps) : null;
@@ -61,7 +64,7 @@ export function StepRisk({
       )}
 
       <Chips
-        label="wSOL the borrower locks"
+        label={borrower ? "wSOL you lock" : "wSOL the borrower locks"}
         options={CUSHIONS}
         value={draft.collateralMode === "manual" ? "manual" : String(draft.cushion)}
         onChange={(v) =>
@@ -87,21 +90,21 @@ export function StepRisk({
           <span className={styles.collateralSub}>
             {draft.cushion === 0
               ? "The least wSOL that meets your max LTV at today's price."
-              : `The minimum at today's price, plus ${draft.cushion}% so a small dip does not block the borrower.`}
+              : `The minimum at today's price, plus ${draft.cushion}% so a small dip does not block ${borrower ? "funding" : "the borrower"}.`}
           </span>
         </p>
       )}
 
       {now !== null && acceptBelow !== null && liqBelow !== null ? (
-        <PriceLadder now={now} acceptBelow={acceptBelow} liquidateBelow={liqBelow} />
+        <PriceLadder now={now} acceptBelow={acceptBelow} liquidateBelow={liqBelow} acceptLabel={borrower ? "Lenders can fund above" : undefined} />
       ) : (
         <p className={styles.explain}>Waiting for the SOL price…</p>
       )}
 
       {tooThin && (
         <p className={styles.warn}>
-          At today&apos;s price this collateral is already past your max LTV, so no borrower could take the offer. Add wSOL or
-          raise the max LTV.
+          At today&apos;s price this collateral is already past your max LTV, so{" "}
+          {borrower ? "no lender could fund the request" : "no borrower could take the offer"}. Add wSOL or raise the max LTV.
         </p>
       )}
     </div>
