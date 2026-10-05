@@ -8,7 +8,9 @@ use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::anchor::ephemeral;
 
 pub mod constants;
+pub mod ai;
 pub mod custody;
+pub mod discovery;
 pub mod error;
 pub mod espl;
 pub mod loan;
@@ -17,7 +19,9 @@ pub mod record;
 pub mod room;
 pub mod schedule;
 
+use ai::*;
 use custody::*;
+use discovery::*;
 use loan::*;
 use probe::*;
 use record::*;
@@ -154,6 +158,48 @@ pub mod private_loan {
     /// Ephemeral rollup. Anyone, at or after the deadline: collateral to the lender.
     pub fn claim_expired(ctx: Context<ClaimExpired>) -> Result<()> {
         loan::claim_expired(ctx)
+    }
+
+    /// Base layer. Room owner publishes an opt-in public card with chosen fields.
+    pub fn publish_card(ctx: Context<PublishCard>, card_id: [u8; 32], fields: CardArgs) -> Result<()> {
+        discovery::publish_card(ctx, card_id, fields)
+    }
+
+    /// Base layer. Publisher removes the card and reclaims rent.
+    pub fn retract_card(ctx: Context<RetractCard>) -> Result<()> {
+        discovery::retract_card(ctx)
+    }
+
+    /// Ephemeral rollup. Owner creates the join queue only they can read.
+    pub fn open_join_queue(ctx: Context<OpenJoinQueue>) -> Result<()> {
+        discovery::open_join_queue(ctx)
+    }
+
+    /// Ephemeral rollup. Anyone asks to join a room from its public card.
+    pub fn request_join(ctx: Context<RequestJoin>) -> Result<()> {
+        discovery::request_join(ctx)
+    }
+
+    /// Base layer. Admin sets the AI worker key and turns the copilot on or off.
+    pub fn set_ai_worker(ctx: Context<SetAiWorker>, worker: Pubkey, enabled: bool) -> Result<()> {
+        ai::set_ai_worker(ctx, worker, enabled)
+    }
+
+    /// Ephemeral rollup. A member binds an approved excerpt hash (and loan revision) to a request.
+    pub fn create_ai_request(
+        ctx: Context<CreateAiRequest>,
+        request_id: [u8; 32],
+        task: u8,
+        payload_hash: [u8; 32],
+        revision: u32,
+        ttl_seconds: i64,
+    ) -> Result<()> {
+        ai::create_ai_request(ctx, request_id, task, payload_hash, revision, ttl_seconds)
+    }
+
+    /// Ephemeral rollup. The worker stores the typed answer once.
+    pub fn ai_callback(ctx: Context<AiCallback>, result: Vec<u8>) -> Result<()> {
+        ai::ai_callback(ctx, result)
     }
 
     /// Base layer. Creates a custody PDA, its ATA, and its eATA.

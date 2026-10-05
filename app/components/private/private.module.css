@@ -39,6 +39,20 @@
   font-weight: 600;
 }
 
+.heroLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+}
+
+.secondaryLink {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .proofLink span {
   display: inline-block;
   transition: transform var(--duration-fast) var(--ease-out);
@@ -865,7 +879,21 @@ span.receiptLink {
   .stepMarker,
   .panel,
   .roomLink,
-  .proofLink span {
+  .heroLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+}
+
+.secondaryLink {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.proofLink span {
     transition: none;
   }
 }
@@ -948,4 +976,194 @@ span.receiptLink {
 .loanRef {
   font-size: var(--text-xs);
   color: var(--color-text-tertiary);
+}
+
+/* Phase 3: copilot, discovery, comparison */
+
+.fieldLabel {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.textarea {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border-emphasized);
+  border-radius: 12px;
+  background: var(--color-background-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: max(16px, var(--text-base));
+  resize: vertical;
+}
+
+.disclosure {
+  display: grid;
+  gap: 0.625rem;
+  padding: 0.875rem;
+  border: 1px solid var(--color-accent-muted);
+  border-radius: 12px;
+  background: var(--color-background-muted);
+}
+
+.excerpt {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: var(--color-background-card);
+  font-family: var(--font-family-code);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.answer {
+  display: grid;
+  gap: 0.625rem;
+  padding: 0.875rem;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 4px 12px 12px 4px;
+  background: var(--color-accent-muted);
+}
+
+.answer[data-stale] {
+  border-left-color: var(--color-brass);
+  background: var(--color-background-yellow);
+}
+
+.staleNote {
+  color: var(--color-text-yellow);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.fields {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fields label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-sm);
+}
+
+.inputSm {
+  width: 5.5rem;
+  height: 2.25rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--color-border-emphasized);
+  border-radius: 8px;
+  font: inherit;
+  font-size: max(16px, var(--text-base));
+}
+
+.textAccent {
+  border: 0;
+  background: none;
+  color: var(--color-text-accent);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cards {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 720px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.card {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding: 1.125rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-card);
+  box-shadow: var(--shadow-low);
+}
+
+.cardFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0;
+}
+
+.cardFields dt {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.cardFields dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.compare th,
+.compare td {
+  padding: 0.5rem 0.375rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: right;
+}
+
+.compare th:first-child,
+.compare td:first-child {
+  text-align: left;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+.compare thead th {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.compareBest {
+  color: var(--color-text-green);
+  font-weight: 600;
+}
+
+.threadAi {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.threadAi > .panel {
+  box-shadow: none;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.notShared {
+  color: var(--color-text-disabled);
+  font-weight: 500;
 }

@@ -19,7 +19,11 @@ import {
   type RoomView as RoomData,
 } from "@/lib/private/rooms";
 import { usePrivate } from "@/lib/private/use-private";
-import { LoanPanel } from "./LoanPanel";
+import { AiPanel } from "./AiPanel";
+import { CardPublisher } from "./CardPublisher";
+import { LoanPanel, type Prefill } from "./LoanPanel";
+import { loanFromId, readLoan } from "@/lib/private/loans";
+import type { LoanTerms } from "@/lib/private/loan-codec";
 import { TeeCard } from "./TeeCard";
 import { LOAN_MESSAGE_PREFIX, loansInThread } from "@/lib/private/loans";
 import styles from "./private.module.css";
@@ -44,12 +48,19 @@ export function RoomView({ roomId }: { roomId: string }) {
   const [note, setNote] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [, force] = useState(0);
+  const [loans, setLoans] = useState<{ anchor: PublicKey; terms: LoanTerms }[]>([]);
+  const [prefill, setPrefill] = useState<Prefill | null>(null);
   const threadEnd = useRef<HTMLLIElement>(null);
 
   const load = useCallback(async () => {
     if (!er || !ref) return;
     const view = await readRoom(er, ref.anchor);
     setData(view);
+    if (view.access === "member") {
+      const ids = loansInThread(view.messages.map((m) => m.body));
+      const read = await Promise.all(ids.map(async (id) => ({ anchor: loanFromId(id), terms: await readLoan(er, loanFromId(id)) })));
+      setLoans(read.filter((l): l is { anchor: PublicKey; terms: LoanTerms } => l.terms !== null));
+    }
     if (view.access === "member" && signer) rememberRoom(signer.publicKey.toBase58(), roomId);
   }, [er, ref, signer, roomId]);
 
@@ -201,6 +212,11 @@ export function RoomView({ roomId }: { roomId: string }) {
                 </>
               )}
             </div>
+            {signer && er && (
+              <div className={styles.threadAi}>
+                <AiPanel signer={signer} base={base} er={er} room={ref.anchor} loans={loans} onUseProposal={(p) => p && setPrefill(p)} />
+              </div>
+            )}
           </section>
 
           <aside className={styles.side}>
@@ -212,8 +228,13 @@ export function RoomView({ roomId }: { roomId: string }) {
                 room={ref.anchor}
                 members={member.state.members}
                 loanIds={loansInThread(member.messages.map((m) => m.body))}
+                loans={loans}
+                prefill={prefill}
                 onChange={() => void load()}
               />
+            )}
+            {signer && er && isOwner && (
+              <CardPublisher signer={signer} base={base} er={er} room={ref.anchor} members={member.state.members.map((m) => m.pubkey)} onChange={() => void load()} />
             )}
             <section className={styles.panel} aria-labelledby="members-h">
               <header className={styles.panelHead}>

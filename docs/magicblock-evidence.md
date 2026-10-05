@@ -38,3 +38,12 @@ Findings from building it:
 - **Large ER-only records overflow the stack.** A 2.9 KB struct overflows the 4 KB SBF stack frame, so the room thread is written in place.
 - **The price source needs care.** The sponsored shard-0 Devnet feed was 97 s old at one point, so acceptance correctly failed `StalePrice`. Hermes now requires an API key (401 without one). Scripts wait for the next sponsored refresh, or post an update when `PYTH_HERMES_API_KEY` is set.
 - **No automated LiteSVM run for `private_loan`.** The ER instructions need the ER runtime (magic program, permissions, eATA mirroring), so the public LiteSVM vectors are not run against `private_loan`. They are covered by the shared `loan-core` vectors and this Devnet run.
+
+## Phase 3: discovery and AI
+
+| Story | Status | Date | Evidence |
+| --- | --- | --- | --- |
+| 11.1 Discovery cards and competing proposals | PASS | 2026-10-05 | `isolated_loan/scripts/private/discovery-ai.ts`, with a borrower and two lenders. The published card shows amount and duration; the unticked rate and collateral are stored as zero. Two lenders ask to join; the owner reads a queue of 2 (a repeat request is ignored), and requesters cannot read it. Each lender's funded offer is invisible to the other; the borrower reads both. Accepting offer 1 records the room deal, and accepting offer 2 then fails (`CompetingOfferAccepted`). Lender 2 cancels and gets exactly 0.1 USDC back. |
+| 11.2 AI request and callback | PASS | 2026-10-05 | Same script, through `POST /api/private/ai`: Vercel AI Gateway, `anthropic/claude-sonnet-5.5`, with a dedicated key that has a $5 monthly budget. The request binds SHA-256(model + excerpt) and the loan revision. Checked cases: the approved excerpt is answered (outsider cannot read the request); a duplicate answer is rejected; a callback from a non-worker is rejected (`NotAiWorker`); an altered excerpt is rejected (hash mismatch); prompt injection inside the excerpt is answered as text and moves nothing; an expired request is rejected; an edit before the answer stores the answer with `stale` set; a new request on the old revision is rejected. **Fixes along the way:** a 600-token output cap truncated structured answers (now 2000), and the proposal schema allows terms shorter than a day. |
+
+The AI worker key (`8wohrpifR962YAwTQjcQjtejSfxbXWeRNGW5B5q16wLq`) is set on-chain by `scripts/private/set-ai-worker.ts`. It holds no user keys or token authority, and its callback can write only the request record.

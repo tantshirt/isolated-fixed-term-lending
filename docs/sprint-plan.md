@@ -60,8 +60,8 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 | 10 | [9.3 Private balances](stories.md) | Done |
 | 11 | [9.4 Execution receipts and recovery](stories.md) | Done |
 | 12 | [10.1 Fund, accept, repay, cancel, expire, withdraw](stories.md) | Done |
-| 13 | [11.1 Discovery cards and competing proposals](stories.md) | Open |
-| 14 | [11.2 AI request and callback](stories.md) | Open |
+| 13 | [11.1 Discovery cards and competing proposals](stories.md) | Done |
+| 14 | [11.2 AI request and callback](stories.md) | Done |
 | 15 | [12.1 Expiry tasks and liquidation tickets](stories.md) | Open |
 | 16 | [12.2 Magic Actions receipts](stories.md) | Open |
 | 17 | [13.1 Transfers, sponsorship, lab, and accessibility](stories.md) | Open |
@@ -79,3 +79,4 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 - 2026-10-05: Epic 8 complete. 8.7 found that committed accounts are plaintext on Solana, so private loan records must be ER-only (8.3) and only balances and opaque receipts settle. 8.6 found no hosted cranker, so the worker runs one. Next: 9.2 rooms, invitations, and scoped sessions.
 - 2026-10-05: Phase 1 done (9.2–9.4). `/devnet/private` is a guided workflow with TEE sign-in, rooms, private balance, and receipts; gate proof moved to `/devnet/private/proof`. Room threads are written in place because a 2.9 KB struct overflows the SBF stack.
 - 2026-10-05: Phase 2 done (10.1). Private loans run inside the TEE between private balances; see evidence for the eATA-permission and base-ATA findings. The 10.1 acceptance line asking for the public LiteSVM vectors against `private_loan` is replaced by the shared `loan-core` vectors plus the Devnet run, because the ER instructions cannot run in LiteSVM.
+- 2026-10-05: Phase 3 done (11.1, 11.2). The copilot runs as a Vercel Function through AI Gateway (budgeted key); no Docker or separate worker. The oracle pattern lives in `private_loan/src/ai.rs`, not a separate program, which saves a deployment.

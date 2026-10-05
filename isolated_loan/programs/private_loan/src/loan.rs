@@ -8,7 +8,7 @@
 //! loan's custody, using the same `loan-core` math and Pyth checks as the
 //! public program.
 
-use crate::constants::{LOAN_SEED, LOAN_TERMS_SEED, ROOM_STATE_SEED, TEE_VALIDATOR};
+use crate::constants::{LOAN_SEED, LOAN_TERMS_SEED, ROOM_DEAL_SEED, ROOM_STATE_SEED, TEE_VALIDATOR};
 use crate::error::{core_error, PrivateLoanError};
 use crate::espl::{self, ESPL_PROGRAM_ID};
 use crate::room::{load, store, RoomAnchor, RoomState, ROLE_BORROWER, ROLE_LENDER};
@@ -125,6 +125,37 @@ fn transfer<'info>(
     }
 }
 
+/// Creates an ER-only record paid for and permission-signed by the loan anchor.
+#[allow(clippy::too_many_arguments)]
+fn create_loan_record<'info>(
+    anchor: &Account<'info, LoanAnchor>,
+    record: &AccountInfo<'info>,
+    permission: &AccountInfo<'info>,
+    record_seeds: &[&[u8]],
+    len: u32,
+    members: Vec<Member>,
+    vault: &AccountInfo<'info>,
+    magic_program: &AccountInfo<'info>,
+    permission_program: &AccountInfo<'info>,
+) -> Result<()> {
+    let anchor_info = anchor.to_account_info();
+    let seeds = anchor_seeds(anchor);
+    EphemeralAccount::new(&anchor_info, record, vault)
+        .with_signer_seeds(&[&seeds, record_seeds])
+        .create(len)?;
+    CreateEphemeralPermissionCpi {
+        permissioned_account: record.clone(),
+        permission: permission.clone(),
+        payer: anchor_info,
+        vault: vault.clone(),
+        magic_program: magic_program.clone(),
+        permission_program: permission_program.clone(),
+        args: EphemeralMembersArgs { is_private: true, members },
+    }
+    .invoke_signed(&[&seeds, record_seeds])?;
+    Ok(())
+}
+
 // ---------------------------------------------------------------- base layer
 
 /// Creates the loan anchor, its two empty eATAs, and delegates the eATAs.
@@ -203,30 +234,21 @@ pub fn propose_terms(ctx: Context<ProposeTerms>, args: TermsArgs) -> Result<()> 
     };
     terms.apply(&args)?;
 
-    let anchor_info = a.anchor.to_account_info();
-    let vault_info = a.vault.to_account_info();
     let terms_info = a.terms.to_account_info();
-    let anchor_seeds = anchor_seeds(&a.anchor);
     let anchor_key = a.anchor.key();
     let terms_bump = [ctx.bumps.terms];
-    let terms_seeds: &[&[u8]] = &[LOAN_TERMS_SEED, anchor_key.as_ref(), &terms_bump];
-    EphemeralAccount::new(&anchor_info, &terms_info, &vault_info)
-        .with_signer_seeds(&[&anchor_seeds, terms_seeds])
-        .create(LoanTerms::LEN as u32)?;
     let seen = TX_LOGS_FLAG | TX_BALANCES_FLAG | TX_MESSAGE_FLAG;
-    CreateEphemeralPermissionCpi {
-        permissioned_account: terms_info.clone(),
-        permission: a.terms_permission.to_account_info(),
-        payer: anchor_info,
-        vault: vault_info,
-        magic_program: a.magic_program.to_account_info(),
-        permission_program: a.permission_program.to_account_info(),
-        args: EphemeralMembersArgs {
-            is_private: true,
-            members: vec![Member { flags: seen, pubkey: lender }, Member { flags: seen, pubkey: args.borrower }],
-        },
-    }
-    .invoke_signed(&[&anchor_seeds, terms_seeds])?;
+    create_loan_record(
+        &a.anchor,
+        &terms_info,
+        &a.terms_permission.to_account_info(),
+        &[LOAN_TERMS_SEED, anchor_key.as_ref(), &terms_bump],
+        LoanTerms::LEN as u32,
+        vec![Member { flags: seen, pubkey: lender }, Member { flags: seen, pubkey: args.borrower }],
+        &a.vault.to_account_info(),
+        &a.magic_program.to_account_info(),
+        &a.permission_program.to_account_info(),
+    )?;
     store(&terms_info, &terms)
 }
 
@@ -287,6 +309,34 @@ pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32) -> Result<()> {
     a.check_accounts(&t)?;
 
     let clock = Clock::get()?;
+    // One accepted offer per room: the first acceptance records itself, and any
+    // competing offer fails. Unused funded offers stay cancellable by their lenders.
+    let deal = a.deal.as_ref().ok_or(error!(PrivateLoanError::InvalidRecord))?;
+    let loan_key = a.anchor.key();
+    if deal.data_is_empty() {
+        let room = a.anchor.room;
+        let (_, bump) = Pubkey::find_program_address(&[ROOM_DEAL_SEED, room.as_ref()], &crate::ID);
+        let bump = [bump];
+        let missing = || error!(PrivateLoanError::InvalidRecord);
+        create_loan_record(
+            &a.anchor,
+            &deal.to_account_info(),
+            &a.deal_permission.as_ref().ok_or_else(missing)?.to_account_info(),
+            &[ROOM_DEAL_SEED, room.as_ref(), &bump],
+            32,
+            vec![Member { flags: TX_LOGS_FLAG | TX_BALANCES_FLAG | TX_MESSAGE_FLAG, pubkey: t.borrower }],
+            &a.vault.as_ref().ok_or_else(missing)?.to_account_info(),
+            &a.magic_program.as_ref().ok_or_else(missing)?.to_account_info(),
+            &a.permission_program.as_ref().ok_or_else(missing)?.to_account_info(),
+        )?;
+        deal.to_account_info().try_borrow_mut_data()?[..32].copy_from_slice(loan_key.as_ref());
+    } else {
+        let d = deal.to_account_info();
+        require_keys_eq!(*d.owner, crate::ID, PrivateLoanError::InvalidRecord);
+        let accepted = Pubkey::new_from_array(d.try_borrow_data()?[..32].try_into().unwrap());
+        require_keys_eq!(accepted, loan_key, PrivateLoanError::CompetingOfferAccepted);
+    }
+
     let price = loan_core::oracle::read_sol_usd_price(&a.price_update, &clock).map_err(core_error)?;
     let value = math::collateral_value_usdc(t.collateral_amount, price.price, price.conf, price.exponent).map_err(core_error)?;
     let ltv = math::current_ltv_bps(t.debt()?, value).map_err(core_error)?;
@@ -454,6 +504,8 @@ pub struct LenderMoves<'info> {
 #[derive(Accounts)]
 pub struct BorrowerMoves<'info> {
     pub borrower: Signer<'info>,
+    /// Writable: on first acceptance it pays rent for the room deal record.
+    #[account(mut)]
     pub anchor: Account<'info, LoanAnchor>,
     /// CHECK: ER-only `LoanTerms`.
     #[account(mut, seeds = [LOAN_TERMS_SEED, anchor.key().as_ref()], bump)]
@@ -476,6 +528,17 @@ pub struct BorrowerMoves<'info> {
     /// CHECK: Canonical Pyth receiver account; owner, feed, age, confidence, and exponent checked by loan-core.
     pub price_update: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
+    /// CHECK: ER-only room deal record (accept only); seeds checked here.
+    #[account(mut, seeds = [ROOM_DEAL_SEED, anchor.room.as_ref()], bump)]
+    pub deal: Option<UncheckedAccount<'info>>,
+    /// CHECK: Ephemeral permission for `deal` (accept only).
+    #[account(mut)]
+    pub deal_permission: Option<UncheckedAccount<'info>>,
+    /// CHECK: Fixed ephemeral rent vault (accept only).
+    #[account(mut, address = EPHEMERAL_VAULT_ID)]
+    pub vault: Option<UncheckedAccount<'info>>,
+    pub magic_program: Option<Program<'info, MagicProgram>>,
+    pub permission_program: Option<Program<'info, PermissionProgram>>,
 }
 
 impl BorrowerMoves<'_> {

@@ -64,6 +64,16 @@ pub enum PrivateLoanError {
     LoanExpired,
     #[msg("Loan is not expired yet")]
     LoanNotExpired,
+    #[msg("The borrower already accepted another offer in this room")]
+    CompetingOfferAccepted,
+    #[msg("The AI copilot is turned off")]
+    AiDisabled,
+    #[msg("Only the configured AI worker may answer")]
+    NotAiWorker,
+    #[msg("This request was already answered")]
+    AlreadyAnswered,
+    #[msg("This request expired before an answer arrived")]
+    RequestExpired,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {
