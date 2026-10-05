@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { messageFromAnchorError } from "@/lib/anchor-errors";
@@ -99,11 +98,6 @@ export function LabPage() {
 
   return (
     <div className="page page-narrow">
-      <nav className={styles.crumbs} aria-label="Breadcrumb">
-        <Link href="/devnet/private">Private</Link>
-        <span aria-hidden>/</span>
-        <span>Loan lab</span>
-      </nav>
       <header className={styles.hero}>
         <p className={styles.eyebrow}>Practice, no money at stake</p>
         <h1 className={styles.title}>How does this loan end?</h1>

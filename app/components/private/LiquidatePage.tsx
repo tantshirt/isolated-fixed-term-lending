@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { fundQuote, listQuotes, settleTicket, type Quote } from "@/lib/private/liquidation";
@@ -52,11 +51,6 @@ export function LiquidatePage() {
 
   return (
     <div className="page">
-      <nav className={styles.crumbs} aria-label="Breadcrumb">
-        <Link href="/devnet/private">Private</Link>
-        <span aria-hidden>/</span>
-        <span>Liquidate</span>
-      </nav>
       <header className={styles.hero}>
         <h1 className={styles.title}>Liquidation quotes</h1>
         <p className={styles.lede}>

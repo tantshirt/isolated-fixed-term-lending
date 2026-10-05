@@ -1,6 +1,5 @@
 import type { Gate, GateStatus } from "@/lib/private/gates";
 import { PRIVATE_PROGRAM_ID, storyProven } from "@/lib/private/gates";
-import Link from "next/link";
 import styles from "./PrivateStatus.module.css";
 import priv from "./private.module.css";
 
@@ -34,11 +33,6 @@ export function PrivateStatus({ gates, error }: { gates: Gate[]; error?: string 
   const passed = gates.filter((g) => g.status === "pass" || g.status === "finding").length;
   return (
     <div className="page">
-      <nav className={priv.crumbs} aria-label="Breadcrumb">
-        <Link href="/devnet/private">Private</Link>
-        <span aria-hidden>/</span>
-        <span>What has been proven</span>
-      </nav>
       <section className={styles.intro}>
         <p className={priv.eyebrow}>Devnet · MagicBlock Private Ephemeral Rollup</p>
         <h1 className={styles.title}>Private lending</h1>

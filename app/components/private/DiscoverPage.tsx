@@ -23,11 +23,6 @@ export function DiscoverPage() {
 
   return (
     <div className="page">
-      <nav className={styles.crumbs} aria-label="Breadcrumb">
-        <Link href="/devnet/private">Private</Link>
-        <span aria-hidden>/</span>
-        <span>Discover</span>
-      </nav>
       <header className={styles.hero}>
         <h1 className={styles.title}>Borrowers looking for lenders</h1>
         <p className={styles.lede}>
