@@ -36,7 +36,7 @@
 
 .back:hover {
   color: var(--color-text-primary);
-  background: rgb(20 32 27 / 0.04);
+  background: var(--color-legacy-overlay-3);
 }
 
 .head {

@@ -5,7 +5,11 @@ import styles from "./Wordmark.module.css";
 
 export function Wordmark() {
   return (
-    <Link href="/" className={styles.wordmark} aria-label={`${BRAND.name}, offers`}>
+    <Link
+      href="/"
+      className={styles.wordmark}
+      aria-label={`${BRAND.name}, home`}
+    >
       <LogoMark size={26} />
       <span className={styles.name}>{BRAND.name}</span>
     </Link>

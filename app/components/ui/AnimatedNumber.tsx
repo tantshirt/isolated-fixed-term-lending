@@ -7,13 +7,14 @@ type Props = {
   value: number;
   format: (n: number) => string;
   className?: string;
+  exact?: string;
 };
 
 /**
  * Counts to a new value instead of jumping. Ease-out, no overshoot: money never bounces.
  * The final frame always renders the exact formatted value.
  */
-export function AnimatedNumber({ value, format, className }: Props) {
+export function AnimatedNumber({ value, format, className, exact }: Props) {
   const ref = useRef<HTMLSpanElement>(null);
   const from = useRef(value);
   const reduce = useReducedMotion();
@@ -22,7 +23,7 @@ export function AnimatedNumber({ value, format, className }: Props) {
     const node = ref.current;
     if (!node) return;
     if (reduce || from.current === value) {
-      node.textContent = format(value);
+      node.textContent = exact ?? format(value);
       from.current = value;
       return;
     }
@@ -33,16 +34,16 @@ export function AnimatedNumber({ value, format, className }: Props) {
         node.textContent = format(v);
       },
       onComplete: () => {
-        node.textContent = format(value);
+        node.textContent = exact ?? format(value);
       },
     });
     from.current = value;
     return () => controls.stop();
-  }, [value, format, reduce]);
+  }, [value, format, reduce, exact]);
 
   return (
     <span ref={ref} className={className}>
-      {format(value)}
+      {exact ?? format(value)}
     </span>
   );
 }

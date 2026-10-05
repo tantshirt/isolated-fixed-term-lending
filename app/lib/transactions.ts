@@ -1,3 +1,6 @@
+import { IS_LOCAL, DEVNET_USDC_MINT, NATIVE_WSOL_MINT } from "./constants";
+import { submitTransaction } from "./transaction-lifecycle";
+import { getConnection } from "./program";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -29,14 +32,22 @@ function ensureAta(payer: PublicKey, owner: PublicKey, mint: PublicKey) {
     payer,
     getAssociatedTokenAddressSync(mint, owner),
     owner,
-    mint,
+    mint
   );
 }
 
 export async function sendCreateOffer(
   lenderSigner: AnySigner,
-  params: CreateOfferParams,
+  params: CreateOfferParams
 ): Promise<{ offer: PublicKey; signature: string }> {
+  if (
+    !IS_LOCAL &&
+    (!params.usdcMint.equals(DEVNET_USDC_MINT) ||
+      !params.wsolMint.equals(NATIVE_WSOL_MINT))
+  )
+    throw new Error(
+      "Devnet offers require canonical Devnet USDC and native wSOL"
+    );
   const signer = asSigner(lenderSigner);
   const lender = signer.publicKey;
   const program = getProgram(signer);
@@ -50,7 +61,7 @@ export async function sendCreateOffer(
       bnU64(params.durationSeconds),
       bnU64(params.collateralAmount),
       params.maxLtvBps,
-      params.liquidationLtvBps,
+      params.liquidationLtvBps
     )
     .accountsPartial({
       lender,
@@ -63,7 +74,8 @@ export async function sendCreateOffer(
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
     })
-    .rpc();
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
 
   return { offer, signature };
 }
@@ -71,7 +83,7 @@ export async function sendCreateOffer(
 export async function sendCancelOffer(
   lenderSigner: AnySigner,
   offer: PublicKey,
-  usdcMint: PublicKey,
+  usdcMint: PublicKey
 ): Promise<string> {
   const signer = asSigner(lenderSigner);
   const lender = signer.publicKey;
@@ -85,7 +97,8 @@ export async function sendCancelOffer(
       tokenProgram: TOKEN_PROGRAM_ID,
     })
     .preInstructions([ensureAta(lender, lender, usdcMint)])
-    .rpc();
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
 }
 
 export async function sendAcceptOffer(
@@ -94,7 +107,7 @@ export async function sendAcceptOffer(
   lender: PublicKey,
   usdcMint: PublicKey,
   wsolMint: PublicKey,
-  priceUpdate: PublicKey,
+  priceUpdate: PublicKey
 ): Promise<string> {
   const signer = asSigner(borrowerSigner);
   const borrower = signer.publicKey;
@@ -118,7 +131,8 @@ export async function sendAcceptOffer(
       ensureAta(borrower, borrower, usdcMint),
       ensureAta(borrower, borrower, wsolMint),
     ])
-    .rpc();
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
 }
 
 export async function sendRepayLoan(
@@ -126,28 +140,31 @@ export async function sendRepayLoan(
   offer: PublicKey,
   lender: PublicKey,
   usdcMint: PublicKey,
-  wsolMint: PublicKey,
+  wsolMint: PublicKey
 ): Promise<string> {
   const signer = asSigner(borrowerSigner);
   const borrower = signer.publicKey;
-  return getProgram(signer)
-    .methods.repayLoan()
-    .accountsPartial({
-      borrower,
-      offer,
-      wsolVault: wsolVaultPda(offer),
-      borrowerUsdc: getAssociatedTokenAddressSync(usdcMint, borrower),
-      lender,
-      lenderUsdc: getAssociatedTokenAddressSync(usdcMint, lender),
-      borrowerWsol: getAssociatedTokenAddressSync(wsolMint, borrower),
-      tokenProgram: TOKEN_PROGRAM_ID,
-    })
-    // A lender who closed their USDC account cannot block repayment.
-    .preInstructions([
-      ensureAta(borrower, lender, usdcMint),
-      ensureAta(borrower, borrower, wsolMint),
-    ])
-    .rpc();
+  return (
+    getProgram(signer)
+      .methods.repayLoan()
+      .accountsPartial({
+        borrower,
+        offer,
+        wsolVault: wsolVaultPda(offer),
+        borrowerUsdc: getAssociatedTokenAddressSync(usdcMint, borrower),
+        lender,
+        lenderUsdc: getAssociatedTokenAddressSync(usdcMint, lender),
+        borrowerWsol: getAssociatedTokenAddressSync(wsolMint, borrower),
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      // A lender who closed their USDC account cannot block repayment.
+      .preInstructions([
+        ensureAta(borrower, lender, usdcMint),
+        ensureAta(borrower, borrower, wsolMint),
+      ])
+      .transaction()
+      .then((tx) => submitTransaction(getConnection(), signer, tx))
+  );
 }
 
 export async function sendClaimExpired(
@@ -155,7 +172,7 @@ export async function sendClaimExpired(
   offer: PublicKey,
   lender: PublicKey,
   borrower: PublicKey,
-  wsolMint: PublicKey,
+  wsolMint: PublicKey
 ): Promise<string> {
   const signer = asSigner(callerSigner);
   const caller = signer.publicKey;
@@ -171,7 +188,8 @@ export async function sendClaimExpired(
       tokenProgram: TOKEN_PROGRAM_ID,
     })
     .preInstructions([ensureAta(caller, lender, wsolMint)])
-    .rpc();
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
 }
 
 export async function sendLiquidateLoan(
@@ -181,7 +199,7 @@ export async function sendLiquidateLoan(
   borrower: PublicKey,
   usdcMint: PublicKey,
   wsolMint: PublicKey,
-  priceUpdate: PublicKey,
+  priceUpdate: PublicKey
 ): Promise<string> {
   const signer = asSigner(callerSigner);
   const caller = signer.publicKey;
@@ -206,17 +224,57 @@ export async function sendLiquidateLoan(
       ensureAta(caller, lender, usdcMint),
       ensureAta(caller, borrower, wsolMint),
     ])
-    .rpc();
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
 }
 
 /** Lender reclaims the offer account's rent once the loan has ended. */
 export async function sendCloseOffer(
   lenderSigner: AnySigner,
-  offer: PublicKey,
+  offer: PublicKey
 ): Promise<string> {
   const signer = asSigner(lenderSigner);
   return getProgram(signer)
     .methods.closeOffer()
     .accountsPartial({ lender: signer.publicKey, offer })
-    .rpc();
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
+}
+
+/** Explicit user action; amount is additional wSOL in lamports, never the full wallet balance. */
+export async function sendWrapSol(
+  wallet: AnySigner,
+  amount: bigint
+): Promise<string> {
+  const { NATIVE_MINT, ACCOUNT_SIZE, createSyncNativeInstruction } =
+    await import("@solana/spl-token");
+  const { Transaction } = await import("@solana/web3.js");
+  if (amount <= 0n || amount > BigInt(Number.MAX_SAFE_INTEGER))
+    throw new Error("Enter a positive, safely representable SOL amount");
+  const signer = asSigner(wallet);
+  const connection = getConnection();
+  const ata = getAssociatedTokenAddressSync(NATIVE_MINT, signer.publicKey);
+  const [balance, rent, existing] = await Promise.all([
+    connection.getBalance(signer.publicKey),
+    connection.getMinimumBalanceForRentExemption(ACCOUNT_SIZE),
+    connection.getAccountInfo(ata),
+  ]);
+  const reserve = 10_000_000n; // Retain 0.01 SOL for subsequent loan transaction fees.
+  if (BigInt(balance) < amount + BigInt(existing ? 0 : rent) + reserve)
+    throw new Error(
+      "Insufficient SOL after retaining token-account rent and a 0.01 SOL fee reserve"
+    );
+  return submitTransaction(
+    connection,
+    signer,
+    new Transaction().add(
+      ensureAta(signer.publicKey, signer.publicKey, NATIVE_MINT),
+      SystemProgram.transfer({
+        fromPubkey: signer.publicKey,
+        toPubkey: ata,
+        lamports: amount,
+      }),
+      createSyncNativeInstruction(ata)
+    )
+  );
 }

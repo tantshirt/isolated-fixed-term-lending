@@ -1,3 +1,4 @@
+import { rejectLocalRequest } from "@/lib/server/local-guard";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { RPC_URL } from "@/lib/constants";
@@ -25,12 +26,14 @@ function paramsFromBody(body: Body): MockPriceParams {
   const scale = 10 ** -exponent;
   const price = BigInt(Math.round(body.priceUsd * scale));
   const conf = BigInt(
-    Math.round((body.confUsd ?? body.priceUsd * 0.001) * scale),
+    Math.round((body.confUsd ?? body.priceUsd * 0.001) * scale)
   );
   return { price, conf, exponent };
 }
 
 export async function POST(request: Request) {
+  const denied = rejectLocalRequest(request);
+  if (denied) return denied;
   try {
     const config = await readDevConfig();
     const secrets = await readDevSecrets();
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
 
     const priceUpdate = new PublicKey(config.priceUpdateAccount);
     const writeAuthority = Keypair.fromSecretKey(
-      Uint8Array.from(secrets.priceWriteAuthoritySecret),
+      Uint8Array.from(secrets.priceWriteAuthoritySecret)
     );
     const data = await encodePriceUpdateV2Account(writeAuthority.publicKey, {
       ...params,
@@ -61,7 +64,7 @@ export async function POST(request: Request) {
       connection,
       priceUpdate,
       data,
-      lamports,
+      lamports
     );
 
     if (!ok) {
@@ -70,7 +73,7 @@ export async function POST(request: Request) {
           error:
             "Could not rewrite mock Pyth account on this RPC. Start Surfpool/surfnet or post a Hermes Pyth update.",
         },
-        { status: 501 },
+        { status: 501 }
       );
     }
 

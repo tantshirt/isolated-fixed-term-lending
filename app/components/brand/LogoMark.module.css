@@ -27,7 +27,7 @@
 }
 
 .panel .ring {
-  stroke: rgb(246 242 234 / 0.22);
+  stroke: var(--color-legacy-overlay-8);
 }
 
 .panel .arc {

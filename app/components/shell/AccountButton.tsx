@@ -10,11 +10,23 @@ import { formatUsdc, formatWsol, shortKey } from "@/lib/format";
 import { Avatar } from "./Avatar";
 import styles from "./AccountButton.module.css";
 
-const ROLE_NAMES = { lender: "Demo lender", borrower: "Demo borrower", liquidator: "Demo liquidator" } as const;
+const ROLE_NAMES = {
+  lender: "Demo lender",
+  borrower: "Demo borrower",
+  liquidator: "Demo liquidator",
+} as const;
 
 export function AccountButton() {
-  const { publicKey, source, localRole, walletName, setConnectOpen, disconnect, bumpRefresh } = useSigner();
-  const { config } = useDevConfig();
+  const {
+    publicKey,
+    source,
+    localRole,
+    walletName,
+    setConnectOpen,
+    disconnect,
+    bumpRefresh,
+  } = useSigner();
+  const { config, localControls } = useDevConfig();
   const balances = useBalances(publicKey, config);
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -24,7 +36,12 @@ export function AccountButton() {
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false);
+      if (
+        e instanceof KeyboardEvent
+          ? e.key === "Escape"
+          : !ref.current?.contains(e.target as Node)
+      )
+        setOpen(false);
     };
     document.addEventListener("mousedown", close);
     document.addEventListener("keydown", close);
@@ -43,7 +60,7 @@ export function AccountButton() {
   }
 
   const key = publicKey.toBase58();
-  const name = localRole ? ROLE_NAMES[localRole] : (walletName ?? "Wallet");
+  const name = localRole ? ROLE_NAMES[localRole] : walletName ?? "Wallet";
 
   const fund = async () => {
     setFunding(true);
@@ -55,10 +72,18 @@ export function AccountButton() {
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Funding failed");
-      toast({ tone: "success", title: "Wallet funded", detail: "2 SOL, 10,000 USDC and 50 wSOL arrived." });
+      toast({
+        tone: "success",
+        title: "Wallet funded",
+        detail: "2 SOL, 10,000 USDC and 50 wSOL arrived.",
+      });
       bumpRefresh();
     } catch (e) {
-      toast({ tone: "error", title: "Could not fund this wallet", detail: e instanceof Error ? e.message : undefined });
+      toast({
+        tone: "error",
+        title: "Could not fund this wallet",
+        detail: e instanceof Error ? e.message : undefined,
+      });
     } finally {
       setFunding(false);
     }
@@ -76,7 +101,7 @@ export function AccountButton() {
         <Avatar seed={key} role={localRole} />
         <span className={styles.who}>
           <span className={styles.name}>{name}</span>
-          <span className={`${styles.key} num`}>{shortKey(key)}</span>
+          <span className={`${styles.key} address`}>{shortKey(key)}</span>
         </span>
       </button>
       <AnimatePresence>
@@ -96,7 +121,7 @@ export function AccountButton() {
                 <p className={styles.name}>{name}</p>
                 <button
                   type="button"
-                  className={`${styles.copy} num`}
+                  className={`${styles.copy} address`}
                   onClick={() => {
                     void navigator.clipboard?.writeText(key);
                     toast({ tone: "info", title: "Address copied" });
@@ -109,20 +134,31 @@ export function AccountButton() {
             <dl className={styles.balances}>
               <div>
                 <dt>USDC</dt>
-                <dd className="num">{balances ? formatUsdc(balances.usdc) : "—"}</dd>
+                <dd className="num">
+                  {balances ? formatUsdc(balances.usdc) : "—"}
+                </dd>
               </div>
               <div>
                 <dt>wSOL</dt>
-                <dd className="num">{balances ? formatWsol(balances.wsol) : "—"}</dd>
+                <dd className="num">
+                  {balances ? formatWsol(balances.wsol) : "—"}
+                </dd>
               </div>
               <div>
                 <dt>SOL for fees</dt>
-                <dd className="num">{balances ? balances.sol.toFixed(3) : "—"}</dd>
+                <dd className="num">
+                  {balances ? balances.sol.toFixed(3) : "—"}
+                </dd>
               </div>
             </dl>
             <div className={styles.actions}>
-              {source === "wallet" && (
-                <Button variant="secondary" block loading={funding} onClick={fund}>
+              {localControls && source === "wallet" && (
+                <Button
+                  variant="secondary"
+                  block
+                  loading={funding}
+                  onClick={fund}
+                >
                   Fund with test tokens
                 </Button>
               )}

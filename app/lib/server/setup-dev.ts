@@ -1,3 +1,4 @@
+import { assertLocalControls } from "./local-guard";
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
@@ -23,6 +24,7 @@ export type SetupResult = {
 };
 
 export async function runLocalSetup(): Promise<SetupResult> {
+  assertLocalControls();
   const connection = new Connection(RPC_URL, "confirmed");
   const admin = Keypair.generate();
   await fundKeypair(connection, admin, admin.publicKey);
@@ -42,40 +44,40 @@ export async function runLocalSetup(): Promise<SetupResult> {
     admin,
     admin.publicKey,
     null,
-    6,
+    6
   );
   const wsolMint = await createMint(
     connection,
     admin,
     admin.publicKey,
     null,
-    9,
+    9
   );
 
   const lenderUsdc = await getOrCreateAssociatedTokenAccount(
     connection,
     admin,
     usdcMint,
-    lender.publicKey,
+    lender.publicKey
   );
   const borrowerWsol = await getOrCreateAssociatedTokenAccount(
     connection,
     admin,
     wsolMint,
-    borrower.publicKey,
+    borrower.publicKey
   );
   // The borrower needs USDC beyond the principal to pay the interest back.
   const borrowerUsdc = await getOrCreateAssociatedTokenAccount(
     connection,
     admin,
     usdcMint,
-    borrower.publicKey,
+    borrower.publicKey
   );
   const liquidatorUsdc = await getOrCreateAssociatedTokenAccount(
     connection,
     admin,
     usdcMint,
-    liquidator.publicKey,
+    liquidator.publicKey
   );
 
   await mintTo(
@@ -84,7 +86,7 @@ export async function runLocalSetup(): Promise<SetupResult> {
     usdcMint,
     lenderUsdc.address,
     admin,
-    1_000_000_000_000,
+    1_000_000_000_000
   );
   await mintTo(
     connection,
@@ -92,7 +94,7 @@ export async function runLocalSetup(): Promise<SetupResult> {
     wsolMint,
     borrowerWsol.address,
     admin,
-    100_000_000_000,
+    100_000_000_000
   );
   await mintTo(
     connection,
@@ -100,7 +102,7 @@ export async function runLocalSetup(): Promise<SetupResult> {
     usdcMint,
     borrowerUsdc.address,
     admin,
-    100_000_000_000,
+    100_000_000_000
   );
   await mintTo(
     connection,
@@ -108,7 +110,7 @@ export async function runLocalSetup(): Promise<SetupResult> {
     usdcMint,
     liquidatorUsdc.address,
     admin,
-    500_000_000_000,
+    500_000_000_000
   );
 
   await ensurePriceUpdateAccount(
@@ -116,7 +118,7 @@ export async function runLocalSetup(): Promise<SetupResult> {
     admin,
     priceUpdate,
     priceWriteAuthority,
-    defaultMockPrice(),
+    defaultMockPrice()
   );
 
   const config: DevConfig = {

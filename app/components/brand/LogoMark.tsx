@@ -15,14 +15,22 @@ const R = 13;
 const C = 2 * Math.PI * R;
 
 /**
- * Tenor's mark: a ring (the term) crowned by a brass arc, with a stem that makes the
+ * Lendspan's mark: a ring (the term) crowned by a brass arc, with a stem that makes the
  * pair read as a T. The arc length is live: it carries progress wherever the mark appears.
  */
-export function LogoMark({ size = 28, progress = 0.25, spinning = false, tone = "ink", title }: Props) {
+export function LogoMark({
+  size = 28,
+  progress = 0.25,
+  spinning = false,
+  tone = "ink",
+  title,
+}: Props) {
   const p = Math.min(1, Math.max(0, progress));
   return (
     <svg
-      className={`${styles.mark} ${styles[tone]} ${spinning ? styles.spinning : ""}`}
+      className={`${styles.mark} ${styles[tone]} ${
+        spinning ? styles.spinning : ""
+      }`}
       width={size}
       height={size}
       viewBox="0 0 32 32"
@@ -40,8 +48,14 @@ export function LogoMark({ size = 28, progress = 0.25, spinning = false, tone = 
         transform="rotate(-90 16 16)"
         style={{ ["--arc" as string]: `${p * C}` }}
       />
-      <rect className={styles.stem} x="14.5" y="9" width="3" height="14" rx="1.5" />
-      <rect className={styles.bar} x="10" y="9" width="12" height="3" rx="1.5" />
+      <path
+        d="M10 22V10M10 22h12M15 17l7-7M16 10h6v6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

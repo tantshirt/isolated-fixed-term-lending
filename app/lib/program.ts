@@ -1,25 +1,31 @@
 import { AnchorProvider, BN, Idl, Program } from "@coral-xyz/anchor";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import idl from "@/idl/isolated_loan.json";
-import { RPC_URL } from "./constants";
+import { RPC_URL, WS_URL, PROGRAM_ID } from "./constants";
 import { asSigner, type LoanSigner } from "./keypair-wallet";
 
 export type IsolatedLoan = Program<Idl>;
 
 export function getConnection(endpoint = RPC_URL): Connection {
-  return new Connection(endpoint, "confirmed");
+  return new Connection(endpoint, {
+    commitment: "confirmed",
+    wsEndpoint: WS_URL,
+  });
 }
 
 export function getProgram(
   signer: Keypair | LoanSigner,
-  endpoint = RPC_URL,
+  endpoint = RPC_URL
 ): IsolatedLoan {
   const connection = getConnection(endpoint);
   const wallet = asSigner(signer);
   const provider = new AnchorProvider(connection, wallet, {
     commitment: "confirmed",
   });
-  return new Program(idl as Idl, provider);
+  return new Program(
+    { ...idl, address: PROGRAM_ID.toBase58() } as Idl,
+    provider
+  );
 }
 
 export function bnU64(value: bigint | number): BN {
@@ -50,7 +56,7 @@ export function offerStatusKey(status: Record<string, unknown>): string {
 
 export async function fetchOffer(
   program: IsolatedLoan,
-  offerPubkey: PublicKey,
+  offerPubkey: PublicKey
 ): Promise<{ publicKey: PublicKey; account: OfferAccount }> {
   const account = await (
     program.account as {

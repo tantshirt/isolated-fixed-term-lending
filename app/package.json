@@ -13,6 +13,7 @@
   "dependencies": {
     "@astryxdesign/theme-neutral": "^0.6.5",
     "@coral-xyz/anchor": "^0.32.1",
+    "@pythnetwork/pyth-solana-receiver": "^0.16.0",
     "@solana/spl-token": "^0.4.15",
     "@solana/wallet-adapter-base": "^0.9.28",
     "@solana/wallet-adapter-react": "^0.15.40",
@@ -33,5 +34,10 @@
     "eslint-config-next": "15.5.27",
     "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "overrides": {
+    "jito-ts": {
+      "@solana/web3.js": "1.99.0"
+    }
   }
 }

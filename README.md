@@ -1,8 +1,10 @@
-# Tenor: isolated fixed-term lending
+# Lendspan
+
+Clear terms. One loan at a time.
 
 A local Solana program for a single loan: a lender locks USDC, a borrower locks wSOL and receives the USDC, and the program repays, expires, or liquidates without a server.
 
-This repo includes the Anchor program ([`isolated_loan/`](isolated_loan/)), three outcome scripts, tests, and **Tenor**, the Next.js interface ([`app/`](app/)).
+This repo includes the Anchor program ([`isolated_loan/`](isolated_loan/)), three outcome scripts, tests, and **Lendspan**, the Next.js interface ([`app/`](app/)).
 
 ## Quick start
 
@@ -36,23 +38,18 @@ npm run script:expire      # → status Expired
 
 Requires RPC at `http://127.0.0.1:8899` with `surfnet_setAccount` and `surfnet_timeTravel` (Surfpool 1.x). Plain `solana-test-validator` needs real Pyth updates instead.
 
-### 3. Tenor (UI)
+### 3. Lendspan
 
 ```bash
 cd app
 npm install
-npm run sync-idl   # after anchor build
+cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), then open **Demo desk** and press **Set up the demo**. This creates three funded wallets: lender, borrower and liquidator. Act as the lender to create an offer, then switch to the borrower to take it.
+Open the URL printed by Next.js. `/` explains the journey; `/demo` is a wallet-free simulation with editable terms, role balances, receipts, and replayable repayment, liquidation, and expiry. No validator or account is needed for the simulation.
 
-The desk also moves the SOL price and the chain clock, so all three endings can be shown live:
-- **Repay:** act as the borrower and press **Repay**.
-- **Liquidation:** drop SOL below the price the loan page shows, then act as the liquidator.
-- **Expiry:** press **+7 days**, then **Claim collateral**.
-
-A browser wallet (Phantom, Solflare) also works. Point it at localhost and use **Fund with test tokens** in the account menu.
+`/devnet` connects a browser wallet to the deployed loan program using canonical test USDC, native wSOL, real Pyth updates, and real chain time. It guides funding and explicit SOL wrapping. See [Devnet configuration and evidence](docs/devnet.md). Devnet transactions use test tokens but still require wallet signatures and SOL for fees.
 
 ### 4. Tests
 
@@ -70,7 +67,7 @@ npm test              # wizard validation, collateral math, u64 seeds
 
 | Item | Value |
 | --- | --- |
-| Program id (local) | `CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef` |
+| Program id (local and Devnet) | `CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef` |
 | Offer PDA | `["offer", lender, offer_id_le]` |
 | USDC vault | `["usdc-vault", offer]` (closed after accept) |
 | wSOL vault | `["wsol-vault", offer]` |
@@ -83,7 +80,7 @@ npm test              # wizard validation, collateral math, u64 seeds
 
 - USDC is one dollar (no USDC price feed).
 - Missing the deadline gives the lender all wSOL.
-- Test mints are not mainnet USDC or wrapped SOL.
+- Local scripts use mock mints; Devnet uses canonical test USDC and native wSOL.
 
 Formulas, caps, Pyth feed id, and the worked example are in [docs/research.md](docs/research.md). Accounts and instruction rules are in [docs/architecture.md](docs/architecture.md). UI copy and layout are in [docs/design-and-experience.md](docs/design-and-experience.md).
 

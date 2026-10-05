@@ -2,39 +2,40 @@
 
 ## Register
 
-product
+Product for the app; brand for the explanatory landing page.
 
-## Users
+## Users and purpose
 
-Capstone demo judges first. They watch a five-minute walkthrough on a laptop or a projector and need to understand a fixed-term loan without crypto fluency. The walkthrough plays both sides of one loan: a lender locks USDC, a borrower locks wSOL and takes the USDC, and the loan ends by repayment, expiry, or liquidation.
+Lendspan demonstrates an isolated, fixed-term USDC loan secured by wrapped SOL on Solana. Capstone judges, crypto beginners and experienced users should understand what each party supplies, receives and risks. One offer is one loan. Interest is fixed for the entire term; repaying early does not reduce it. Missing the repayment deadline makes all collateral claimable for the lender.
 
-Behind them sit the real users the product is shaped for: Solana lenders who want a fixed return on USDC, and borrowers who want USDC without selling SOL.
+Success: someone unfamiliar with crypto can complete the guided simulation and explain the exchange, while an experienced user can inspect exact terms and perform real transactions on Devnet.
 
-## Product Purpose
+## Two experiences
 
-Tenor is an isolated, fixed-term USDC loan against wSOL collateral. One offer is one loan. The terms are fixed at creation, interest for the whole term is part of the debt, and the deadline is final: miss it and the lender takes the collateral.
+- **Simulation:** immediately available, wallet-free, sample funds, explicit role changes, repeatable repayment/liquidation/expiry. It never submits a transaction or calls a chain API.
+- **Devnet:** actual wallet signatures, canonical test USDC, wrapped test SOL, genuine Pyth prices and real chain time. No sign-in or account registration. Clearly identify Devnet and label test assets.
 
-Success in the demo is one sentence from a judge: "I understood exactly what each side gets, and it felt like a finished product."
+The simulation is not proof of an on-chain transaction. Only confirmed Devnet signatures are presented as such.
 
-## Brand Personality
+## Brand
 
-Assured, warm, precise. A private desk, not an exchange. Calm about money, generous with feedback, never hurried. Small interactions carry personality (Arc, Raycast). Filling in an offer feels like Stripe Checkout: every input answers back immediately and nothing is wasted.
+**Lendspan — Clear terms. One loan at a time.**
+
+Familiar, clear, precise. Light white surfaces and cool neutrals with blue primary actions. Inter carries words and aligned tabular figures. Monospace is reserved for addresses and technical details. This supersedes Tenor's ivory, deep-green and brass private-desk styling.
+
+## Principles
+
+1. Say what moves: principal, total repayment, collateral and deadline appear before commitment.
+2. One decision at a time: guided steps, helpful editable defaults and a live summary.
+3. Explain consequences beside controls; place advanced mechanics behind expandable detail without hiding risk.
+4. Every action has feedback: pending, rejection, failure, confirmation and an honest recovery path.
+5. Motion explains fund movement and state. Native scrolling, visible defaults and reduced-motion alternatives are required.
+6. Preserve the program's rules. No demo shortcut weakens authority, oracle validation, integer rounding or settlement boundaries.
+
+## Accessibility
+
+WCAG 2.2 AA. Body text starts at 16px. Text contrast is at least 4.5:1. Status uses words as well as color. Controls are keyboard accessible with visible focus, clear labels and suitable touch targets. State changes are announced; step navigation places focus meaningfully. No horizontal overflow on small phones.
 
 ## Anti-references
 
-- Degen crypto: neon gradients, glowing coins, casino energy.
-- Trading terminals: dense tables, red and green everywhere, ticker tape.
-- Generic SaaS templates: card grids, hero metrics, purple gradients.
-- Old bank portals: stiff navy, walls of form fields, no feedback.
-
-## Design Principles
-
-1. Say what moves. Every screen names, in plain figures, what you give, what you get, and when.
-2. One decision at a time. One primary action per screen; the wizard asks one question per step.
-3. The number is the hero. Figures are set large, in the code face, with aligned digits, and they animate to their new value instead of jumping.
-4. Feedback before commitment. The preview shows the borrower's view of the offer while the lender is still typing.
-5. Calm under risk. Risk is shown next to the number it qualifies, in brass before red, never as a banner.
-
-## Accessibility & Inclusion
-
-WCAG 2.2 AA. Text contrast at least 4.5:1 on every surface. Risk is never carried by color alone: each state also has a word. Motion respects `prefers-reduced-motion` with instant or crossfade alternatives. All controls, including the range sliders and the wizard, are fully keyboard operable with visible focus.
+No casino styling, neon crypto motifs, dense trading terminals, decorative mono figures, invented traction or guaranteed-return claims. The landing page tells a real loan story rather than displaying generic marketing cards.

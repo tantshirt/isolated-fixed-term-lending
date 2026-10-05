@@ -3,9 +3,7 @@
   display: inline-grid;
   place-items: center;
   border-radius: 50%;
-  background:
-    radial-gradient(circle, var(--color-panel) 64%, transparent 65%),
-    conic-gradient(from var(--a), var(--tenor-brass-bright) 0 28%, rgb(13 51 40 / 0.85) 28% 100%);
+  background: var(--color-accent-muted);
   color: var(--color-on-panel);
   font-weight: 700;
 }

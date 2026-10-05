@@ -1,3 +1,4 @@
+import { assertLocalControls } from "./local-guard";
 import fs from "fs/promises";
 import path from "path";
 
@@ -11,6 +12,7 @@ export type DevSecrets = {
 const SECRETS_PATH = path.join(process.cwd(), ".local", "dev-secrets.json");
 
 export async function readDevSecrets(): Promise<DevSecrets | null> {
+  assertLocalControls();
   try {
     const raw = await fs.readFile(SECRETS_PATH, "utf8");
     return JSON.parse(raw) as DevSecrets;

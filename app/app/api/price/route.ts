@@ -1,6 +1,8 @@
+import { rejectLocalRequest } from "@/lib/server/local-guard";
+import { validatePriceAccount } from "@/lib/server/validate-price";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
-import { MAX_PRICE_AGE_SECONDS, RPC_URL } from "@/lib/constants";
+import { MAX_PRICE_AGE_SECONDS, RPC_URL, IS_LOCAL } from "@/lib/constants";
 import { readDevConfig } from "@/lib/server/dev-config";
 import { readDevSecrets } from "@/lib/server/dev-secrets";
 import {
@@ -20,12 +22,20 @@ const KEEP_FRESH_AFTER_SECONDS = 30;
  * `?keepFresh=1` re-posts the same price with a new timestamp (local mock only).
  */
 export async function GET(request: Request) {
+  const keepFresh =
+    IS_LOCAL && new URL(request.url).searchParams.get("keepFresh") === "1";
+  if (keepFresh) {
+    const denied = rejectLocalRequest(request);
+    if (denied) return denied;
+  }
   try {
     const config = await readDevConfig();
     if (!config) {
-      return NextResponse.json({ error: "Run local setup first" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Run local setup first" },
+        { status: 400 }
+      );
     }
-    const keepFresh = new URL(request.url).searchParams.get("keepFresh") === "1";
     const connection = new Connection(RPC_URL, "confirmed");
     const account = new PublicKey(config.priceUpdateAccount);
 
@@ -41,21 +51,27 @@ export async function GET(request: Request) {
       const secrets = await readDevSecrets();
       if (secrets) {
         const writeAuthority = Keypair.fromSecretKey(
-          Uint8Array.from(secrets.priceWriteAuthoritySecret),
+          Uint8Array.from(secrets.priceWriteAuthoritySecret)
         );
         const { price, conf, exponent } = decoded;
-        const data = await encodePriceUpdateV2Account(writeAuthority.publicKey, {
-          price,
-          conf,
-          exponent,
-          publishTime: now,
-        });
-        if (await trySurfnetSetAccount(connection, account, data, info.lamports)) {
+        const data = await encodePriceUpdateV2Account(
+          writeAuthority.publicKey,
+          {
+            price,
+            conf,
+            exponent,
+            publishTime: now,
+          }
+        );
+        if (
+          await trySurfnetSetAccount(connection, account, data, info.lamports)
+        ) {
           decoded = decodePriceUpdateV2(data);
         }
       }
     }
 
+    validatePriceAccount(info.owner, decoded, now, false);
     const publishTime = Number(decoded.publishTime);
     return NextResponse.json({
       price: decoded.price.toString(),
@@ -63,7 +79,7 @@ export async function GET(request: Request) {
       exponent: decoded.exponent,
       publishTime,
       chainTime: now,
-      fresh: now - publishTime <= MAX_PRICE_AGE_SECONDS,
+      fresh: now >= publishTime && now - publishTime <= MAX_PRICE_AGE_SECONDS,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "price read failed";

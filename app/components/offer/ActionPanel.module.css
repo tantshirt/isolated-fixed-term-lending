@@ -8,7 +8,7 @@
 }
 
 .panel[data-tone="risk"] {
-  box-shadow: var(--shadow-med), 0 0 0 1px rgb(180 67 47 / 0.35);
+  box-shadow: var(--shadow-med), 0 0 0 1px var(--color-legacy-overlay-2);
 }
 
 .panel[data-tone="risk"] .title {

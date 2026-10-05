@@ -11,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { STORAGE_KEYS, type ActingRole } from "@/lib/constants";
+import { IS_LOCAL, STORAGE_KEYS, type ActingRole } from "@/lib/constants";
 import { KeypairWallet, type LoanSigner } from "@/lib/keypair-wallet";
 import { hasRoleKeypairs, keypairForRole, setActiveRole } from "@/lib/roles";
 
@@ -39,9 +39,12 @@ const SignerContext = createContext<SignerState | null>(null);
 
 function readStoredLocalRole(): ActingRole | null {
   try {
-    if (localStorage.getItem(STORAGE_KEYS.signerSource) !== "local") return null;
+    if (localStorage.getItem(STORAGE_KEYS.signerSource) !== "local")
+      return null;
     const role = localStorage.getItem(STORAGE_KEYS.role);
-    return role === "lender" || role === "borrower" || role === "liquidator" ? role : null;
+    return role === "lender" || role === "borrower" || role === "liquidator"
+      ? role
+      : null;
   } catch {
     return null;
   }
@@ -74,6 +77,8 @@ export function SignerProvider({ children }: { children: ReactNode }) {
 
   const chooseLocal = useCallback(
     (role: ActingRole) => {
+      if (!IS_LOCAL)
+        throw new Error("Demo wallets are only available on localnet");
       setActiveRole(role);
       try {
         localStorage.setItem(STORAGE_KEYS.signerSource, "local");
@@ -81,7 +86,7 @@ export function SignerProvider({ children }: { children: ReactNode }) {
       setLocalRole(role);
       if (wallet.connected) void wallet.disconnect();
     },
-    [wallet],
+    [wallet]
   );
 
   const disconnect = useCallback(async () => {
@@ -117,7 +122,8 @@ export function SignerProvider({ children }: { children: ReactNode }) {
       publicKey: signer?.publicKey ?? null,
       source,
       localRole: source === "local" ? localRole : null,
-      walletName: source === "wallet" ? (wallet.wallet?.adapter.name ?? null) : null,
+      walletName:
+        source === "wallet" ? wallet.wallet?.adapter.name ?? null : null,
       chooseLocal,
       disconnect,
       refreshKey,
@@ -127,9 +133,19 @@ export function SignerProvider({ children }: { children: ReactNode }) {
       deskOpen,
       setDeskOpen,
     };
-  }, [localRole, wallet, chooseLocal, disconnect, refreshKey, connectOpen, deskOpen]);
+  }, [
+    localRole,
+    wallet,
+    chooseLocal,
+    disconnect,
+    refreshKey,
+    connectOpen,
+    deskOpen,
+  ]);
 
-  return <SignerContext.Provider value={value}>{children}</SignerContext.Provider>;
+  return (
+    <SignerContext.Provider value={value}>{children}</SignerContext.Provider>
+  );
 }
 
 export function useSigner(): SignerState {

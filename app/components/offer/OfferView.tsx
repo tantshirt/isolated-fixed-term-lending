@@ -6,10 +6,25 @@ import { useEffect, useMemo, useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useBalances, useChainNow, useDevConfig, useOffer, usePrice } from "@/lib/client/hooks";
+import {
+  useBalances,
+  useChainNow,
+  useDevConfig,
+  useOffer,
+  usePrice,
+} from "@/lib/client/hooks";
 import { useSigner } from "@/lib/client/signer-context";
 import { EXPIRY_SENTENCE } from "@/lib/constants";
-import { atomsToNumber, fmt, formatBpsAsPercent, formatDeadline, formatDuration, shortKey } from "@/lib/format";
+import {
+  atomsToNumber,
+  fmt,
+  formatUsdc,
+  formatWsol,
+  formatBpsAsPercent,
+  formatDeadline,
+  formatDuration,
+  shortKey,
+} from "@/lib/format";
 import { computeHealth, debtOf, statusTitle } from "@/lib/offer-status";
 import type { Offer } from "@/lib/offers";
 import { offerPda } from "@/lib/pda";
@@ -29,16 +44,22 @@ function keyFor(lender: string, id: string): string | null {
   }
 }
 
-export function OfferView({ lender, offerId }: { lender: string; offerId: string }) {
+export function OfferView({
+  lender,
+  offerId,
+}: {
+  lender: string;
+  offerId: string;
+}) {
   const key = useMemo(() => keyFor(lender, offerId), [lender, offerId]);
   if (!key) return <Missing title="That offer link is not valid" />;
   return <Loaded offerKey={key} />;
 }
 
 function Loaded({ offerKey }: { offerKey: string }) {
-  const { offer } = useOffer(offerKey);
+  const { offer, error, reload } = useOffer(offerKey);
   const { price } = usePrice();
-  const now = useChainNow(price);
+  const now = useChainNow();
   const { publicKey } = useSigner();
   const { config } = useDevConfig();
   const balances = useBalances(publicKey, config);
@@ -47,24 +68,44 @@ function Loaded({ offerKey }: { offerKey: string }) {
   // "What moved" belongs to whoever signed it; a new signer starts clean.
   useEffect(() => setMoved(null), [signerKey]);
 
+  if (error)
+    return (
+      <section role="alert">
+        <h1>Offer unavailable</h1>
+        <p>Could not read this offer from the network. Its state is unknown.</p>
+        <button onClick={reload}>Retry</button>
+      </section>
+    );
   if (offer === undefined) return <Loading />;
-  if (offer === null) return <Missing title="This offer is closed" body="The lender closed it after it settled, so it no longer exists on chain." />;
+  if (offer === null)
+    return (
+      <Missing
+        title="This offer is closed"
+        body="The lender closed it after it settled, so it no longer exists on chain."
+      />
+    );
 
   const role = roleFor(offer, publicKey?.toBase58() ?? null);
-  const expired = offer.status === "filled" && now >= offer.expiryTs;
-  const health = price && ["open", "filled"].includes(offer.status) ? computeHealth(offer, price) : null;
+  const expired =
+    offer.status === "filled" && now !== null && now >= offer.expiryTs;
+  const health =
+    price && ["open", "filled"].includes(offer.status)
+      ? computeHealth(offer, price)
+      : null;
 
   return (
     <div className={styles.layout}>
       <div className={styles.main}>
-        <Link href="/" className={styles.back}>
+        <Link href="/devnet" className={styles.back}>
           ← Offers
         </Link>
 
         <header className={styles.head}>
           <div className={styles.pills}>
             <span className={styles.role}>{roleLabel(role, offer)}</span>
-            {expired && <span className={styles.expiredTag}>Past the deadline</span>}
+            {expired && (
+              <span className={styles.expiredTag}>Past the deadline</span>
+            )}
           </div>
           {/* Keyed so a new status rises in; no exit phase, so a fast poll can never strand the old title. */}
           <m.h1
@@ -95,29 +136,52 @@ function Loaded({ offerKey }: { offerKey: string }) {
 
         <Figures offer={offer} role={role} />
 
-        {offer.status === "open" && role !== "lender" && (
+        {offer.status === "open" && role !== "lender" && now !== null && (
           <p className={styles.deadlineLine}>
-            Taken now, repay by <b>{formatDeadline(now + offer.durationSeconds)}</b>. {EXPIRY_SENTENCE}
+            Taken now, repay by{" "}
+            <b>{formatDeadline(now + offer.durationSeconds)}</b>.{" "}
+            {EXPIRY_SENTENCE}
           </p>
         )}
 
         {offer.status === "filled" && (
           <section className={styles.block}>
-            <TermRing startTs={offer.startTs} expiryTs={offer.expiryTs} now={now} />
-            {role === "borrower" && !expired && <p className={styles.sentence}>{EXPIRY_SENTENCE}</p>}
+            {now === null ? (
+              <p role="status">
+                Chain clock unavailable. Reconnecting before time-sensitive
+                actions.
+              </p>
+            ) : (
+              <TermRing
+                startTs={offer.startTs}
+                expiryTs={offer.expiryTs}
+                now={now}
+              />
+            )}
+            {role === "borrower" && !expired && (
+              <p className={styles.sentence}>{EXPIRY_SENTENCE}</p>
+            )}
           </section>
         )}
 
         {health && (
           <section className={styles.block}>
-            {offer.status === "open" && <p className={styles.blockNote}>If this offer were taken at today&apos;s SOL price:</p>}
+            {offer.status === "open" && (
+              <p className={styles.blockNote}>
+                If this offer were taken at today&apos;s SOL price:
+              </p>
+            )}
             <HealthMeter
               ltvBps={health.currentLtvBps}
               healthBps={health.healthBps}
               maxLtvBps={offer.maxLtvBps}
               liquidationLtvBps={offer.liquidationLtvBps}
               stale={!price?.fresh}
-              liquidationPrice={solPriceAtLtv(debtOf(offer), offer.collateralAmount, offer.liquidationLtvBps)}
+              liquidationPrice={solPriceAtLtv(
+                debtOf(offer),
+                offer.collateralAmount,
+                offer.liquidationLtvBps
+              )}
               solPrice={price ? priceUsd(price) : null}
             />
           </section>
@@ -149,31 +213,76 @@ function roleLabel(role: OfferRole, offer: Offer) {
 
 function Figures({ offer, role }: { offer: Offer; role: OfferRole }) {
   const owed = debtOf(offer);
-  const borrowerView = role === "borrower" || (role === "visitor" && offer.status === "open");
+  const borrowerView =
+    role === "borrower" || (role === "visitor" && offer.status === "open");
   const taken = offer.status !== "open";
   const items = borrowerView
     ? [
-        { label: taken ? "USDC you received" : "USDC you receive", value: atomsToNumber(offer.principal, 6), unit: "USDC", f: fmt.usd },
         {
-          label: offer.status === "filled" ? "USDC you owe" : taken ? "USDC owed" : "USDC you repay",
+          label: taken ? "USDC you received" : "USDC you receive",
+          exact: formatUsdc(offer.principal),
+          value: atomsToNumber(offer.principal, 6),
+          unit: "USDC",
+          f: fmt.usd,
+        },
+        {
+          label:
+            offer.status === "filled"
+              ? "USDC you owe"
+              : taken
+              ? "USDC owed"
+              : "USDC you repay",
+          exact: formatUsdc(owed),
           value: atomsToNumber(owed, 6),
           unit: "USDC",
           f: fmt.usd,
         },
-        { label: taken ? "wSOL you locked" : "wSOL you lock", value: atomsToNumber(offer.collateralAmount, 9), unit: "wSOL", f: fmt.wsol },
+        {
+          label: taken ? "wSOL you locked" : "wSOL you lock",
+          exact: formatWsol(offer.collateralAmount),
+          value: atomsToNumber(offer.collateralAmount, 9),
+          unit: "wSOL",
+          f: fmt.wsol,
+        },
       ]
     : [
-        { label: role === "lender" ? "You lent" : "Principal", value: atomsToNumber(offer.principal, 6), unit: "USDC", f: fmt.usd },
-        { label: role === "lender" ? "You are owed" : "Debt", value: atomsToNumber(owed, 6), unit: "USDC", f: fmt.usd },
-        { label: "Collateral", value: atomsToNumber(offer.collateralAmount, 9), unit: "wSOL", f: fmt.wsol },
+        {
+          label: role === "lender" ? "You lent" : "Principal",
+          exact: formatUsdc(offer.principal),
+          value: atomsToNumber(offer.principal, 6),
+          unit: "USDC",
+          f: fmt.usd,
+        },
+        {
+          label: role === "lender" ? "You are owed" : "Debt",
+          exact: formatUsdc(owed),
+          value: atomsToNumber(owed, 6),
+          unit: "USDC",
+          f: fmt.usd,
+        },
+        {
+          label: "Collateral",
+          exact: formatWsol(offer.collateralAmount),
+          value: atomsToNumber(offer.collateralAmount, 9),
+          unit: "wSOL",
+          f: fmt.wsol,
+        },
       ];
   return (
     <div className={styles.figures}>
       {items.map((it, i) => (
-        <div key={it.label} className={`${styles.figure} ${i === 0 ? styles.figureHero : ""}`}>
+        <div
+          key={it.label}
+          className={`${styles.figure} ${i === 0 ? styles.figureHero : ""}`}
+        >
           <span className={styles.figureLabel}>{it.label}</span>
           <span className={styles.figureValue}>
-            <AnimatedNumber value={it.value} format={it.f} className="num" />
+            <AnimatedNumber
+              value={it.value}
+              format={it.f}
+              exact={it.exact}
+              className="num"
+            />
             <span className={styles.unit}>{it.unit}</span>
           </span>
         </div>
@@ -199,7 +308,15 @@ function Terms({ offer }: { offer: Offer }) {
         {rows.map(([k, v]) => (
           <div key={k}>
             <dt>{k}</dt>
-            <dd className="num">{v}</dd>
+            <dd
+              className={
+                ["Lender", "Borrower", "Offer account"].includes(k)
+                  ? "address"
+                  : "num"
+              }
+            >
+              {v}
+            </dd>
           </div>
         ))}
       </dl>
@@ -235,7 +352,7 @@ function Missing({ title, body }: { title: string; body?: string }) {
       <LogoMark size={44} progress={1} />
       <h1 className={styles.title}>{title}</h1>
       {body && <p className={styles.sentence}>{body}</p>}
-      <Link href="/" className={styles.back}>
+      <Link href="/devnet" className={styles.back}>
         ← Back to offers
       </Link>
     </div>

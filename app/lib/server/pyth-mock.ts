@@ -1,8 +1,6 @@
+import { assertLocalControls } from "./local-guard";
 import { Connection, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import {
-  PYTH_RECEIVER_PROGRAM_ID,
-  SOL_USD_FEED_ID,
-} from "../constants";
+import { PYTH_RECEIVER_PROGRAM_ID, SOL_USD_FEED_ID } from "../constants";
 import { encodePriceUpdateV2 } from "./price-update-codec";
 
 export type MockPriceParams = {
@@ -28,13 +26,15 @@ export function defaultMockPrice(): MockPriceParams {
 export async function chainUnixTime(connection: Connection): Promise<number> {
   const slot = await connection.getSlot("confirmed");
   const time = await connection.getBlockTime(slot);
-  return time ?? Math.floor(Date.now() / 1000);
+  if (time === null)
+    throw new Error("Chain time is unavailable; retry the price read");
+  return time;
 }
 
 export async function encodePriceUpdateV2Account(
   writeAuthority: PublicKey,
   params: MockPriceParams & { publishTime: number },
-  postedSlot = 0n,
+  postedSlot = 0n
 ): Promise<Buffer> {
   return encodePriceUpdateV2(
     writeAuthority,
@@ -45,21 +45,24 @@ export async function encodePriceUpdateV2Account(
       exponent: params.exponent,
       publishTime: BigInt(params.publishTime),
     },
-    postedSlot,
+    postedSlot
   );
 }
 
 async function rpcRequest(
   connection: Connection,
   method: string,
-  params: unknown[],
+  params: unknown[]
 ): Promise<unknown> {
   const res = await fetch(connection.rpcEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
   });
-  const json = (await res.json()) as { result?: unknown; error?: { message: string } };
+  const json = (await res.json()) as {
+    result?: unknown;
+    error?: { message: string };
+  };
   if (json.error) throw new Error(json.error.message);
   return json.result;
 }
@@ -69,8 +72,9 @@ export async function trySurfnetSetAccount(
   connection: Connection,
   pubkey: PublicKey,
   data: Buffer,
-  lamports = 2_000_000_000,
+  lamports = 2_000_000_000
 ): Promise<boolean> {
+  assertLocalControls();
   try {
     await rpcRequest(connection, "surfnet_setAccount", [
       pubkey.toBase58(),
@@ -84,7 +88,10 @@ export async function trySurfnetSetAccount(
     ]);
     return true;
   } catch (err) {
-    console.warn("surfnet_setAccount failed:", err instanceof Error ? err.message : err);
+    console.warn(
+      "surfnet_setAccount failed:",
+      err instanceof Error ? err.message : err
+    );
     return false;
   }
 }
@@ -94,7 +101,7 @@ export async function ensurePriceUpdateAccount(
   payer: Keypair,
   priceUpdateKeypair: Keypair,
   writeAuthority: Keypair,
-  params: MockPriceParams,
+  params: MockPriceParams
 ): Promise<PublicKey> {
   const data = await encodePriceUpdateV2Account(writeAuthority.publicKey, {
     ...params,
@@ -109,11 +116,11 @@ export async function ensurePriceUpdateAccount(
       connection,
       priceUpdateKeypair.publicKey,
       data,
-      lamports + 1_000_000,
+      lamports + 1_000_000
     );
     if (!created) {
       throw new Error(
-        "Could not create mock Pyth account. Start Surfpool/surfnet or clone the Pyth receiver on your validator, then call setup again.",
+        "Could not create mock Pyth account. Start Surfpool/surfnet or clone the Pyth receiver on your validator, then call setup again."
       );
     }
     return priceUpdateKeypair.publicKey;
@@ -123,11 +130,11 @@ export async function ensurePriceUpdateAccount(
     connection,
     priceUpdateKeypair.publicKey,
     data,
-    info.lamports,
+    info.lamports
   );
   if (!updated) {
     throw new Error(
-      "Could not rewrite mock Pyth account. Use Surfpool (surfnet_setAccount) or post a Hermes update.",
+      "Could not rewrite mock Pyth account. Use Surfpool (surfnet_setAccount) or post a Hermes update."
     );
   }
   return priceUpdateKeypair.publicKey;
@@ -137,7 +144,7 @@ export async function fundKeypair(
   connection: Connection,
   payer: Keypair,
   target: PublicKey,
-  lamports = 2 * 10 ** 9,
+  lamports = 2 * 10 ** 9
 ): Promise<void> {
   const sig = await connection.requestAirdrop(target, lamports);
   await connection.confirmTransaction(sig, "confirmed");

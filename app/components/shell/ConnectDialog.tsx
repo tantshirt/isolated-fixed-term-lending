@@ -5,30 +5,40 @@ import { WalletReadyState, type WalletName } from "@solana/wallet-adapter-base";
 import { useEffect, useState } from "react";
 import { useSigner } from "@/lib/client/signer-context";
 import { useToast } from "@/lib/client/toast";
+import { useDevConfig } from "@/lib/client/hooks";
 import { DemoRoles } from "./DemoRoles";
 import { Sheet } from "./Sheet";
 import styles from "./ConnectDialog.module.css";
 
 export function ConnectDialog() {
+  const { localControls } = useDevConfig();
   const { connectOpen, setConnectOpen } = useSigner();
-  const { wallets, select, connect, wallet, connecting, connected } = useWallet();
+  const { wallets, select, connect, wallet, connecting, connected } =
+    useWallet();
   const toast = useToast();
   const [pending, setPending] = useState<WalletName | null>(null);
 
   const installed = wallets.filter(
-    (w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable,
+    (w) =>
+      w.readyState === WalletReadyState.Installed ||
+      w.readyState === WalletReadyState.Loadable
   );
 
   // select() then connect() once the adapter is chosen.
   useEffect(() => {
-    if (!pending || wallet?.adapter.name !== pending || connected || connecting) return;
+    if (!pending || wallet?.adapter.name !== pending || connected || connecting)
+      return;
     connect()
       .then(() => {
         setConnectOpen(false);
         toast({ tone: "success", title: `${pending} connected` });
       })
       .catch((e: unknown) =>
-        toast({ tone: "error", title: "Wallet did not connect", detail: e instanceof Error ? e.message : undefined }),
+        toast({
+          tone: "error",
+          title: "Wallet did not connect",
+          detail: e instanceof Error ? e.message : undefined,
+        })
       )
       .finally(() => setPending(null));
   }, [pending, wallet, connect, connected, connecting, setConnectOpen, toast]);
@@ -37,8 +47,12 @@ export function ConnectDialog() {
     <Sheet
       open={connectOpen}
       onClose={() => setConnectOpen(false)}
-      title="Connect to Tenor"
-      description="Sign with a browser wallet, or act as one of the funded demo wallets."
+      title="Connect to Lendspan"
+      description={
+        localControls
+          ? "Sign with a browser wallet or a funded local wallet."
+          : "Connect your browser wallet for Devnet test-token transactions. Every transaction requires your approval."
+      }
     >
       <section className={styles.section}>
         <h3 className={styles.heading}>Browser wallet</h3>
@@ -58,21 +72,29 @@ export function ConnectDialog() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={w.adapter.icon} alt="" width={28} height={28} />
                   <span>{w.adapter.name}</span>
-                  <span className={styles.state}>{pending === w.adapter.name ? "Approve in wallet…" : "Detected"}</span>
+                  <span className={styles.state}>
+                    {pending === w.adapter.name
+                      ? "Approve in wallet…"
+                      : "Detected"}
+                  </span>
                 </button>
               </li>
             ))}
           </ul>
         ) : (
           <p className={styles.none}>
-            No browser wallet found. Install Phantom or Solflare and point it at localhost, or use a demo wallet below.
+            No compatible browser wallet detected. Enable your Solana wallet
+            extension, set it to Devnet, then reopen this dialog. You can
+            explore the simulation without a wallet.
           </p>
         )}
       </section>
-      <section className={styles.section}>
-        <h3 className={styles.heading}>Demo wallets</h3>
-        <DemoRoles onPicked={() => setConnectOpen(false)} />
-      </section>
+      {localControls && (
+        <section className={styles.section}>
+          <h3 className={styles.heading}>Local wallets</h3>
+          <DemoRoles onPicked={() => setConnectOpen(false)} />
+        </section>
+      )}
     </Sheet>
   );
 }

@@ -1,5 +1,5 @@
 import { Keypair } from "@solana/web3.js";
-import { ActingRole, STORAGE_KEYS } from "./constants";
+import { ActingRole, STORAGE_KEYS, IS_LOCAL } from "./constants";
 
 export type RoleKeypairs = {
   lender: number[];
@@ -14,7 +14,7 @@ export type DevConfigClient = {
 };
 
 function loadKeypair(storageKey: string): Keypair | null {
-  if (typeof window === "undefined") return null;
+  if (!IS_LOCAL || typeof window === "undefined") return null;
   const raw = localStorage.getItem(storageKey);
   if (!raw) return null;
   try {
@@ -26,11 +26,15 @@ function loadKeypair(storageKey: string): Keypair | null {
 }
 
 export function saveRoleKeypairs(keypairs: RoleKeypairs): void {
+  if (!IS_LOCAL) throw new Error("Demo wallets are only available on localnet");
   localStorage.setItem(STORAGE_KEYS.lender, JSON.stringify(keypairs.lender));
-  localStorage.setItem(STORAGE_KEYS.borrower, JSON.stringify(keypairs.borrower));
+  localStorage.setItem(
+    STORAGE_KEYS.borrower,
+    JSON.stringify(keypairs.borrower)
+  );
   localStorage.setItem(
     STORAGE_KEYS.liquidator,
-    JSON.stringify(keypairs.liquidator),
+    JSON.stringify(keypairs.liquidator)
   );
 }
 
@@ -39,7 +43,7 @@ export function saveDevConfigClient(config: DevConfigClient): void {
 }
 
 export function loadDevConfigClient(): DevConfigClient | null {
-  if (typeof window === "undefined") return null;
+  if (!IS_LOCAL || typeof window === "undefined") return null;
   const raw = localStorage.getItem(STORAGE_KEYS.devConfig);
   if (!raw) return null;
   try {
@@ -73,6 +77,6 @@ export function hasRoleKeypairs(): boolean {
   return Boolean(
     loadKeypair(STORAGE_KEYS.lender) &&
       loadKeypair(STORAGE_KEYS.borrower) &&
-      loadKeypair(STORAGE_KEYS.liquidator),
+      loadKeypair(STORAGE_KEYS.liquidator)
   );
 }

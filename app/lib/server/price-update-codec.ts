@@ -8,9 +8,13 @@ import { PublicKey } from "@solana/web3.js";
  * prev_publish_time(i64) ema_price(i64) ema_conf(u64) posted_slot(u64).
  * Written by hand because Anchor's coder cannot load the receiver IDL.
  */
-export const PRICE_UPDATE_V2_LEN = 8 + 32 + 2 + 32 + 8 + 8 + 4 + 8 + 8 + 8 + 8 + 8;
+export const PRICE_UPDATE_V2_LEN =
+  8 + 32 + 2 + 32 + 8 + 8 + 4 + 8 + 8 + 8 + 8 + 8;
 
-const DISCRIMINATOR = createHash("sha256").update("account:PriceUpdateV2").digest().subarray(0, 8);
+const DISCRIMINATOR = createHash("sha256")
+  .update("account:PriceUpdateV2")
+  .digest()
+  .subarray(0, 8);
 
 export type PriceMessage = {
   feedId: Buffer;
@@ -20,7 +24,11 @@ export type PriceMessage = {
   publishTime: bigint;
 };
 
-export function encodePriceUpdateV2(writeAuthority: PublicKey, msg: PriceMessage, postedSlot = 0n): Buffer {
+export function encodePriceUpdateV2(
+  writeAuthority: PublicKey,
+  msg: PriceMessage,
+  postedSlot = 0n
+): Buffer {
   const b = Buffer.alloc(PRICE_UPDATE_V2_LEN);
   let o = 0;
   DISCRIMINATOR.copy(b, o);
@@ -50,12 +58,16 @@ export function encodePriceUpdateV2(writeAuthority: PublicKey, msg: PriceMessage
 }
 
 export function decodePriceUpdateV2(data: Buffer): PriceMessage {
-  if (data.length < PRICE_UPDATE_V2_LEN - 1 || !data.subarray(0, 8).equals(DISCRIMINATOR)) {
+  if (
+    data.length < PRICE_UPDATE_V2_LEN - 1 ||
+    !data.subarray(0, 8).equals(DISCRIMINATOR)
+  ) {
     throw new Error("Not a PriceUpdateV2 account");
   }
   let o = 40;
   const level = data.readUInt8(o);
-  o += level === 0 ? 2 : 1; // Partial carries num_signatures
+  if (level !== 1) throw new Error("Pyth price requires Full verification");
+  o += 1;
   const feedId = Buffer.from(data.subarray(o, o + 32));
   o += 32;
   const price = data.readBigInt64LE(o);

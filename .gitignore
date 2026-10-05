@@ -1,5 +1,10 @@
 # Local-only tooling and planning notes.
 _*/
+!_bmad/
+_bmad/*
+!_bmad/custom/
+_bmad/custom/*
+!_bmad/custom/bmad-party-mode.toml
 .agents/
 .cursor/skills/
 .claude/skills/

@@ -35,9 +35,8 @@
   background: var(--color-accent);
   color: var(--color-on-accent);
   font-weight: 600;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), var(--shadow-low);
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
+  box-shadow: inset 0 1px 0 var(--color-legacy-overlay-1), var(--shadow-low);
+  transition: background-color var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
 }
 

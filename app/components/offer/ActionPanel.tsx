@@ -1,6 +1,5 @@
 "use client";
 
-import { PublicKey } from "@solana/web3.js";
 import { AnimatePresence, m } from "motion/react";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
@@ -10,16 +9,16 @@ import { useSigner } from "@/lib/client/signer-context";
 import { useToast } from "@/lib/client/toast";
 import { STALE_PRICE_MESSAGE } from "@/lib/constants";
 import { formatUsdc, formatWsol } from "@/lib/format";
-import { canAcceptAtPrice, canLiquidate, debtOf, liquidationFigures } from "@/lib/offer-status";
-import type { Offer } from "@/lib/offers";
 import {
-  sendAcceptOffer,
-  sendCancelOffer,
-  sendClaimExpired,
-  sendCloseOffer,
-  sendLiquidateLoan,
-  sendRepayLoan,
-} from "@/lib/transactions";
+  canAcceptAtPrice,
+  canLiquidate,
+  debtOf,
+  liquidationFigures,
+} from "@/lib/offer-status";
+import type { Offer } from "@/lib/offers";
+import { DevnetLoanService } from "@/lib/devnet-loan-service";
+import type { LoanAction } from "@/lib/loan-service";
+import { SubmissionError, signatureUrl } from "@/lib/transaction-lifecycle";
 import type { OfferRole } from "./useOfferRole";
 import styles from "./ActionPanel.module.css";
 
@@ -27,7 +26,7 @@ type Props = {
   offer: Offer;
   role: OfferRole;
   price: LivePrice | null;
-  now: number;
+  now: number | null;
   config: DevConfig | null;
   balances: Balances | null;
   onMoved: (line: string) => void;
@@ -42,40 +41,61 @@ async function freshenPrice() {
  * One primary action for the current state and the person looking at it,
  * placed last in the reading order. Everything else is a text button.
  */
-export function ActionPanel({ offer, role, price, now, config, balances, onMoved }: Props) {
+export function ActionPanel({
+  offer,
+  role,
+  price,
+  now,
+  config,
+  balances,
+  onMoved,
+}: Props) {
   const { signer, setConnectOpen, bumpRefresh } = useSigner();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
-  const key = new PublicKey(offer.publicKey);
-  const lender = new PublicKey(offer.lender);
-  const borrower = offer.borrower ? new PublicKey(offer.borrower) : null;
-  const usdcMint = new PublicKey(offer.usdcMint);
-  const wsolMint = new PublicKey(offer.wsolMint);
-  const priceAccount = config ? new PublicKey(config.priceUpdateAccount) : null;
+  const executeLoan = async (action: LoanAction): Promise<string> => {
+    if (!signer || !config)
+      throw new Error(
+        "Connect a wallet and verify network configuration first."
+      );
+    const receipt = await new DevnetLoanService(signer, config, offer).execute({
+      action,
+    });
+    return receipt.signature!;
+  };
   const owed = debtOf(offer);
-  const expired = offer.status === "filled" && now >= offer.expiryTs;
+  const expired =
+    offer.status === "filled" && now !== null && now >= offer.expiryTs;
 
   const run = async (fn: () => Promise<string>, moved: string) => {
     setError(null);
     setBusy(true);
     try {
-      await fn();
+      const signature = await fn();
+      setReceipt(signature);
       setConfirming(false);
       onMoved(moved);
       toast({ tone: "success", title: moved });
       bumpRefresh();
     } catch (e) {
-      setError(messageFromAnchorError(e));
+      setError(
+        e instanceof SubmissionError ? e.message : messageFromAnchorError(e)
+      );
+      if (e instanceof SubmissionError && e.signature) setReceipt(e.signature);
     } finally {
       setBusy(false);
     }
   };
 
   const connect = (label: string) => (
-    <Panel title="Connect to continue" body="Connect the wallet that should sign this step.">
+    <Panel
+      title="Connect to continue"
+      body="Connect the wallet that should sign this step."
+    >
       <Button size="lg" block onClick={() => setConnectOpen(true)}>
         {label}
       </Button>
@@ -90,20 +110,31 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
           title="Waiting for a borrower"
           body="Your USDC sits in the offer's vault. Cancel at any time before someone accepts."
           error={error}
+          receipt={receipt}
+          busy={busy}
         >
           <AnimatePresence mode="wait" initial={false}>
             {confirming ? (
               <m.div key="confirm" className={styles.confirm} {...swap}>
-                <p className={styles.confirmQ}>Return the USDC to your wallet?</p>
+                <p className={styles.confirmQ}>
+                  Return the USDC to your wallet?
+                </p>
                 <div className={styles.row}>
-                  <Button variant="ghost" onClick={() => setConfirming(false)} disabled={busy}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setConfirming(false)}
+                    disabled={busy}
+                  >
                     Keep offer
                   </Button>
                   <Button
                     variant="danger"
                     loading={busy}
                     onClick={() =>
-                      run(() => sendCancelOffer(signer!, key, usdcMint), `You received ${formatUsdc(offer.principal)} USDC back`)
+                      run(
+                        () => executeLoan("cancel"),
+                        `You received ${formatUsdc(offer.principal)} USDC back`
+                      )
                     }
                   >
                     Return USDC
@@ -112,7 +143,13 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
               </m.div>
             ) : (
               <m.div key="cancel" {...swap}>
-                <Button variant="secondary" size="lg" block onClick={() => setConfirming(true)} disabled={!signer}>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  block
+                  onClick={() => setConfirming(true)}
+                  disabled={!signer}
+                >
                   Cancel offer
                 </Button>
               </m.div>
@@ -128,15 +165,21 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
     const reason = !fresh
       ? STALE_PRICE_MESSAGE
       : !fits
-        ? "At today's SOL price this collateral is past the offer's max LTV. The lender asked for more cushion than SOL can give right now."
-        : !enough
-          ? `You hold ${formatWsol(balances!.wsol)} wSOL. This offer needs ${formatWsol(offer.collateralAmount)}.`
-          : null;
+      ? "At today's SOL price this collateral is past the offer's max LTV. The lender asked for more cushion than SOL can give right now."
+      : !enough
+      ? `You hold ${formatWsol(
+          balances!.wsol
+        )} wSOL. This offer needs ${formatWsol(offer.collateralAmount)}.`
+      : null;
     return (
       <Panel
         title="Take this loan"
-        body={`Lock ${formatWsol(offer.collateralAmount)} wSOL and receive ${formatUsdc(offer.principal)} USDC now.`}
+        body={`Lock ${formatWsol(
+          offer.collateralAmount
+        )} wSOL and receive ${formatUsdc(offer.principal)} USDC now.`}
         error={error}
+        receipt={receipt}
+        busy={busy}
         note={reason}
       >
         <Button
@@ -147,7 +190,7 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
           onClick={() =>
             run(async () => {
               await freshenPrice();
-              return sendAcceptOffer(signer, key, lender, usdcMint, wsolMint, priceAccount!);
+              return executeLoan("accept");
             }, `You received ${formatUsdc(offer.principal)} USDC`)
           }
         >
@@ -159,16 +202,35 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
 
   // ---- Filled loan ----
   if (offer.status === "filled") {
+    if (now === null)
+      return (
+        <Panel
+          title="Chain clock unavailable"
+          body="Repayment, liquidation, and expiry claims pause until the network clock can be read. Oracle availability does not affect repayment."
+          error={error}
+          receipt={receipt}
+          busy={busy}
+        />
+      );
     if (expired) {
       if (role === "borrower") {
-        return <Panel title="The deadline has passed" body="The loan can no longer be repaid. The lender can now claim your wSOL." />;
+        return (
+          <Panel
+            title="The deadline has passed"
+            body="The loan can no longer be repaid. The lender can now claim your wSOL."
+          />
+        );
       }
       if (!signer) return connect("Connect to claim");
       return (
         <Panel
           title="Ready to claim"
-          body={`The borrower did not repay in time. Claiming sends all ${formatWsol(offer.collateralAmount)} wSOL to the lender.`}
+          body={`The borrower did not repay in time. Claiming sends all ${formatWsol(
+            offer.collateralAmount
+          )} wSOL to the lender.`}
           error={error}
+          receipt={receipt}
+          busy={busy}
         >
           <Button
             size="lg"
@@ -176,8 +238,10 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
             loading={busy}
             onClick={() =>
               run(
-                () => sendClaimExpired(signer, key, lender, borrower!, wsolMint),
-                role === "lender" ? `You received ${formatWsol(offer.collateralAmount)} wSOL` : "The lender received the wSOL",
+                () => executeLoan("claim"),
+                role === "lender"
+                  ? `You received ${formatWsol(offer.collateralAmount)} wSOL`
+                  : "The lender received the wSOL"
               )
             }
           >
@@ -192,9 +256,19 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
       return (
         <Panel
           title="Repay to get your wSOL back"
-          body={`Pay ${formatUsdc(owed)} USDC before the deadline. You receive your wSOL back.`}
+          body={`Pay ${formatUsdc(
+            owed
+          )} USDC before the deadline. You receive your wSOL back.`}
           error={error}
-          note={short ? `You hold ${formatUsdc(balances!.usdc)} USDC, short of ${formatUsdc(owed)}.` : null}
+          receipt={receipt}
+          busy={busy}
+          note={
+            short
+              ? `You hold ${formatUsdc(
+                  balances!.usdc
+                )} USDC, short of ${formatUsdc(owed)}.`
+              : null
+          }
         >
           <AnimatePresence mode="wait" initial={false}>
             {confirming ? (
@@ -206,19 +280,27 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
                   </div>
                   <div>
                     <dt>You receive</dt>
-                    <dd className="num">{formatWsol(offer.collateralAmount)} wSOL</dd>
+                    <dd className="num">
+                      {formatWsol(offer.collateralAmount)} wSOL
+                    </dd>
                   </div>
                 </dl>
                 <div className={styles.row}>
-                  <Button variant="ghost" onClick={() => setConfirming(false)} disabled={busy}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setConfirming(false)}
+                    disabled={busy}
+                  >
                     Not yet
                   </Button>
                   <Button
                     loading={busy}
                     onClick={() =>
                       run(
-                        () => sendRepayLoan(signer!, key, lender, usdcMint, wsolMint),
-                        `You received ${formatWsol(offer.collateralAmount)} wSOL back`,
+                        () => executeLoan("repay"),
+                        `You received ${formatWsol(
+                          offer.collateralAmount
+                        )} wSOL back`
                       )
                     }
                   >
@@ -228,7 +310,12 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
               </m.div>
             ) : (
               <m.div key="repay" {...swap}>
-                <Button size="lg" block disabled={Boolean(short)} onClick={() => setConfirming(true)}>
+                <Button
+                  size="lg"
+                  block
+                  disabled={Boolean(short)}
+                  onClick={() => setConfirming(true)}
+                >
                   Repay
                 </Button>
               </m.div>
@@ -244,7 +331,9 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
       return (
         <Panel
           title="Past the liquidation line"
-          body={`Any liquidator can settle this loan now. When they do, you receive ${formatUsdc(owed)} USDC in full.`}
+          body={`Any liquidator can settle this loan now. When they do, you receive ${formatUsdc(
+            owed
+          )} USDC in full.`}
           tone="risk"
         />
       );
@@ -253,7 +342,14 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
     if (canLiquidate(offer, price, now) && price) {
       const f = liquidationFigures(offer, price);
       return (
-        <Panel title="This loan can be liquidated" body="SOL has fallen past the liquidation line. Anyone but the borrower can settle it now." error={error} tone="risk">
+        <Panel
+          title="This loan can be liquidated"
+          body="SOL has fallen past the liquidation line. Anyone but the borrower can settle it now."
+          error={error}
+          receipt={receipt}
+          busy={busy}
+          tone="risk"
+        >
           <dl className={styles.sheet}>
             <div>
               <dt>USDC you pay the lender</dt>
@@ -276,7 +372,7 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
               onClick={() =>
                 run(async () => {
                   await freshenPrice();
-                  return sendLiquidateLoan(signer, key, lender, borrower!, usdcMint, wsolMint, priceAccount!);
+                  return executeLoan("liquidate");
                 }, `You received ${formatWsol(f.receiveWsol)} wSOL`)
               }
             >
@@ -293,7 +389,9 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
 
     return (
       <Panel
-        title={role === "lender" ? "Your loan is running" : "Waiting for repayment"}
+        title={
+          role === "lender" ? "Your loan is running" : "Waiting for repayment"
+        }
         body={
           role === "lender"
             ? "You are paid when the borrower repays. If they miss the deadline, or SOL falls past the line, the wSOL settles it."
@@ -306,19 +404,35 @@ export function ActionPanel({ offer, role, price, now, config, balances, onMoved
   // ---- Settled ----
   if (role === "lender") {
     return (
-      <Panel title="This loan is settled" body="The offer account stays on chain as your receipt. Close it to take back its rent." error={error}>
+      <Panel
+        title="This loan is settled"
+        body="The offer account stays on chain as your receipt. Close it to take back its rent."
+        error={error}
+        receipt={receipt}
+        busy={busy}
+      >
         <Button
           variant="ghost"
           loading={busy}
           disabled={!signer}
-          onClick={() => run(() => sendCloseOffer(signer!, key), "Receipt closed, rent returned")}
+          onClick={() =>
+            run(() => executeLoan("close"), "Receipt closed, rent returned")
+          }
         >
           Close and reclaim rent
         </Button>
       </Panel>
     );
   }
-  return <Panel title="This loan is settled" body="Nothing more can happen to it." />;
+  return (
+    <Panel
+      title="This loan is settled"
+      body="Nothing more can happen to it."
+      error={error}
+      receipt={receipt}
+      busy={busy}
+    />
+  );
 }
 
 const swap = {
@@ -333,6 +447,8 @@ function Panel({
   body,
   children,
   error,
+  receipt,
+  busy,
   note,
   tone,
 }: {
@@ -340,6 +456,8 @@ function Panel({
   body: string;
   children?: ReactNode;
   error?: string | null;
+  receipt?: string | null;
+  busy?: boolean;
   note?: string | null;
   tone?: "risk";
 }) {
@@ -348,6 +466,17 @@ function Panel({
       <h2 className={styles.title}>{title}</h2>
       <p className={styles.body}>{body}</p>
       {children}
+      {busy && (
+        <p role="status">
+          Preparing, awaiting wallet approval, then confirming. Review your
+          wallet to continue.
+        </p>
+      )}
+      {receipt && (
+        <a href={signatureUrl(receipt)} target="_blank" rel="noreferrer">
+          View transaction on Explorer ↗
+        </a>
+      )}
       {note && <p className={styles.note}>{note}</p>}
       <AnimatePresence>
         {error && (

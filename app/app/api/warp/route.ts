@@ -1,3 +1,4 @@
+import { rejectLocalRequest } from "@/lib/server/local-guard";
 import { Connection } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { RPC_URL } from "@/lib/constants";
@@ -6,6 +7,8 @@ export const runtime = "nodejs";
 
 /** Local demo only: move the Surfpool clock to a unix timestamp. */
 export async function POST(request: Request) {
+  const denied = rejectLocalRequest(request);
+  if (denied) return denied;
   try {
     const { timestamp } = (await request.json()) as { timestamp?: number };
     if (!timestamp || !Number.isFinite(timestamp)) {
@@ -26,7 +29,8 @@ export async function POST(request: Request) {
     if (json.error) throw new Error(json.error.message);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Time travel needs Surfpool";
+    const message =
+      err instanceof Error ? err.message : "Time travel needs Surfpool";
     return NextResponse.json({ error: message }, { status: 501 });
   }
 }

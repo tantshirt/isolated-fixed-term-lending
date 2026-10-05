@@ -21,9 +21,18 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 
 const STEPS = [
-  { title: "A lender locks USDC", body: "They set the amount, the interest for the whole term, and the wSOL a borrower must lock." },
-  { title: "A borrower takes it", body: "They lock the wSOL and receive the USDC at once. The deadline starts now." },
-  { title: "The loan settles", body: "Repay in time and get the wSOL back. Miss it, or let SOL fall past the line, and the lender is paid from the wSOL." },
+  {
+    title: "A lender locks USDC",
+    body: "They set the amount, the interest for the whole term, and the wSOL a borrower must lock.",
+  },
+  {
+    title: "A borrower takes it",
+    body: "They lock the wSOL and receive the USDC at once. The deadline starts now.",
+  },
+  {
+    title: "The loan settles",
+    body: "Repay in time and get the wSOL back. Miss it, or let SOL fall past the line, and the lender is paid from the wSOL.",
+  },
 ];
 
 function matches(o: Offer, f: Filter) {
@@ -36,9 +45,17 @@ export function OffersPage() {
   const { offers, error } = useOffers();
   const { price } = usePrice();
   const [filter, setFilter] = useState<Filter>("open");
-  const shown = useMemo(() => (offers ?? []).filter((o) => matches(o, filter)), [offers, filter]);
+  const shown = useMemo(
+    () => (offers ?? []).filter((o) => matches(o, filter)),
+    [offers, filter]
+  );
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { open: 0, filled: 0, ended: 0, all: offers?.length ?? 0 };
+    const c: Record<Filter, number> = {
+      open: 0,
+      filled: 0,
+      ended: 0,
+      all: offers?.length ?? 0,
+    };
     for (const o of offers ?? []) {
       if (o.status === "open") c.open++;
       else if (o.status === "filled") c.filled++;
@@ -53,12 +70,22 @@ export function OffersPage() {
         <div className={styles.titleRow}>
           <div>
             <h1 className={styles.title}>Offers</h1>
-            <p className={styles.lede}>Fixed-term USDC loans against wSOL. One offer is one loan, with every number fixed up front.</p>
+            <p className={styles.lede}>
+              Fixed-term USDC loans against wSOL. One offer is one loan, with
+              every number fixed up front.
+            </p>
           </div>
-          <Link href="/create" className={styles.create}>
+          <Link href="/devnet/create" className={styles.create}>
             Create offer
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-              <path d="M3 7h8M7.5 3.5L11 7l-3.5 3.5" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M3 7h8M7.5 3.5L11 7l-3.5 3.5"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </Link>
         </div>
@@ -83,13 +110,24 @@ export function OffersPage() {
           <Chips
             label="Show"
             hideLabel
-            options={FILTERS.map((f) => ({ value: f.value, label: `${f.label}${offers ? ` ${counts[f.value]}` : ""}` }))}
+            options={FILTERS.map((f) => ({
+              value: f.value,
+              label: `${f.label}${offers ? ` ${counts[f.value]}` : ""}`,
+            }))}
             value={filter}
             onChange={setFilter}
           />
         </div>
 
-        {offers === null ? (
+        {error ? (
+          <div role="alert" className={styles.empty}>
+            <h2>Offers unavailable</h2>
+            <p>
+              Could not read the network. Your offers may still exist. Use Retry
+              connection above.
+            </p>
+          </div>
+        ) : offers === null ? (
           <div className={styles.list}>
             {[0, 1, 2].map((i) => (
               <div key={i} className={styles.skeletonRow}>
@@ -101,15 +139,21 @@ export function OffersPage() {
             ))}
           </div>
         ) : shown.length === 0 ? (
-          <m.div className={styles.empty} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <m.div
+            className={styles.empty}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
             <LogoMark size={48} progress={0.08} />
-            <p className={styles.emptyTitle}>{filter === "open" ? "No open offers" : "Nothing here yet"}</p>
+            <p className={styles.emptyTitle}>
+              {filter === "open" ? "No open offers" : "Nothing here yet"}
+            </p>
             <p className={styles.emptyBody}>
               {error
-                ? "Tenor cannot reach the local validator. Start Surfpool on 127.0.0.1:8899, then open the Demo desk."
-                : "Lenders post offers here. Create one, then switch to the demo borrower to take it."}
+                ? "Lendspan cannot reach the configured network. Retry the connection above."
+                : "Lenders post offers here. Create one with test USDC, or return later for a new offer."}
             </p>
-            <Link href="/create" className={styles.emptyLink}>
+            <Link href="/devnet/create" className={styles.emptyLink}>
               Create offer
             </Link>
           </m.div>
@@ -128,7 +172,15 @@ export function OffersPage() {
                   key={o.publicKey}
                   layout
                   initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0, transition: { delay: Math.min(i, 8) * 0.04, duration: 0.32, ease: [0.22, 1, 0.36, 1] } }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    transition: {
+                      delay: Math.min(i, 8) * 0.04,
+                      duration: 0.32,
+                      ease: [0.22, 1, 0.36, 1],
+                    },
+                  }}
                   exit={{ opacity: 0, transition: { duration: 0.12 } }}
                 >
                   <OfferRow offer={o} price={price} />

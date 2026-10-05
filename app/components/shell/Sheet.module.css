@@ -8,7 +8,7 @@
 }
 
 .sheet::backdrop {
-  background: rgb(13 51 40 / 0.32);
+  background: var(--color-legacy-overlay-7);
   backdrop-filter: blur(3px);
 }
 

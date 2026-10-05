@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchAllOffers, fetchOfferByKey, type Offer } from "@/lib/offers";
 import { getConnection } from "@/lib/program";
 import type { PriceSnapshot } from "@/lib/offer-status";
+import { readChainClock } from "./chain-clock";
 import { useSigner } from "./signer-context";
 
 export type DevConfig = {
@@ -39,21 +40,66 @@ export function useDevConfig() {
   const { refreshKey } = useSigner();
   const [config, setConfig] = useState<DevConfig | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [responseKey, setResponseKey] = useState<number | null>(null);
+  const [localControls, setLocalControls] = useState(false);
+  const [readiness, setReadiness] = useState<{
+    ready: boolean;
+    errors: string[];
+  } | null>(null);
   useEffect(() => {
     let alive = true;
+    setLoaded(false);
+    setConfig(null);
+    setReadiness(null);
+    setLocalControls(false);
     fetch("/api/config")
-      .then((r) => r.json())
-      .then((j: { config: DevConfig | null }) => alive && setConfig(j.config))
-      .catch(() => alive && setConfig(null))
-      .finally(() => alive && setLoaded(true));
+      .then((r) => {
+        if (!r.ok) throw new Error("Configuration unavailable");
+        return r.json();
+      })
+      .then(
+        (j: {
+          config: DevConfig | null;
+          readiness: { ready: boolean; errors: string[] };
+          localControls?: boolean;
+        }) => {
+          if (alive) {
+            setConfig(j.config);
+            setReadiness(j.readiness);
+            setLocalControls(j.localControls === true);
+          }
+        }
+      )
+      .catch(() => {
+        if (alive) {
+          setConfig(null);
+          setReadiness(null);
+          setLocalControls(false);
+        }
+      })
+      .finally(() => {
+        if (alive) {
+          setLoaded(true);
+          setResponseKey(refreshKey);
+        }
+      });
     return () => {
       alive = false;
     };
   }, [refreshKey]);
-  return { config, loaded };
+  const current = responseKey === refreshKey;
+  return {
+    config: current ? config : null,
+    loaded: current && loaded,
+    readiness: current ? readiness : null,
+    localControls: current && loaded && localControls,
+  };
 }
 
-export type LivePrice = PriceSnapshot & { chainTime: number; receivedAt: number };
+export type LivePrice = PriceSnapshot & {
+  chainTime: number;
+  receivedAt: number;
+};
 
 /**
  * SOL/USD from the price account, judged fresh on the chain clock.
@@ -80,24 +126,52 @@ export function usePrice(ms = 5_000) {
         });
         setError(null);
       } catch (e) {
+        setPrice(null);
         setError(e instanceof Error ? e.message : "No price");
       }
     },
     ms,
-    [refreshKey],
+    [refreshKey]
   );
   return { price, error };
 }
 
-/** Chain time now, ticking each second from the last price read. */
-export function useChainNow(price: LivePrice | null): number {
-  const [, setTick] = useState(0);
+/** Last observed chain time, independent of oracle availability. Unknown disables time-sensitive actions. */
+export function useChainNow(): number | null {
+  const { refreshKey } = useSigner();
+  const [snapshot, setSnapshot] = useState<{
+    key: number;
+    time: number | null;
+  } | null>(null);
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 1_000);
-    return () => clearInterval(id);
-  }, []);
-  if (!price) return Math.floor(Date.now() / 1000);
-  return price.chainTime + Math.floor((Date.now() - price.receivedAt) / 1000);
+    let alive = true,
+      request = 0;
+    setSnapshot(null);
+    const tick = async () => {
+      const ownRequest = ++request;
+      if (document.visibilityState !== "visible") {
+        setSnapshot(null);
+        return;
+      }
+      try {
+        const time = await readChainClock(getConnection());
+        if (alive && ownRequest === request)
+          setSnapshot({ key: refreshKey, time });
+      } catch {
+        if (alive && ownRequest === request)
+          setSnapshot({ key: refreshKey, time: null });
+      }
+    };
+    void tick();
+    const id = setInterval(tick, 5_000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      alive = false;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [refreshKey]);
+  return snapshot?.key === refreshKey ? snapshot.time : null;
 }
 
 export function useOffers(ms = 6_000) {
@@ -111,60 +185,117 @@ export function useOffers(ms = 6_000) {
         setError(null);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not read offers");
-        setOffers((prev) => prev ?? []);
       }
     },
     ms,
-    [refreshKey],
+    [refreshKey]
   );
   return { offers, error };
 }
 
 export function useOffer(key: string, ms = 3_000) {
   const { refreshKey } = useSigner();
-  const [offer, setOffer] = useState<Offer | null | undefined>(undefined);
-  const load = useCallback(async () => {
-    try {
-      setOffer(await fetchOfferByKey(getConnection(), new PublicKey(key)));
-    } catch {
-      setOffer(null);
-    }
-  }, [key]);
-  usePoll(load, ms, [key, refreshKey]);
-  return { offer, reload: load };
+  const [retry, setRetry] = useState(0);
+  const identity = key;
+  const [snapshot, setSnapshot] = useState<{
+    identity: string;
+    offer: Offer | null | undefined;
+    error: string | null;
+  } | null>(null);
+  const reload = useCallback(() => setRetry((n) => n + 1), []);
+  useEffect(() => {
+    let alive = true,
+      request = 0;
+    const load = async () => {
+      if (document.visibilityState !== "visible") return;
+      const ownRequest = ++request;
+      try {
+        const offer = await fetchOfferByKey(
+          getConnection(),
+          new PublicKey(key)
+        );
+        if (alive && ownRequest === request)
+          setSnapshot({ identity, offer, error: null });
+      } catch (e) {
+        if (alive && ownRequest === request)
+          setSnapshot({
+            identity,
+            offer: undefined,
+            error: e instanceof Error ? e.message : "Could not read offer",
+          });
+      }
+    };
+    void load();
+    const id = setInterval(load, ms);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      alive = false;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", load);
+    };
+  }, [key, identity, refreshKey, retry, ms]);
+  return {
+    offer: snapshot?.identity === identity ? snapshot.offer : undefined,
+    error: snapshot?.identity === identity ? snapshot.error : null,
+    reload,
+  };
 }
 
 export type Balances = { sol: number; usdc: bigint; wsol: bigint };
 
-export function useBalances(publicKey: PublicKey | null, config: DevConfig | null, ms = 6_000) {
+export function useBalances(
+  publicKey: PublicKey | null,
+  config: DevConfig | null,
+  ms = 6_000
+) {
   const { refreshKey } = useSigner();
-  const [balances, setBalances] = useState<Balances | null>(null);
   const key = publicKey?.toBase58() ?? null;
-  usePoll(
-    async () => {
-      if (!publicKey || !config) {
-        setBalances(null);
-        return;
+  const usdcMint = config?.usdcMint,
+    wsolMint = config?.wsolMint;
+  const identity = `${key}:${usdcMint}:${wsolMint}:${refreshKey}`;
+  const [snapshot, setSnapshot] = useState<{
+    identity: string;
+    balances: Balances | null;
+  } | null>(null);
+  useEffect(() => {
+    let alive = true,
+      request = 0;
+    setSnapshot(null);
+    const load = async () => {
+      const ownRequest = ++request;
+      if (!key || !usdcMint || !wsolMint) return;
+      if (document.visibilityState !== "visible") return;
+      const owner = new PublicKey(key),
+        c = getConnection();
+      try {
+        const token = async (mint: string) => {
+          const ata = getAssociatedTokenAddressSync(new PublicKey(mint), owner);
+          if (!(await c.getAccountInfo(ata))) return 0n;
+          return BigInt((await c.getTokenAccountBalance(ata)).value.amount);
+        };
+        const [lamports, usdc, wsol] = await Promise.all([
+          c.getBalance(owner),
+          token(usdcMint),
+          token(wsolMint),
+        ]);
+        if (alive && ownRequest === request)
+          setSnapshot({
+            identity,
+            balances: { sol: lamports / 1e9, usdc, wsol },
+          });
+      } catch {
+        if (alive && ownRequest === request)
+          setSnapshot({ identity, balances: null });
       }
-      const c = getConnection();
-      const token = async (mint: string) => {
-        try {
-          const ata = getAssociatedTokenAddressSync(new PublicKey(mint), publicKey);
-          const b = await c.getTokenAccountBalance(ata);
-          return BigInt(b.value.amount);
-        } catch {
-          return 0n;
-        }
-      };
-      const [lamports, usdc, wsol] = await Promise.all([
-        c.getBalance(publicKey).catch(() => 0),
-        token(config.usdcMint),
-        token(config.wsolMint),
-      ]);
-      setBalances({ sol: lamports / 1e9, usdc, wsol });
-    },
-    ms,
-    [key, config?.usdcMint, refreshKey],
-  );
-  return balances;
+    };
+    void load();
+    const id = setInterval(load, ms);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      alive = false;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", load);
+    };
+  }, [key, usdcMint, wsolMint, refreshKey, identity, ms]);
+  return snapshot?.identity === identity ? snapshot.balances : null;
 }

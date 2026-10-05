@@ -1,0 +1,129 @@
+{
+  "network": "devnet",
+  "programId": "CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef",
+  "lender": "3dh3Bxu1hJzH3aHfwNAibRqTxyrPsUFyteiuGxycoohh",
+  "borrower": "8MXk23SniGQQ2v7BtZBt56VGcQRVPzuzTSb6g586UnCa",
+  "principalUsdc": "0.10",
+  "verifiedAt": "2026-10-05T04:25:29.610Z",
+  "receipts": [
+    {
+      "action": "fund-borrower",
+      "signature": "T38vz94Ap6zEi7JpDFQmkcHD7YjfiLu966JFzq7aBVPsW22YJkgCMyh6hZSVJAxvqE3eEoeaShs8rrnheynbRQH",
+      "url": "https://explorer.solana.com/tx/T38vz94Ap6zEi7JpDFQmkcHD7YjfiLu966JFzq7aBVPsW22YJkgCMyh6hZSVJAxvqE3eEoeaShs8rrnheynbRQH?cluster=devnet"
+    },
+    {
+      "action": "wrap-collateral",
+      "signature": "2CCFRxNzimz1tPQzuVs1sS8ChPxcoLrFtHCZv8PEkFMi6k1DsUkSnRGNkreY29mTA32Dy3c81VEyUSVMsedJfV6s",
+      "url": "https://explorer.solana.com/tx/2CCFRxNzimz1tPQzuVs1sS8ChPxcoLrFtHCZv8PEkFMi6k1DsUkSnRGNkreY29mTA32Dy3c81VEyUSVMsedJfV6s?cluster=devnet"
+    },
+    {
+      "action": "create",
+      "signature": "dFkjXjxhjEuB6vfJNgcm4Vdoe2UTgiiyfVksLpp3HHdzfi2Dz4w42K4QtT6NgPkaEQG5VNnDcMYHzhcAvexvyxZ",
+      "url": "https://explorer.solana.com/tx/dFkjXjxhjEuB6vfJNgcm4Vdoe2UTgiiyfVksLpp3HHdzfi2Dz4w42K4QtT6NgPkaEQG5VNnDcMYHzhcAvexvyxZ?cluster=devnet",
+      "status": "open"
+    },
+    {
+      "action": "borrow",
+      "signature": "5ykkBSs2tcx7g94nPhLdyzrz1ffhrGUTDKAB2YBnVJXFo3RcP2ztWzMtA3rEyz4pkuuDn3CKn4tPTR5ngKELroaV",
+      "url": "https://explorer.solana.com/tx/5ykkBSs2tcx7g94nPhLdyzrz1ffhrGUTDKAB2YBnVJXFo3RcP2ztWzMtA3rEyz4pkuuDn3CKn4tPTR5ngKELroaV?cluster=devnet",
+      "status": "filled"
+    },
+    {
+      "action": "repay",
+      "signature": "JhF97F6NgZDnJt9ZX5CkiL6HErjhWGF8rAZBwYDrMqL2z1qBGM2FH3RtfVCDoYt1npKrvKohvV4WFaBrvgPYhPM",
+      "url": "https://explorer.solana.com/tx/JhF97F6NgZDnJt9ZX5CkiL6HErjhWGF8rAZBwYDrMqL2z1qBGM2FH3RtfVCDoYt1npKrvKohvV4WFaBrvgPYhPM?cluster=devnet",
+      "status": "repaid"
+    },
+    {
+      "action": "close-repaid",
+      "signature": "2RLZUetSekU42hHSiCHpARgNyCmMzXbF9eqSCExLKZ8ztNWQuNkb3JetJhLF61jzkh7RmmFGYXCoWZX2xq5PsXtC",
+      "url": "https://explorer.solana.com/tx/2RLZUetSekU42hHSiCHpARgNyCmMzXbF9eqSCExLKZ8ztNWQuNkb3JetJhLF61jzkh7RmmFGYXCoWZX2xq5PsXtC?cluster=devnet"
+    },
+    {
+      "action": "create",
+      "signature": "vCYzL7KGMXUxio3iYcrNcRLVYpJpJPuBf389M7jqdAStkWX1vX62mR32tM9grmeo9RsqVkQMFRA6Aky6hxGCnd1",
+      "url": "https://explorer.solana.com/tx/vCYzL7KGMXUxio3iYcrNcRLVYpJpJPuBf389M7jqdAStkWX1vX62mR32tM9grmeo9RsqVkQMFRA6Aky6hxGCnd1?cluster=devnet",
+      "status": "open"
+    },
+    {
+      "action": "cancel",
+      "signature": "97s1LqeMFcuQK1hhEoD4oHmQNEpAJcb2cSNEMz9s5S2ztCbSuMVhSUefyNBym7a34vLUYQenXMaiFA1hFyMKnEq",
+      "url": "https://explorer.solana.com/tx/97s1LqeMFcuQK1hhEoD4oHmQNEpAJcb2cSNEMz9s5S2ztCbSuMVhSUefyNBym7a34vLUYQenXMaiFA1hFyMKnEq?cluster=devnet",
+      "status": "cancelled"
+    },
+    {
+      "action": "close-cancelled",
+      "signature": "59jxdmrUpWJ6FDk6wdrtK11ECe56wJAqExVxmb6XLtSQUMrzD157j3swYHxTsyYgk258DBktCzSAq5yoe8LunfnM",
+      "url": "https://explorer.solana.com/tx/59jxdmrUpWJ6FDk6wdrtK11ECe56wJAqExVxmb6XLtSQUMrzD157j3swYHxTsyYgk258DBktCzSAq5yoe8LunfnM?cluster=devnet",
+      "status": "closed",
+      "offer": "4LQdjBvqSuQTT4AyzfWgQHVzoG8wt5B2ptavyeBBSYA9",
+      "borrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX"
+    },
+    {
+      "action": "fund-recovery-borrower",
+      "signature": "44nQEvJLLawnPpxnAfqRwfGYed4iWeAVeKuJqdH4SEFsBFj876hFjceCxWfrLm82brtjyUJHFEVVf13djxdhSnEK",
+      "url": "https://explorer.solana.com/tx/44nQEvJLLawnPpxnAfqRwfGYed4iWeAVeKuJqdH4SEFsBFj876hFjceCxWfrLm82brtjyUJHFEVVf13djxdhSnEK?cluster=devnet",
+      "borrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX"
+    },
+    {
+      "action": "wrap-collateral",
+      "signature": "4gsNJDyLHSLUUrvYerJMSvKLcaGz1yFTGjrHR9psDW4Jdo6hsxtFugew3fJBpMAE8pxFwsqZq29zMHZAYg8H7PZd",
+      "url": "https://explorer.solana.com/tx/4gsNJDyLHSLUUrvYerJMSvKLcaGz1yFTGjrHR9psDW4Jdo6hsxtFugew3fJBpMAE8pxFwsqZq29zMHZAYg8H7PZd?cluster=devnet",
+      "borrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX"
+    },
+    {
+      "action": "create",
+      "signature": "27qyW281XaMSwzH9Mum7Da9JEkM3H2kYYZwv3XeoCLc7TYBam9jP1RwfyAKnuFf5SHLkVVZqURVJJyrc8YAJ43Fi",
+      "url": "https://explorer.solana.com/tx/27qyW281XaMSwzH9Mum7Da9JEkM3H2kYYZwv3XeoCLc7TYBam9jP1RwfyAKnuFf5SHLkVVZqURVJJyrc8YAJ43Fi?cluster=devnet",
+      "status": "open",
+      "offer": "GayPnbxL7aHKKcNSxexyqMJJCLyZ6b2mdKNKpgJZX893",
+      "borrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX"
+    },
+    {
+      "action": "borrow-short-term",
+      "signature": "4KUwZ8WWnn2QZu5waLS9L8AohXcKsUF6ez2h9469BNaAvzEq1WwDbTDHg9ws22BL53vDH34G54BYtKY2oH3JZdMX",
+      "url": "https://explorer.solana.com/tx/4KUwZ8WWnn2QZu5waLS9L8AohXcKsUF6ez2h9469BNaAvzEq1WwDbTDHg9ws22BL53vDH34G54BYtKY2oH3JZdMX?cluster=devnet",
+      "status": "filled",
+      "offer": "GayPnbxL7aHKKcNSxexyqMJJCLyZ6b2mdKNKpgJZX893",
+      "borrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX"
+    },
+    {
+      "action": "claim-expired",
+      "signature": "2unjkeTPCmC2y5TwQkJiWnHyEc1L4F4keZuoMxNP9idFQzNVP6GqkvSeTBwm8H4VNPJAwqn7X2FguYzkRmks5Zbq",
+      "url": "https://explorer.solana.com/tx/2unjkeTPCmC2y5TwQkJiWnHyEc1L4F4keZuoMxNP9idFQzNVP6GqkvSeTBwm8H4VNPJAwqn7X2FguYzkRmks5Zbq?cluster=devnet",
+      "status": "expired",
+      "offer": "GayPnbxL7aHKKcNSxexyqMJJCLyZ6b2mdKNKpgJZX893",
+      "borrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX"
+    },
+    {
+      "action": "close-expired",
+      "signature": "uLxBBeHzjGr8bbCyNqLiCDen5CHf6xMfKc5yNj7VuTXZK9pqwqzSMiZVjHJ9roD6nGvcuKuLuMrHn92PbrJU4hb",
+      "url": "https://explorer.solana.com/tx/uLxBBeHzjGr8bbCyNqLiCDen5CHf6xMfKc5yNj7VuTXZK9pqwqzSMiZVjHJ9roD6nGvcuKuLuMrHn92PbrJU4hb?cluster=devnet",
+      "status": "closed",
+      "offer": "GayPnbxL7aHKKcNSxexyqMJJCLyZ6b2mdKNKpgJZX893",
+      "borrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX"
+    },
+    {
+      "action": "return-recovery-tokens-and-rent",
+      "signature": "3rvPv3txuqrs4TTr1raFUyh6AhAZahcmJSNFzwb7S6JDH6MyuQrqwRoCLuouGirszQWVXBLfhudqJdqeTFP5CKL2",
+      "url": "https://explorer.solana.com/tx/3rvPv3txuqrs4TTr1raFUyh6AhAZahcmJSNFzwb7S6JDH6MyuQrqwRoCLuouGirszQWVXBLfhudqJdqeTFP5CKL2?cluster=devnet",
+      "borrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX"
+    },
+    {
+      "action": "return-recovery-sol",
+      "signature": "8fF8wQDm7sQZ4J14Xopx9HH5kcswbzpi5rApvakgwryBhGQwcBRQhKdjuFYeDc7UwisvsfCGV4LP89Se6x6WpLc",
+      "url": "https://explorer.solana.com/tx/8fF8wQDm7sQZ4J14Xopx9HH5kcswbzpi5rApvakgwryBhGQwcBRQhKdjuFYeDc7UwisvsfCGV4LP89Se6x6WpLc?cluster=devnet",
+      "borrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX"
+    }
+  ],
+  "recoveryBorrower": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX",
+  "strandedOriginalBorrower": {
+    "solLamports": 45383514,
+    "usdcAtoms": "0",
+    "wsolLamports": "3113046"
+  },
+  "limitations": [
+    "The first process crashed after cancellation. Its temporary borrower key existed only in memory and is unavailable; its remaining test SOL, wSOL and account rent were not recovered. Recovery-run cleanup does not include that wallet."
+  ],
+  "recoveryComplete": true
+}

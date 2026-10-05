@@ -13,7 +13,7 @@ li:nth-child(2) > .row {
 }
 
 .row:hover {
-  background: rgb(246 242 234 / 0.6);
+  background: var(--color-legacy-overlay-4);
 }
 
 .row:hover .chevron {
@@ -71,7 +71,6 @@ li:nth-child(2) > .row {
 
 .chevron {
   color: var(--color-text-tertiary);
-  transition:
-    transform var(--duration-fast) var(--ease-out),
+  transition: transform var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
 }

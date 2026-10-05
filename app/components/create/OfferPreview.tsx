@@ -4,7 +4,14 @@ import { AnimatePresence, m } from "motion/react";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import type { LivePrice } from "@/lib/client/hooks";
-import { atomsToNumber, fmt, formatBpsAsPercent, formatDuration } from "@/lib/format";
+import {
+  atomsToNumber,
+  fmt,
+  formatUsdc,
+  formatWsol,
+  formatBpsAsPercent,
+  formatDuration,
+} from "@/lib/format";
 import { parseAmount } from "@/lib/offer-validation";
 import { plannedLtvBps } from "@/lib/risk";
 import type { WizardDraft } from "./useDraft";
@@ -24,7 +31,8 @@ export function OfferPreview({
 }) {
   const principal = parseAmount(draft.principal, 6);
   const lamports = parseAmount(draft.collateral, 9);
-  const ltv = price && owed && lamports ? plannedLtvBps(owed, lamports, price) : null;
+  const ltv =
+    price && owed && lamports ? plannedLtvBps(owed, lamports, price) : null;
 
   return (
     <div className={styles.panel}>
@@ -40,19 +48,40 @@ export function OfferPreview({
         )}
       </AnimatePresence>
       <div className={styles.head}>
-        <span className={styles.badge}>{live ? "Live on Tenor" : "Borrower's view"}</span>
+        <span className={styles.badge}>
+          {live ? "Live on Lendspan" : "Borrower's view"}
+        </span>
         <LogoMark size={28} tone="panel" progress={live ? 1 : 0.25} />
       </div>
 
       <div className={styles.figures}>
-        <Figure label="You receive" value={principal ? atomsToNumber(principal, 6) : 0} unit="USDC" format={fmt.usd} hero />
-        <Figure label="You repay" value={owed ? atomsToNumber(owed, 6) : 0} unit="USDC" format={fmt.usd} />
-        <Figure label="You lock" value={lamports ? atomsToNumber(lamports, 9) : 0} unit="wSOL" format={fmt.wsol} />
+        <Figure
+          label="You receive"
+          value={principal ? atomsToNumber(principal, 6) : 0}
+          unit="USDC"
+          exact={principal === null ? "—" : formatUsdc(principal)}
+          format={fmt.usd}
+          hero
+        />
+        <Figure
+          label="You repay"
+          value={owed ? atomsToNumber(owed, 6) : 0}
+          unit="USDC"
+          exact={owed === null ? "—" : formatUsdc(owed)}
+          format={fmt.usd}
+        />
+        <Figure
+          label="You lock"
+          value={lamports ? atomsToNumber(lamports, 9) : 0}
+          unit="wSOL"
+          exact={lamports === null ? "—" : formatWsol(lamports)}
+          format={fmt.wsol}
+        />
       </div>
 
       <p className={styles.deadline}>
-        Repay within <b>{formatDuration(draft.durationSeconds)}</b> of accepting. If you do not repay by then, the lender
-        receives your wSOL.
+        Repay within <b>{formatDuration(draft.durationSeconds)}</b> of
+        accepting. If you do not repay by then, the lender receives your wSOL.
       </p>
 
       <dl className={styles.meta}>
@@ -62,12 +91,15 @@ export function OfferPreview({
         </div>
         <div>
           <dt>LTV today</dt>
-          <dd className="num">{ltv !== null ? formatBpsAsPercent(Math.min(ltv, 99_99)) : "—"}</dd>
+          <dd className="num">
+            {ltv !== null ? formatBpsAsPercent(Math.min(ltv, 99_99)) : "—"}
+          </dd>
         </div>
         <div>
           <dt>Max / liquidation</dt>
           <dd className="num">
-            {formatBpsAsPercent(draft.maxLtvBps, 0)} / {formatBpsAsPercent(draft.liquidationLtvBps, 0)}
+            {formatBpsAsPercent(draft.maxLtvBps, 0)} /{" "}
+            {formatBpsAsPercent(draft.liquidationLtvBps, 0)}
           </dd>
         </div>
       </dl>
@@ -81,18 +113,25 @@ function Figure({
   unit,
   format,
   hero,
+  exact,
 }: {
   label: string;
   value: number;
   unit: string;
   format: (n: number) => string;
   hero?: boolean;
+  exact?: string;
 }) {
   return (
     <div className={`${styles.figure} ${hero ? styles.hero : ""}`}>
       <span className={styles.figureLabel}>{label}</span>
       <span className={styles.figureValue}>
-        <AnimatedNumber value={value} format={format} className="num" />
+        <AnimatedNumber
+          value={value}
+          format={format}
+          exact={exact}
+          className="num"
+        />
         <span className={styles.unit}>{unit}</span>
       </span>
     </div>

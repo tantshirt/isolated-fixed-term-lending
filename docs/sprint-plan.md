@@ -46,3 +46,4 @@ Days 2 through 7 follow the tables. At the end of each day, both lanes read the 
 
 - Program and UI live under `isolated_loan/` and `app/`. Outcome scripts: `npm run script:repay|liquidate|expire` in `isolated_loan/`.
 - Story 5.1 is covered by the LiteSVM suite in `isolated_loan/programs/isolated_loan/tests/litesvm.rs` (`npm run test:litesvm`).
+- 2026-10-05: Devnet deployment and live repayment/cancellation/expiry/close checks completed; see [evidence](devnet-evidence.json). Story 7.2 remains Open because indexer and fuzz work are excluded from the approved Lendspan redesign.

@@ -1,39 +1,35 @@
 @import "@astryxdesign/theme-neutral/theme.css";
 
-/*
- * Tenor tokens. Astryx semantic names are kept and pointed at the Tenor palette,
- * so components only ever say var(--color-…). Hex lives here and nowhere else.
- * Contrast (on ivory): ink 15:1, ink-2 6.8:1, ink-3 4.6:1, accent 8.8:1,
- * healthy 4.9:1, risk 5:1, brass-ink 5.4:1. Brass itself is decoration only.
- */
+/* Lendspan light palette. Legacy variable names keep existing components compatible.
+   Components consume semantic tokens; palette literals are contained here. */
 html[data-astryx-theme="neutral"] {
   /* Palette */
-  --tenor-ivory: #f6f2ea;
-  --tenor-surface: #fffdf8;
-  --tenor-sunk: #efeadf;
-  --tenor-line: #e3dccd;
-  --tenor-line-strong: #cbc1ad;
-  --tenor-ink: #14201b;
-  --tenor-ink-2: #4b5751;
-  --tenor-ink-3: #5f6963;
-  --tenor-ink-4: #9aa29d;
-  --tenor-green: #0f4d3a;
-  --tenor-green-hover: #0b402f;
-  --tenor-green-pressed: #083325;
-  --tenor-green-deep: #0d3328;
-  --tenor-green-tint: #e2ece5;
-  --tenor-on-green: #f6f2ea;
-  --tenor-on-green-muted: #a9bdb3;
-  --tenor-brass: #c9a45c;
-  --tenor-brass-bright: #d9b96e;
-  --tenor-brass-ink: #7e5e22;
-  --tenor-brass-tint: #f4ebd7;
+  --tenor-ivory: #f8faff;
+  --tenor-surface: #ffffff;
+  --tenor-sunk: #eef2f8;
+  --tenor-line: #dfe5ef;
+  --tenor-line-strong: #bac6da;
+  --tenor-ink: #14213b;
+  --tenor-ink-2: #526079;
+  --tenor-ink-3: #64718a;
+  --tenor-ink-4: #8592a7;
+  --tenor-green: #245be8;
+  --tenor-green-hover: #194ac9;
+  --tenor-green-pressed: #143ca3;
+  --tenor-green-deep: #edf3ff;
+  --tenor-green-tint: #eaf0ff;
+  --tenor-on-green: #f8faff;
+  --tenor-on-green-muted: #526079;
+  --tenor-brass: #245be8;
+  --tenor-brass-bright: #245be8;
+  --tenor-brass-ink: #785513;
+  --tenor-brass-tint: #fff4d9;
   --tenor-healthy: #276f50;
   --tenor-healthy-tint: #e1efe6;
   --tenor-risk: #b4432f;
   --tenor-risk-tint: #f7e4de;
 
-  /* Astryx semantic tokens → Tenor */
+  /* Astryx semantic tokens → Lendspan */
   --color-background-body: var(--tenor-ivory);
   --color-background-surface: var(--tenor-surface);
   --color-background-card: var(--tenor-surface);
@@ -62,17 +58,32 @@ html[data-astryx-theme="neutral"] {
   --color-brass-ink: var(--tenor-brass-ink);
   --color-text-tertiary: var(--tenor-ink-3);
   --color-panel: var(--tenor-green-deep);
-  --color-on-panel: var(--tenor-on-green);
+  --color-on-panel: var(--tenor-ink);
   --color-on-panel-muted: var(--tenor-on-green-muted);
   --color-on-panel-brass: var(--tenor-brass-bright);
 
+  --color-legacy-overlay-1: rgb(255 255 255 / 0.08);
+  --color-legacy-overlay-2: rgb(180 67 47 / 0.35);
+  --color-legacy-overlay-3: rgb(20 32 27 / 0.04);
+  --color-legacy-overlay-4: rgb(246 242 234 / 0.6);
+  --color-legacy-overlay-5: rgb(13 51 40 / 0.85);
+  --color-legacy-overlay-6: rgb(246 242 234 / 0.86);
+  --color-legacy-overlay-7: rgb(13 51 40 / 0.32);
+  --color-legacy-overlay-8: rgb(246 242 234 / 0.22);
+  --color-legacy-overlay-9: rgb(217 185 110 / 0.14);
+  --color-legacy-overlay-10: rgb(246 242 234 / 0.12);
+  --color-legacy-overlay-11: rgb(246 242 234 / 0.06);
+
   /* Type */
-  --font-family-body: var(--font-figtree), Figtree, ui-sans-serif, system-ui, sans-serif;
-  --font-family-heading: var(--font-figtree), Figtree, ui-sans-serif, system-ui, sans-serif;
-  --font-family-code: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-family-body: var(--font-inter), Inter, ui-sans-serif, system-ui,
+    sans-serif;
+  --font-family-heading: var(--font-inter), Inter, ui-sans-serif, system-ui,
+    sans-serif;
+  --font-family-code: var(--font-plex-mono), "IBM Plex Mono", ui-monospace,
+    SFMono-Regular, Menlo, monospace;
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
-  --text-base: 0.9375rem;
+  --text-base: 1rem;
   --text-md: 1.0625rem;
   --text-lg: 1.25rem;
   --text-xl: 1.5rem;
@@ -84,8 +95,10 @@ html[data-astryx-theme="neutral"] {
   --radius-container: 14px;
   --radius-full: 999px;
   --shadow-low: 0 1px 2px rgb(20 32 27 / 0.06), 0 1px 1px rgb(20 32 27 / 0.04);
-  --shadow-med: 0 4px 8px -2px rgb(20 32 27 / 0.1), 0 2px 4px -2px rgb(20 32 27 / 0.06);
-  --shadow-high: 0 12px 24px -8px rgb(20 32 27 / 0.22), 0 4px 8px -4px rgb(20 32 27 / 0.1);
+  --shadow-med: 0 4px 8px -2px rgb(20 32 27 / 0.1),
+    0 2px 4px -2px rgb(20 32 27 / 0.06);
+  --shadow-high: 0 12px 24px -8px rgb(20 32 27 / 0.22),
+    0 4px 8px -4px rgb(20 32 27 / 0.1);
   --ring-brass: 0 0 0 3px rgb(201 164 92 / 0.45);
 
   /* Motion */
@@ -167,9 +180,9 @@ p {
   background: var(--tenor-brass-tint);
 }
 
-/* Figures: the code face, aligned digits. */
+/* Financial figures use Inter with aligned digits. */
 .num {
-  font-family: var(--font-family-code);
+  font-family: var(--font-family-body);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
@@ -208,4 +221,21 @@ p {
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }
+}
+
+button,
+select {
+  min-height: 44px;
+}
+button {
+  touch-action: manipulation;
+}
+input,
+select {
+  max-width: 100%;
+}
+
+.address {
+  font-family: var(--font-family-code);
+  overflow-wrap: anywhere;
 }

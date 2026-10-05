@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { LivePrice } from "@/lib/client/hooks";
 import { debt } from "@/lib/loan-math";
 import { parseAmount, type OfferDraft } from "@/lib/offer-validation";
+import { validStoredDraft } from "@/lib/simulation";
 import { minCollateralLamports } from "@/lib/risk";
 
 export type Cushion = 0 | 10 | 25 | 50;
@@ -25,11 +26,14 @@ export const DEFAULT_DRAFT: WizardDraft = {
   cushion: 10,
 };
 
-const KEY = "tenor-create-draft";
+const KEY = "lendspan-devnet-create-draft-v1";
 
 function lamportsToString(l: bigint): string {
   const whole = l / 1_000_000_000n;
-  const frac = (l % 1_000_000_000n).toString().padStart(9, "0").replace(/0+$/, "");
+  const frac = (l % 1_000_000_000n)
+    .toString()
+    .padStart(9, "0")
+    .replace(/0+$/, "");
   return frac ? `${whole}.${frac}` : `${whole}`;
 }
 
@@ -45,7 +49,17 @@ export function useDraft(price: LivePrice | null) {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(KEY);
-      if (raw) setDraft({ ...DEFAULT_DRAFT, ...(JSON.parse(raw) as Partial<WizardDraft>) });
+      if (raw) {
+        const value = JSON.parse(raw);
+        const d = value.draft;
+        if (
+          value.version === 1 &&
+          validStoredDraft(d) &&
+          ["auto", "manual"].includes(value.draft.collateralMode) &&
+          [0, 10, 25, 50].includes(value.draft.cushion)
+        )
+          setDraft(value.draft as WizardDraft);
+      }
     } catch {}
     setHydrated(true);
   }, []);
@@ -53,15 +67,27 @@ export function useDraft(price: LivePrice | null) {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      sessionStorage.setItem(KEY, JSON.stringify(draft));
+      sessionStorage.setItem(KEY, JSON.stringify({ version: 1, draft }));
     } catch {}
   }, [draft, hydrated]);
 
   const principal = parseAmount(draft.principal, 6);
-  const owed = principal !== null ? debt(principal, draft.interestBps) : null;
+  const owed =
+    principal !== null &&
+    Number.isInteger(draft.interestBps) &&
+    draft.interestBps >= 0
+      ? debt(principal, draft.interestBps)
+      : null;
 
   const autoCollateral = useMemo(() => {
-    if (!price || owed === null || owed === 0n) return null;
+    if (
+      !price ||
+      owed === null ||
+      owed === 0n ||
+      !Number.isInteger(draft.maxLtvBps) ||
+      draft.maxLtvBps <= 0
+    )
+      return null;
     const min = minCollateralLamports(owed, draft.maxLtvBps, price);
     const cushioned = (min * BigInt(100 + draft.cushion) + 99n) / 100n;
     const step = 100_000n; // 0.0001 wSOL
@@ -69,11 +95,14 @@ export function useDraft(price: LivePrice | null) {
   }, [price, owed, draft.maxLtvBps, draft.cushion]);
 
   const collateral =
-    draft.collateralMode === "auto" && autoCollateral !== null ? lamportsToString(autoCollateral) : draft.collateral;
+    draft.collateralMode === "auto" && autoCollateral !== null
+      ? lamportsToString(autoCollateral)
+      : draft.collateral;
 
   const effective: WizardDraft = { ...draft, collateral };
 
-  const update = (patch: Partial<WizardDraft>) => setDraft((d) => ({ ...d, ...patch }));
+  const update = (patch: Partial<WizardDraft>) =>
+    setDraft((d) => ({ ...d, ...patch }));
   const reset = () => {
     setDraft(DEFAULT_DRAFT);
     try {
