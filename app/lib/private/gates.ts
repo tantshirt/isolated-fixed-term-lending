@@ -1,5 +1,4 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
+import evidence from "./evidence.json";
 
 export const PRIVATE_PROGRAM_ID = "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK";
 
@@ -92,15 +91,13 @@ function statusOf(id: string, g?: RawGate): GateStatus {
   return id === "8.7" ? "finding" : "pass";
 }
 
-export async function loadGates(): Promise<{ gates: Gate[]; error?: string }> {
-  let raw: { gates?: Record<string, RawGate> } = {};
-  let error: string | undefined;
-  try {
-    const file = path.join(process.cwd(), "..", "docs", "magicblock-evidence.json");
-    raw = JSON.parse(await readFile(file, "utf8"));
-  } catch {
-    error = "The evidence file docs/magicblock-evidence.json could not be read.";
-  }
+/**
+ * Evidence is a committed copy of docs/magicblock-evidence.json so it ships in the
+ * Vercel bundle. Refresh it with `npm run sync-evidence`; a test fails if it drifts.
+ */
+export function loadGates(): { gates: Gate[]; error?: string } {
+  const raw = evidence as { gates?: Record<string, RawGate> };
+  const error = raw.gates ? undefined : "The gate evidence is missing from this build.";
   const gates = Object.keys(COPY).map((id) => {
     const g = raw.gates?.[id];
     return {

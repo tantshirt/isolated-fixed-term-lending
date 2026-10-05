@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "sync-idl": "cp ../isolated_loan/target/idl/isolated_loan.json idl/isolated_loan.json",
-    "test": "node --import tsx --test lib/*.test.ts"
+    "test": "node --import tsx --test lib/*.test.ts",
+    "sync-evidence": "cp ../docs/magicblock-evidence.json lib/private/evidence.json"
   },
   "dependencies": {
     "@astryxdesign/theme-neutral": "^0.6.5",
