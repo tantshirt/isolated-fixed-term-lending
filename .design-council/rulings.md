@@ -46,3 +46,13 @@ Source methods restored from the pinned upstream repositories; actual verificati
 | The copilot shows the exact excerpt, model, and identifiability warning before the wallet signs | Fovea / Plumb | Disclosure must be informed. Redacting addresses does not make exact amounts anonymous. |
 | A stale AI answer stays visible, tinted, with no "Use as a draft" | Plumb | A late answer can inform but must not change the current draft. |
 | Comparison highlights the cheapest repayment only | Sol | One clear figure, not a ranking that implies advice. |
+
+## Phase 6: landing, use cases, footer (2026-10-05)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Use cases follow chainpay's "I want to… → Start here" table, linked to illustrated case cards below it | Sol / Wren | A quick index plus one detailed telling of each case; the first draft repeated every intent twice. |
+| Case cards alternate image and text; the two text-only cases span full width | Ravi / Indigo | Rhythm without inventing filler art for cases that do not need it. |
+| The private chapter moves into place but is never hidden before scrolling | Nils | Content must be visible by default; opacity-0 reveals failed full-page captures and no-JS readers. |
+| New illustrations reuse the cobalt satin and porcelain series and its prompt grammar | Kestrel / Wren | Same identity across public and private stories; no text or logos in images. |
+| The footer lists Try it, Private, and Learn, with a Devnet and no-guarantee note | Sol / Fovea | Replaces the two-line inline footer; every new surface is reachable without the header. |

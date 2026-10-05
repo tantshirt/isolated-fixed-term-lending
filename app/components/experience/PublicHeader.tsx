@@ -9,6 +9,12 @@ export function PublicHeader() {
         <Link className={s.desktop} href="/#how-it-works">
           How it works
         </Link>
+        <Link className={s.desktop} href="/use-cases">
+          Use cases
+        </Link>
+        <Link className={s.desktop} href="/devnet/private">
+          Private
+        </Link>
         <Link href="/demo">Try the demo</Link>
         <Link href="/devnet">Use Devnet ↗</Link>
       </nav>

@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { HeroArtwork, LoanStory } from "@/components/experience/LoanStory";
+import { PrivateChapter } from "@/components/experience/PrivateChapter";
 import { PublicHeader } from "@/components/experience/PublicHeader";
+import { SiteFooter } from "@/components/experience/SiteFooter";
+import { UseCaseTable } from "@/components/experience/UseCaseTable";
 import s from "@/components/experience/Experience.module.css";
 export default function Home() {
   return (
@@ -34,6 +37,7 @@ export default function Home() {
           <HeroArtwork />
         </section>
         <LoanStory />
+        <PrivateChapter />
         <section className={s.section}>
           <div className={s.risk}>
             <div>
@@ -97,6 +101,15 @@ export default function Home() {
               </p>
             </details>
             <details>
+              <summary>Who can see a private loan?</summary>
+              <p>
+                Only the lender and borrower can read its terms, inside a
+                hardware-protected MagicBlock rollup. Solana sees deposits,
+                withdrawals, and final balances, never the terms or the
+                conversation.
+              </p>
+            </details>
+            <details>
               <summary>Can I change a loan after it starts?</summary>
               <p>
                 No. The terms are fixed. A lender may cancel an offer before
@@ -106,10 +119,8 @@ export default function Home() {
             </details>
           </div>
         </section>
-        <footer className={s.footer}>
-          <span>Lendspan · Clear terms. One loan at a time.</span>
-          <span>Built on Solana · Devnet only</span>
-        </footer>
+        <UseCaseTable limit={4} />
+        <SiteFooter />
       </main>
     </>
   );
