@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { DiscoverPage } from "@/components/private/DiscoverPage";
-
-export const metadata: Metadata = { title: "Discover · Lendspan" };
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <DiscoverPage />;
+  redirect("/devnet/discover?side=borrowers&venue=private");
 }

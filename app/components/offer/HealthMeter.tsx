@@ -15,6 +15,7 @@ export function HealthMeter({
   maxLtvBps,
   liquidationLtvBps,
   stale,
+  maxLabel = "Max LTV at accept",
   liquidationPrice,
   solPrice,
 }: {
@@ -23,6 +24,8 @@ export function HealthMeter({
   maxLtvBps: number;
   liquidationLtvBps: number;
   stale: boolean;
+  /** Words for the max LTV marker; offers check it at accept, requests at funding. */
+  maxLabel?: string;
   liquidationPrice: number | null;
   solPrice: number | null;
 }) {
@@ -58,7 +61,7 @@ export function HealthMeter({
       </div>
       <div className={styles.scale}>
         <span>
-          <i data-kind="max" aria-hidden /> Max LTV at accept <b className="num">{formatBpsAsPercent(maxLtvBps, 0)}</b>
+          <i data-kind="max" aria-hidden /> {maxLabel} <b className="num">{formatBpsAsPercent(maxLtvBps, 0)}</b>
         </span>
         <span>
           <i data-kind="liq" aria-hidden /> Liquidation <b className="num">{formatBpsAsPercent(liquidationLtvBps, 0)}</b>

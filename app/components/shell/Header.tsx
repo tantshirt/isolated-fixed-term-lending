@@ -9,6 +9,7 @@ import { AccountButton } from "./AccountButton";
 import styles from "./Header.module.css";
 
 const NAV = [
+  { href: "/devnet/discover", label: "Discover" },
   { href: "/devnet", label: "Offers" },
   { href: "/devnet/create", label: "Create offer" },
   { href: "/devnet/private", label: "Private" },
@@ -28,6 +29,9 @@ export function Header() {
               n.href === "/devnet"
                 ? pathname === "/devnet" ||
                   pathname.startsWith("/devnet/offers")
+                : n.href === "/devnet/discover"
+                ? pathname.startsWith("/devnet/discover") ||
+                  pathname.startsWith("/devnet/requests")
                 : n.href === "/devnet/private"
                   ? pathname.startsWith("/devnet/private")
                   : pathname.startsWith(n.href);

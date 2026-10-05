@@ -74,7 +74,7 @@ Borrower-posted public requests and a top-level Discover page. Each story ships 
 | --- | --- | --- |
 | 1 | [14.1 Borrower requests](stories.md) | Done |
 | 2 | [14.2 Client and live reads](stories.md) | Done |
-| 3 | [14.3 Discover page](stories.md) | Open |
+| 3 | [14.3 Discover page](stories.md) | Done |
 | 4 | [14.4 Request a loan](stories.md) | Open |
 
 ## Notes
