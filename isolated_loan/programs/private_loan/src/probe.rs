@@ -67,9 +67,10 @@ pub fn delegate_probe(ctx: Context<DelegateProbe>, id: [u8; 32]) -> Result<()> {
         .validator(Some(&ctx.accounts.validator.to_account_info()))
         .invoke_signed(&[seeds])?;
 
+    // The SDK derives and appends the bump itself.
     ctx.accounts.delegate_probe(
         &ctx.accounts.authority,
-        seeds,
+        &[PROBE_SEED, &id],
         DelegateConfig { validator: Some(TEE_VALIDATOR), ..Default::default() },
     )?;
     Ok(())

@@ -1,9 +1,125 @@
 {
   "programs": {
-    "private_loan": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK"
+    "private_loan": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+    "private_loan_deploys": [
+      "AqrBr4GwAreEKj9pN9ZajPjsQtzMX5Q8zY4mQnmgE7xCaDc6YK6mEsGqfrr6LijNmMciEkdScpYzUUD84KWNF7X",
+      "GfgY3YCJkYvfUQTKd7YhPUS7TqiRHw8w73y1Ya15dEQQXL4LmFtyWwwtdte7Y9vZCGMXanXAz4rdviuEdYxbBgn"
+    ]
   },
-  "sdk": { "ephemeral-rollups-sdk": "0.17.3", "session-keys": "3.1.1", "anchor-cli": "1.0.2", "anchor-lang": "1.2.0", "rust": "1.89.0" },
+  "sdk": {
+    "ephemeral-rollups-sdk": "0.17.3",
+    "session-keys": "3.1.1",
+    "anchor-cli": "1.0.2",
+    "anchor-lang": "1.2.0",
+    "rust": "1.89.0"
+  },
   "gates": {
-    "8.1": { "status": "PASS", "date": "2026-10-05", "evidence": "local anchor build of both programs, zero warnings" }
+    "8.1": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "evidence": "local anchor build of both programs, zero warnings"
+    },
+    "8.2": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "probe": "BAaF6tx1b8FHqkJJSt1ourpfrVTJg4SFrfuUFNiWLzPU",
+      "signatures": {
+        "setup": "KCEJhpPB5SNkcSAtSx4yASf7EHXcPBQerZprtjpJQaUCx4oygKrHJFAa9LGCaLzLhjuy1vTQ54bTVjSdRuSytzf",
+        "write": "2KfMuv2QentL5EPqzcrXnLbx7oCoY7nVLpGxVoUDP9xL9YK7xpQkABD5EtmaXXi4W3unh6kjDDd6fayJf72VizfR"
+      },
+      "failed": [],
+      "checks": {
+        "tee-attestation": {
+          "ok": true,
+          "detail": "verifyTeeRpcIntegrity resolved"
+        },
+        "atomic-create-and-delegate": {
+          "ok": true,
+          "detail": {
+            "probe": "BAaF6tx1b8FHqkJJSt1ourpfrVTJg4SFrfuUFNiWLzPU",
+            "setupSig": "KCEJhpPB5SNkcSAtSx4yASf7EHXcPBQerZprtjpJQaUCx4oygKrHJFAa9LGCaLzLhjuy1vTQ54bTVjSdRuSytzf"
+          }
+        },
+        "auth-tokens": {
+          "ok": true,
+          "detail": "authority, reader, outsider tokens issued"
+        },
+        "member-write-in-er": {
+          "ok": true,
+          "detail": {
+            "writeSig": "2KfMuv2QentL5EPqzcrXnLbx7oCoY7nVLpGxVoUDP9xL9YK7xpQkABD5EtmaXXi4W3unh6kjDDd6fayJf72VizfR"
+          }
+        },
+        "authority-reads": {
+          "ok": true,
+          "detail": {
+            "visible": true,
+            "value": "424242"
+          }
+        },
+        "reader-reads": {
+          "ok": true,
+          "detail": {
+            "visible": true,
+            "value": "424242"
+          }
+        },
+        "outsider-cannot-read": {
+          "ok": true,
+          "detail": {
+            "visible": false,
+            "value": null
+          }
+        },
+        "anonymous-cannot-read": {
+          "ok": true,
+          "detail": {
+            "visible": false,
+            "value": null
+          }
+        },
+        "outsider-gpa-no-contents": {
+          "ok": true,
+          "detail": {
+            "returned": 0
+          }
+        },
+        "reader-sees-tx-logs": {
+          "ok": true,
+          "detail": {
+            "found": true,
+            "logs": 4
+          }
+        },
+        "outsider-no-tx-logs": {
+          "ok": true,
+          "detail": {
+            "found": true,
+            "logs": 0
+          }
+        },
+        "outsider-subscription-silent": {
+          "ok": true,
+          "detail": {
+            "events": 0
+          }
+        },
+        "base-layer-no-er-value": {
+          "ok": true,
+          "detail": {
+            "owner": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh",
+            "baseValue": "0"
+          }
+        }
+      },
+      "outsider_get_transaction": {
+        "keys": [],
+        "instructions": [],
+        "err": null,
+        "preBalances": [],
+        "logs": [],
+        "note": "Outsider learns that the signature exists and succeeded, nothing else."
+      }
+    }
   }
 }
