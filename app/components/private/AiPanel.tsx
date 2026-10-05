@@ -78,9 +78,9 @@ export function AiPanel({ signer, base, er, room, loans, onUseProposal }: Props)
         <span className={styles.badge}>Explains and proposes, never acts</span>
       </header>
       <div className={styles.panelBody}>
-        <div className={styles.roleChoice} role="radiogroup" aria-label="What to ask">
+        <div className={styles.roleChoice} role="group" aria-label="What to ask">
           {tasks.map((t) => (
-            <button type="button" key={t} role="radio" aria-checked={task === t} onClick={() => (setTask(t), setReviewing(false), setAnswer(null))}>
+            <button type="button" key={t} aria-pressed={task === t} onClick={() => (setTask(t), setReviewing(false), setAnswer(null))}>
               {AI_TASK_LABEL[t]}
             </button>
           ))}

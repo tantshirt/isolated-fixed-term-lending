@@ -218,9 +218,9 @@ function ProposeForm({ signer, base, er, room, counterparties, prefill, onDone }
       </select>
       <AmountInput label="You lend" value={principal} onChange={setPrincipal} unit="USDC" decimals={6} />
       <AmountInput label="Interest for the whole term" value={rate} onChange={setRate} unit="%" decimals={2} hint="Charged in full, even if repaid early." />
-      <div className={styles.roleChoice} role="radiogroup" aria-label="Term">
+      <div className={styles.roleChoice} role="group" aria-label="Term">
         {DURATIONS.map((d) => (
-          <button type="button" key={d.seconds} role="radio" aria-checked={duration === d.seconds} onClick={() => setDuration(d.seconds)}>
+          <button type="button" key={d.seconds} aria-pressed={duration === d.seconds} onClick={() => setDuration(d.seconds)}>
             {d.label}
           </button>
         ))}

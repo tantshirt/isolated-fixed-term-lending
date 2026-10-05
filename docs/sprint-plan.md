@@ -64,7 +64,7 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 | 14 | [11.2 AI request and callback](stories.md) | Done |
 | 15 | [12.1 Expiry tasks and liquidation tickets](stories.md) | Done |
 | 16 | [12.2 Magic Actions receipts](stories.md) | Done |
-| 17 | [13.1 Transfers, sponsorship, lab, and accessibility](stories.md) | Open |
+| 17 | [13.1 Transfers, sponsorship, lab, and accessibility](stories.md) | Done |
 
 ## Notes
 

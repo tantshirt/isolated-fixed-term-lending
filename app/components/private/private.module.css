@@ -838,7 +838,7 @@ span.receiptLink {
   transition: border-color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
 }
 
-.roleChoice button[aria-checked="true"] {
+.roleChoice button[aria-pressed="true"] {
   border-color: var(--color-accent);
   background: var(--color-accent-muted);
   color: var(--color-text-accent);
@@ -1166,4 +1166,129 @@ span.receiptLink {
 .notShared {
   color: var(--color-text-disabled);
   font-weight: 500;
+}
+
+.sendBox {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.sendBox summary {
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sendBox .panelBody {
+  padding-top: 0;
+}
+
+.checks {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.25rem 0.875rem;
+  align-items: center;
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.check:first-child {
+  border-top: 0;
+}
+
+.checkDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-text-disabled);
+}
+
+.check[data-state="ok"] .checkDot {
+  background: var(--color-text-green);
+}
+
+.check[data-state="warn"] .checkDot {
+  background: var(--color-text-yellow);
+}
+
+.check[data-state="ok"] .badge {
+  background: var(--color-background-green);
+  color: var(--color-text-green);
+}
+
+.check[data-state="warn"] .badge {
+  background: var(--color-background-yellow);
+  color: var(--color-text-yellow);
+}
+
+.check[data-state="fail"] .badge {
+  background: var(--color-background-red);
+  color: var(--color-text-red);
+}
+
+.checkSummary {
+  margin: 0;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.check[data-state="fail"] .checkDot {
+  background: var(--color-text-red);
+}
+
+.checkName {
+  font-weight: 600;
+}
+
+.checkDetail {
+  grid-column: 2 / -1;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Token switch: a compact segmented control */
+
+.tokenSwitch {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-background-muted);
+}
+
+.tokenSwitch button {
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tokenSwitch button[aria-pressed="true"] {
+  background: var(--color-background-card);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+}
+
+.tokenSwitch button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

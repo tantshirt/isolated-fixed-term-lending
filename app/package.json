@@ -15,6 +15,7 @@
     "@astryxdesign/theme-neutral": "^0.6.5",
     "@coral-xyz/anchor": "^0.32.1",
     "@magicblock-labs/ephemeral-rollups-sdk": "0.17.3",
+    "@magicblock-labs/soar-sdk": "^0.1.23",
     "@metamask/connect-solana": "^2.1.1",
     "@pythnetwork/pyth-solana-receiver": "^0.16.0",
     "@solana/spl-token": "^0.4.15",

@@ -277,9 +277,9 @@ export function RoomView({ roomId }: { roomId: string }) {
                     autoComplete="off"
                     spellCheck={false}
                   />
-                  <div className={styles.roleChoice} role="radiogroup" aria-label="Role">
+                  <div className={styles.roleChoice} role="group" aria-label="Role">
                     {(["lender", "borrower", "viewer"] as RoleName[]).map((r) => (
-                      <button type="button" key={r} role="radio" aria-checked={role === r} onClick={() => setRole(r)}>
+                      <button type="button" key={r} aria-pressed={role === r} onClick={() => setRole(r)}>
                         {ROLE_WORD[r]}
                       </button>
                     ))}

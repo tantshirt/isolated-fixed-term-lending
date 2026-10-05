@@ -65,6 +65,12 @@ export function PrivateHome() {
           <Link href="/devnet/private/liquidate" className={styles.secondaryLink}>
             Liquidation quotes
           </Link>
+          <Link href="/devnet/lab" className={styles.secondaryLink}>
+            Loan lab
+          </Link>
+          <Link href="/devnet/private/diagnostics" className={styles.secondaryLink}>
+            Diagnostics
+          </Link>
           <Link href="/devnet/private/proof" className={styles.secondaryLink}>
             What has been proven on Devnet
           </Link>
