@@ -7,7 +7,17 @@ import styles from "./PriceLadder.module.css";
  * SOL price on one axis: where it trades now, where a borrower could no longer accept,
  * and where the loan can be liquidated. Distance from now is the cushion, in words too.
  */
-export function PriceLadder({ now, acceptBelow, liquidateBelow }: { now: number; acceptBelow: number; liquidateBelow: number }) {
+export function PriceLadder({
+  now,
+  acceptBelow,
+  liquidateBelow,
+  acceptLabel = "Borrowers can accept above",
+}: {
+  now: number;
+  acceptBelow: number;
+  liquidateBelow: number;
+  acceptLabel?: string;
+}) {
   const top = Math.max(now, acceptBelow) * 1.12;
   const pos = (v: number) => `${Math.max(0, Math.min(100, (v / top) * 100))}%`;
   const drop = (v: number) => Math.max(0, (1 - v / now) * 100);
@@ -29,7 +39,7 @@ export function PriceLadder({ now, acceptBelow, liquidateBelow }: { now: number;
       <dl className={styles.legend}>
         <div>
           <dt>
-            <i data-kind="accept" aria-hidden /> Borrowers can accept above
+            <i data-kind="accept" aria-hidden /> {acceptLabel}
           </dt>
           <dd className="num">${acceptBelow.toFixed(2)}</dd>
         </div>

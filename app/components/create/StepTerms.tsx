@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/Slider";
 import { CAPS } from "@/lib/constants";
 import { atomsToNumber, fmt, formatDuration } from "@/lib/format";
 import type { DraftErrors } from "@/lib/offer-validation";
-import type { WizardDraft } from "./useDraft";
+import type { Perspective, WizardDraft } from "./useDraft";
 import styles from "./CreateWizard.module.css";
 
 const TERMS = [
@@ -27,12 +27,14 @@ export function StepTerms({
   errors,
   principal,
   owed,
+  perspective = "lender",
 }: {
   draft: WizardDraft;
   update: (p: Partial<WizardDraft>) => void;
   errors: DraftErrors;
   principal: bigint | null;
   owed: bigint | null;
+  perspective?: Perspective;
 }) {
   const preset = TERMS.some((t) => t.value === draft.durationSeconds);
   const [custom, setCustom] = useState(!preset);
@@ -104,11 +106,11 @@ export function StepTerms({
 
       <div className={styles.callout}>
         <p>
-          The borrower pays{" "}
+          {perspective === "borrower" ? "You pay" : "The borrower pays"}{" "}
           <strong className="num">
             <AnimatedNumber value={interest !== null ? atomsToNumber(interest, 6) : 0} format={fmt.usd} />
           </strong>{" "}
-          USDC of interest over {formatDuration(draft.durationSeconds)}, whether they repay on day one or at the last minute.
+          USDC of interest over {formatDuration(draft.durationSeconds)}, whether {perspective === "borrower" ? "you repay" : "they repay"} on day one or at the last minute.
         </p>
         <p className={styles.calloutSub}>
           That is about <span className="num">{yearly >= 1000 ? "1,000+" : yearly.toFixed(1)}%</span> a year. Interest is fixed

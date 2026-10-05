@@ -15,7 +15,7 @@ import {
 } from "@/lib/format";
 import { parseAmount } from "@/lib/offer-validation";
 import { plannedLtvBps } from "@/lib/risk";
-import type { WizardDraft } from "./useDraft";
+import type { Perspective, WizardDraft } from "./useDraft";
 import styles from "./OfferPreview.module.css";
 
 /** The offer exactly as a borrower will read it, updating while the lender types. */
@@ -24,12 +24,16 @@ export function OfferPreview({
   owed,
   price,
   live,
+  perspective = "lender",
 }: {
   draft: WizardDraft;
   owed: bigint | null;
   price: LivePrice | null;
   live: boolean;
+  perspective?: Perspective;
 }) {
+  // A lender previews what a borrower reads, and a borrower what a lender reads.
+  const lenderReads = perspective === "borrower";
   const principal = parseAmount(draft.principal, 6);
   const lamports = parseAmount(draft.collateral, 9);
   const ltv =
@@ -50,14 +54,14 @@ export function OfferPreview({
       </AnimatePresence>
       <div className={styles.head}>
         <span className={styles.badge}>
-          {live ? "Live on Lendspan" : "Borrower's view"}
+          {live ? "Live on Lendspan" : lenderReads ? "Lender's view" : "Borrower's view"}
         </span>
         <LogoMark size={28} tone="panel" progress={live ? 1 : 0.25} />
       </div>
 
       <div className={styles.figures}>
         <Figure
-          label="You receive"
+          label={lenderReads ? "You lend" : "You receive"}
           value={principal ? atomsToNumber(principal, 6) : 0}
           unit="USDC"
           exact={principal === null ? "—" : formatUsdc(principal)}
@@ -65,14 +69,14 @@ export function OfferPreview({
           hero
         />
         <Figure
-          label="You repay"
+          label={lenderReads ? "You are repaid" : "You repay"}
           value={owed ? atomsToNumber(owed, 6) : 0}
           unit="USDC"
           exact={owed === null ? "—" : formatUsdc(owed)}
           format={fmt.usd}
         />
         <Figure
-          label="You lock"
+          label={lenderReads ? "Collateral locked" : "You lock"}
           value={lamports ? atomsToNumber(lamports, 9) : 0}
           unit="wSOL"
           exact={lamports === null ? "—" : formatWsol(lamports)}
@@ -81,8 +85,18 @@ export function OfferPreview({
       </div>
 
       <p className={styles.deadline}>
-        Repay within <b>{formatDuration(draft.durationSeconds)}</b> of
-        accepting. If you do not repay by then, the lender receives your wSOL.
+        {lenderReads ? (
+          <>
+            Repaid within <b>{formatDuration(draft.durationSeconds)}</b> of
+            funding. If the borrower misses it, you receive their wSOL.
+          </>
+        ) : (
+          <>
+            Repay within <b>{formatDuration(draft.durationSeconds)}</b> of
+            accepting. If you do not repay by then, the lender receives your
+            wSOL.
+          </>
+        )}
       </p>
 
       <dl className={styles.meta}>

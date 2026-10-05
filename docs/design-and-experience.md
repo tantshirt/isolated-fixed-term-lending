@@ -13,6 +13,8 @@ Light mode only: white surfaces, cool neutral layers, blue primary actions, dist
 - `/`: explanatory landing page, primary **Try the demo**, secondary **Use Devnet**.
 - `/demo`: wallet-free guided simulation and free exploration.
 - `/devnet`: actual offer list and wallet-based transactions.
+- `/devnet/discover`: the live marketplace. **Borrowers asking** and **Lenders offering**, each with **Public** and **Private**. Public rows are on-chain requests and offers; private borrower rows are discovery cards showing only the fields their borrower chose. Private lenders have no listing, and the page says so instead of inventing one. A status badge says whether the list is live, polling, or unreachable, in words.
+- `/devnet/discover/request`: borrower's choice of public or private, then the public request wizard. `/devnet/requests/[borrower]/[id]`: one public request, where a lender funds it.
 - Create and offer details live under their respective experience. Existing create/offer links redirect into Devnet.
 
 Landing and simulation do not initialize wallet providers or depend on chain availability. The Devnet shell identifies the network, displays readiness and connects a wallet only when the visitor chooses to. No registration or sign-in.
@@ -30,6 +32,12 @@ Explain what the loan does, what the lender and borrower supply, how terms are f
 Four named steps: **Amount, Rate and term, Collateral, Review**. Back and refresh preserve valid drafts. Invalid deep links return to the earliest unmet step. Each step shows inline feedback and a live summary of what each side gives and receives. Review allows editing earlier choices.
 
 Collateral begins with understandable choices and a visible collateral amount. Advanced LTV controls and exact calculations remain accessible through detail disclosure. Always explain that interest applies to the whole term, even if the borrower repays early.
+
+### Borrower request wizard
+
+The lender wizard's four steps, written from the borrower's side: **You borrow**, **You pay**, **wSOL you lock**. The live summary shows the **Lender's view**. Step zero chooses public or private; private continues in a room. Wrapping SOL is its own explicit button when the wallet holds too little wSOL, never a silent step inside posting.
+
+Funding a request reads the price at funding. When the Devnet price is older than 60 seconds, say before the click that funding first posts a fresh price and asks for extra signatures.
 
 ### Borrower and active loan
 
@@ -59,6 +67,6 @@ Desktop layouts pair the decision area with a stable summary; phones stack them 
 
 ## Action vocabulary
 
-Keep actions understandable and consistent: **Lock USDC**, **Cancel offer**, **Lock wSOL and borrow**, **Repay**, **Claim collateral**, **Pay the lender and take collateral**, and **Close and reclaim rent**. Simulation may use explanatory introductions but must preserve each action's actual consequence.
+Keep actions understandable and consistent: **Lock USDC**, **Cancel offer**, **Lock wSOL and borrow**, **Repay**, **Claim collateral**, **Pay the lender and take collateral**, and **Close and reclaim rent**. Requests add **Lock wSOL and post request**, **Fund this request**, **Cancel request**, and **Close request**. Simulation may use explanatory introductions but must preserve each action's actual consequence.
 
 States remain **Open offer**, **Waiting for repayment**, **Repaid**, **Expired**, **Liquidated**, **Cancelled**, with a separate closed-account result. A transaction submission alone does not establish a new loan state.
