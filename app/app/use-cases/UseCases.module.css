@@ -1,0 +1,173 @@
+.hero {
+  display: grid;
+  gap: 16px;
+  max-width: 760px;
+  padding: 40px 0 24px;
+}
+
+.hero h1 {
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.eyebrow {
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.lede {
+  color: var(--color-text-secondary);
+  font-size: var(--text-md);
+}
+
+.cases {
+  display: grid;
+  gap: 20px;
+  padding-bottom: 72px;
+}
+
+.case {
+  display: grid;
+  gap: 28px;
+  align-items: center;
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-background-card);
+  scroll-margin-top: 24px;
+}
+
+.case[data-art] {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.case[data-art]:nth-child(even) .art {
+  order: 2;
+}
+
+.case:target {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px var(--color-accent-muted);
+}
+
+.art {
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--color-background-muted);
+  aspect-ratio: 1;
+}
+
+.art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.caseText {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.caseNo {
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+.caseText h2 {
+  font-size: clamp(22px, 2.4vw, 28px);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.caseText dl {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+}
+
+.caseText dt {
+  margin-top: 10px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.caseText dd {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+}
+
+.start {
+  margin-top: 14px;
+  color: var(--color-text-accent);
+  font-weight: 600;
+}
+
+.features {
+  display: grid;
+  gap: 16px;
+  padding: 72px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.features h2 {
+  font-size: clamp(28px, 3.6vw, 40px);
+  letter-spacing: -0.04em;
+}
+
+.features ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px 36px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.features li {
+  padding-top: 18px;
+  border-top: 2px solid var(--color-border);
+}
+
+.features h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.features p {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+@media (max-width: 800px) {
+  .case,
+  .case[data-art] {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  .case[data-art]:nth-child(even) .art {
+    order: 0;
+  }
+
+  .art {
+    aspect-ratio: 4 / 3;
+  }
+
+  .features ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+
