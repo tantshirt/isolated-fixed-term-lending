@@ -16,7 +16,7 @@ export function PublicHeader() {
           Private
         </Link>
         <Link href="/demo">Try the demo</Link>
-        <Link href="/devnet">Use Devnet ↗</Link>
+        <Link href="/devnet">Use Devnet</Link>
       </nav>
     </header>
   );

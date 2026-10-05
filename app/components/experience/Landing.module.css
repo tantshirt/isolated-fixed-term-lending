@@ -157,6 +157,9 @@
 }
 
 .ucTable a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--color-text-accent);
   font-weight: 600;
 }
@@ -174,9 +177,14 @@
 
 .siteFooter {
   display: grid;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-inline: 1rem;
   grid-template-columns: 1.6fr repeat(3, 1fr);
   gap: 32px;
-  padding: 48px 0 0;
+  padding-top: 48px;
+  padding-bottom: 3rem;
   border-top: 1px solid var(--color-border);
 }
 
@@ -193,13 +201,16 @@
 
 .footerCol ul {
   display: grid;
-  gap: 10px;
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .footerCol a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--color-text-secondary);
   font-size: 14px;
 }
