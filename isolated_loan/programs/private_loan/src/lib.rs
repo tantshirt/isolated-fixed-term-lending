@@ -7,9 +7,12 @@ use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::anchor::ephemeral;
 
 pub mod constants;
+pub mod custody;
 pub mod error;
+pub mod espl;
 pub mod probe;
 
+use custody::*;
 use probe::*;
 
 declare_id!("HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK");
@@ -42,5 +45,30 @@ pub mod private_loan {
     /// Ephemeral rollup. Commits and undelegates the probe back to the base layer.
     pub fn undelegate_probe(ctx: Context<UndelegateProbe>) -> Result<()> {
         probe::undelegate_probe(ctx)
+    }
+
+    /// Base layer. Creates a custody PDA, its ATA, and its eATA.
+    pub fn create_custody(ctx: Context<CreateCustody>, id: [u8; 32]) -> Result<()> {
+        custody::create_custody(ctx, id)
+    }
+
+    /// Base layer. Moves tokens into the custody eATA and delegates it to the TEE.
+    pub fn fund_and_delegate(ctx: Context<FundAndDelegate>, amount: u64) -> Result<()> {
+        custody::fund_and_delegate(ctx, amount)
+    }
+
+    /// Ephemeral rollup. Custody PDA signs an SPL transfer out of its own ATA.
+    pub fn custody_transfer(ctx: Context<CustodyTransfer>, amount: u64) -> Result<()> {
+        custody::custody_transfer(ctx, amount)
+    }
+
+    /// Ephemeral rollup. Returns the custody eATA to the base layer.
+    pub fn undelegate_custody(ctx: Context<UndelegateCustody>) -> Result<()> {
+        custody::undelegate_custody(ctx)
+    }
+
+    /// Base layer. Withdraws from the global vault to the authority.
+    pub fn withdraw_custody(ctx: Context<WithdrawCustody>, amount: u64) -> Result<()> {
+        custody::withdraw_custody(ctx, amount)
     }
 }

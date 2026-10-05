@@ -154,6 +154,8 @@ Decisions:
 - **Sessions.** Session keys may edit drafts, post messages, revise proposals, and send already-approved AI requests. Lendspan checks room and instruction scope itself. Funding, accepting, repaying, withdrawing, granting access, and approving a disclosure need the primary wallet.
 - **AI.** A request binds the approved payload hash, provider, model, and terms revision. The callback is signed by the oracle identity PDA and checked for replay, deadline, and revision. It cannot write loan state.
 - **Settlement evidence.** ER execution, commit, and base-layer settlement are tracked separately. Queue acceptance is never shown as settlement.
+- **Custody accounting.** Inside the TEE, no wallet can read a custody PDA's token balance; the ER returns a masked value. Loan state records principal and collateral itself, and the interface reads loan state. Token balances are checked on the base layer after settlement.
+- **eSPL calls.** `private_loan/src/espl.rs` builds eSPL instructions in the order the deployed program's processors read them. Do not switch to the SDK's `spl` CPI helpers: the feature does not build for SBF, and its withdraw order is wrong in 0.17.3.
 - **Gates.** Each MagicBlock capability needs a passing Epic 8 gate in [magicblock-evidence.md](magicblock-evidence.md). A failed gate leaves the feature off.
 
 Pinned ids (verified 2026-10-05):

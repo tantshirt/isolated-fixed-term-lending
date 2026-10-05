@@ -215,6 +215,117 @@
           }
         }
       }
+    },
+    "8.4": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "runs": {
+        "usdc": {
+          "sigs": {
+            "create": "5neTbjXuFhDGr4fJG1eG7D12whX9f5ajvhDXdHZrEQJ4ovv8tgzdAKXPxAo1poUjsEcTVn3a1ZJQakubKjXehbLZ",
+            "fund": "hCUiNjU5sBY4ehX1RZuKkykRtYKQx2RCCFRieTw3XDX2cbCKrVVRaVQuEu3TdM41D5ieBZE8nPwVg9z9UkQPRUE",
+            "transfer": "2HVyNsX3GyJnAUxcEN6QvyZAUKuHhwYuxEdK6Vtt2ko5oWrxttThzxvvxGhSvPnJdJu6xxZBqeBwbCvZ5AWFuoFC",
+            "undelegateA": "5DU8gNMMfhEDBGVHoCUCWvk9fe1JDLiXybW5fMZBiUJb7mosQz8JEBa8qyJoEfXmJvUQiXLXTMMzPdZSmEKz3vd7",
+            "undelegateB": "jLMYkYkgrBASKoCKLw5obGLDUBPXtADgVUprsSxw2REJaBUqtHJUyyxMT8sxipVR3GCu591tS63M6es36ZboXw9",
+            "withdraw": "3Z5JLGmWEwq28Kpv64aDigMSx6Hde1zgdCCvKdJxWsMGtawZa37ZRmRAMCWi9kgecg9iHGrZbpAKnpyh1CbAD7Mw"
+          },
+          "custodies": {
+            "A": "AqeAcW5Dk8N4m42bmWYjGKZe1Ymmt7WQWXTDEH4k7RgQ",
+            "B": "2n5hX6wVcXwcM86AFVrK5EfXYARaNVVeCkCMK8yDK2vU"
+          }
+        },
+        "wsol": {
+          "sigs": {
+            "create": "T4JeWCfoPbabgV9BXBghYgbTJXE2EyHRxwSkpyt5EzH3QCDxqMS3DTasZ7tDvPwaV5tyhG4knp5t2G3LxtqSkuo",
+            "fund": "4Q5zPj7ZF41GsoQNNZXVPUXH8FmVLCNh2jXHSk7ySq2UpJw6jr9JHSNoGtPW2W2sPQ5ayc1XEB9uDUhhBv5nWKBk",
+            "transfer": "4M8FebsVdiBDiEuvHwS7GsoLe9b4gvtx9NYNBTwik3nE29nggzEBb76AV3Y6NmG7JBZw7oYpu6Uh2ruDKkgTzDaz",
+            "undelegateA": "KaS3JMHN7gXt9rfQnKSqx1ypVkbHYnk8n6ft6zumc5Cczg33FRKtdevDxaFDUrauoBuLhQGmrDrYbubmL2x2Vmj",
+            "undelegateB": "kiaNGirvgpvqZV3PeUqdCWzCcT3kjnvXntb3K8VxpHja8HN8gqsPWx7fMkTNxQAT4KvURvVwQdXdd6xcCdwJnDn",
+            "withdraw": "54JUqNeJ3EKoGBLvW66fFKfQZ9bM1ogADNdiuY2RintKiwFdfF672xUA2KPoUkvWY5uRCoBubAtje5Phc8JpRDSU"
+          },
+          "custodies": {
+            "A": "K6bRdbfYRqy5f8T8cG7hsTkqJFfc468mRnjx72Shqi5",
+            "B": "7UvhXjLau1UGBuyS7AA1hFyBCKYJZTUz9cPYc3ehrSkQ"
+          }
+        }
+      },
+      "failed": [],
+      "checks": {
+        "usdc:global-vault-exists": {
+          "ok": true,
+          "detail": {
+            "vault": "EiV97BPvmJzP4kzy28ciqddhQW864Wit3r3zYiLXARjG"
+          }
+        },
+        "usdc:deposit-and-delegate": {
+          "ok": true,
+          "detail": {
+            "walletBefore": "1379900",
+            "walletAfter": "1279900",
+            "eataA": "100000"
+          }
+        },
+        "usdc:custody-balance-hidden-in-er": {
+          "ok": true,
+          "detail": {
+            "authority": "0",
+            "outsider": "0",
+            "truth": "60000"
+          }
+        },
+        "usdc:exact-after-er-transfer": {
+          "ok": true,
+          "detail": {
+            "A": "60000",
+            "B": "40000",
+            "moved": "40000"
+          }
+        },
+        "usdc:exact-round-trip": {
+          "ok": true,
+          "detail": {
+            "start": "1379900",
+            "end": "1379900"
+          }
+        },
+        "wsol:global-vault-exists": {
+          "ok": true,
+          "detail": {
+            "vault": "8hJLJSY3xoAhQrT1jmJ3tN94VhcrtVc1iasZEP9aVLA4"
+          }
+        },
+        "wsol:deposit-and-delegate": {
+          "ok": true,
+          "detail": {
+            "walletBefore": "11561859",
+            "walletAfter": "1561859",
+            "eataA": "10000000"
+          }
+        },
+        "wsol:custody-balance-hidden-in-er": {
+          "ok": true,
+          "detail": {
+            "authority": "0",
+            "outsider": "0",
+            "truth": "6000000"
+          }
+        },
+        "wsol:exact-after-er-transfer": {
+          "ok": true,
+          "detail": {
+            "A": "6000000",
+            "B": "4000000",
+            "moved": "4000000"
+          }
+        },
+        "wsol:exact-round-trip": {
+          "ok": true,
+          "detail": {
+            "start": "11561859",
+            "end": "11561859"
+          }
+        }
+      }
     }
   }
 }
