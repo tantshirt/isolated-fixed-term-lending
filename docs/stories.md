@@ -168,3 +168,160 @@ Build the screens in [design-and-experience.md](design-and-experience.md). Light
 ### Story 7.2. Devnet, indexer, fuzz
 
 Deploy to devnet with the real USDC and wSOL mints and a real Pyth update. An indexer and Trident fuzzing come after the deploy is reproducible, not before.
+
+## Epic 8. Private protocol: compatibility and privacy proof
+
+Private lane. This is a gate, not a feature. Each story records PASS or FAIL with raw evidence (signatures, RPC dumps) in [magicblock-evidence.md](magicblock-evidence.md). A failed gate keeps its feature unavailable. It never switches the feature to public execution and never weakens the Pyth checks.
+
+### Story 8.1. Pin the toolchain
+
+A new `private_loan` program builds in the `isolated_loan/` workspace beside the public program, with its own program id.
+
+Acceptance:
+
+- `anchor build` builds both programs with `ephemeral-rollups-sdk` 0.17.3 (feature `anchor`) on the existing anchor-lang 1.x and Rust 1.89.
+- The SDK, delegation, permission, eSPL, Hydra, and TEE validator ids are pinned in one constants file and in the evidence file.
+- `session-keys` builds under anchor 1.x, or the evidence records why not and Lendspan uses its own scoped session account instead.
+
+### Story 8.2. TEE auth and permissions
+
+Acceptance:
+
+- A script verifies the Devnet TEE attestation and obtains an auth token before sending any private request.
+- A permissioned, delegated account is readable by a member.
+- An outsider gets no contents through `getAccountInfo`, `getProgramAccounts`, `accountSubscribe`, or transaction logs.
+
+### Story 8.3. ER-only accounts
+
+Acceptance:
+
+- A record created with `#[ephemeral_accounts]` never appears on the base layer, before or after commit and undelegate of its neighbours.
+- The behaviour of that record across a validator restart is recorded, whatever it is.
+
+### Story 8.4. Program-controlled eSPL custody
+
+Acceptance:
+
+- A program PDA owns an eATA for Devnet USDC and one for wSOL.
+- Deposit, delegate, a PDA-signed transfer inside the ER, and withdraw all succeed with exact balances.
+
+### Story 8.5. Canonical Pyth inside the PER
+
+Acceptance:
+
+- The shared Pyth check reads the cloned Pyth Receiver `PriceUpdateV2` (owner `rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ`) inside the TEE.
+- A stale clone fails with `StalePrice`.
+- The MagicBlock pricing oracle is not accepted in its place.
+
+### Story 8.6. Private scheduled execution
+
+Acceptance:
+
+- A Hydra crank calls a permissionless instruction on a private account.
+- The scheduler operator holds no read permission on that account.
+- A retry after the account has settled does nothing.
+
+### Story 8.7. Commit visibility
+
+Acceptance:
+
+- The base-layer commit of a permissioned account is inspected, and what it exposes is written down.
+- Any plaintext leak of terms or identities blocks the dependent feature.
+
+## Epic 9. Private foundation
+
+Private lane. Only features whose Epic 8 gate passed.
+
+### Story 9.1. Shared loan core
+
+The loan math and the Pyth check move into `isolated_loan/crates/loan-core`. Both programs use it.
+
+Acceptance:
+
+- `npm run test:rust` and `npm run test:litesvm` pass with no change to the public program's behaviour.
+- The worked-example vectors live in one file that the Rust and TypeScript tests both read.
+
+### Story 9.2. Rooms, invitations, and scoped sessions
+
+Acceptance:
+
+- Opening a room creates the room, its permission, and its delegation in one transaction.
+- Seeds use opaque random ids, never wallets or terms.
+- Only the primary wallet can invite or revoke. A link alone grants nothing.
+- A session key can post a message but cannot fund, accept, repay, withdraw, grant access, or approve a disclosure.
+- An expired or revoked session fails.
+
+### Story 9.3. Private balances
+
+Acceptance:
+
+- A user can deposit USDC, wrap and deposit wSOL, and withdraw to a reviewed destination.
+- Every externally built transaction is checked for programs, accounts, mint, amount, destination, fee payer, and network before the wallet signs.
+- Fees show separately from principal and interest.
+
+### Story 9.4. Execution receipts and recovery
+
+Acceptance:
+
+- A receipt records environment, intent, revision, ER signature, commit id, and base signature.
+- It shows "executed" separately from "settled".
+- An uncertain submission survives a reload and is reconciled without a second token movement.
+- A private request is never sent to a public endpoint.
+
+## Epic 10. Complete private loan
+
+### Story 10.1. Fund, accept, repay, cancel, expire, withdraw
+
+Acceptance:
+
+- Each loan has its own PDA-owned eATAs. No instruction can move another loan's balance.
+- Both approvals bind to the same terms revision. Any financial edit invalidates them.
+- Every vector in the public LiteSVM suite passes against `private_loan`: worked example, deadline boundaries, rounding, permissions, insufficient balance, and double-settlement rejection.
+- A full lifecycle runs on the Devnet TEE, and its signatures are recorded.
+
+## Epic 11. Discovery and AI
+
+### Story 11.1. Discovery cards and competing proposals
+
+Acceptance:
+
+- A public card holds only the fields the publisher selected.
+- A competing lender sees their own proposal and the disclosed request, never another lender's.
+- Accepting one funded offer invalidates the selection of the others. Unused funded offers stay cancellable.
+
+### Story 11.2. AI request and callback
+
+Acceptance:
+
+- The user sees the exact excerpt, provider, and model before anything is sent.
+- The request binds the payload hash, approval, and terms revision.
+- A forged, duplicate, late, or stale callback cannot modify the current draft.
+- Model output never changes loan status, prices, eligibility, or settlement.
+
+## Epic 12. Automated settlement
+
+### Story 12.1. Expiry tasks and liquidation tickets
+
+Acceptance:
+
+- Expiry runs from a permissionless crank with fixed destinations, and it is harmless after settlement.
+- A liquidator funds a ticket from a short-lived quote without reading the loan.
+- Execution rechecks price, status, deadline, and limits. It settles once, or the ticket becomes refundable.
+- The Devnet liquidator's capital is separate from user deposits.
+
+### Story 12.2. Magic Actions receipts
+
+Acceptance:
+
+- A minimal receipt is posted on settlement.
+- A direct, forged, or duplicate action call fails.
+
+## Epic 13. Optional integrations and polish
+
+### Story 13.1. Transfers, sponsorship, lab, and accessibility
+
+Acceptance:
+
+- Private transfers and gas sponsorship are bounded and never change approved financial contents.
+- `/devnet/lab` VRF scenarios and SOAR achievements are opt-in and confer no loan advantage.
+- Keyboard, mobile, wallet switching, and rejected signatures all work on `/devnet/private`.

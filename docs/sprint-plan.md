@@ -42,6 +42,30 @@ Days 2 through 7 follow the tables. At the end of each day, both lanes read the 
 | [7.1 Interface](stories.md) | Done |
 | [7.2 Devnet, indexer, fuzz](stories.md) | Open |
 
+## Private lane
+
+MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts only when the gate it depends on has passed in [magicblock-evidence.md](magicblock-evidence.md).
+
+| Order | Story | Status |
+| --- | --- | --- |
+| 1 | [8.1 Pin the toolchain](stories.md) | Open |
+| 2 | [9.1 Shared loan core](stories.md) | Open |
+| 3 | [8.2 TEE auth and permissions](stories.md) | Open |
+| 4 | [8.3 ER-only accounts](stories.md) | Open |
+| 5 | [8.4 Program-controlled eSPL custody](stories.md) | Open |
+| 6 | [8.5 Canonical Pyth inside the PER](stories.md) | Open |
+| 7 | [8.6 Private scheduled execution](stories.md) | Open |
+| 8 | [8.7 Commit visibility](stories.md) | Open |
+| 9 | [9.2 Rooms, invitations, and scoped sessions](stories.md) | Open |
+| 10 | [9.3 Private balances](stories.md) | Open |
+| 11 | [9.4 Execution receipts and recovery](stories.md) | Open |
+| 12 | [10.1 Fund, accept, repay, cancel, expire, withdraw](stories.md) | Open |
+| 13 | [11.1 Discovery cards and competing proposals](stories.md) | Open |
+| 14 | [11.2 AI request and callback](stories.md) | Open |
+| 15 | [12.1 Expiry tasks and liquidation tickets](stories.md) | Open |
+| 16 | [12.2 Magic Actions receipts](stories.md) | Open |
+| 17 | [13.1 Transfers, sponsorship, lab, and accessibility](stories.md) | Open |
+
 ## Notes
 
 - Program and UI live under `isolated_loan/` and `app/`. Outcome scripts: `npm run script:repay|liquidate|expire` in `isolated_loan/`.
