@@ -22,24 +22,38 @@ const programFor = (base: Connection, signer?: LoanSigner) =>
 export const joinQueuePda = (room: PublicKey) => PublicKey.findProgramAddressSync([enc.encode("join-queue"), room.toBytes()], PRIVATE_PROGRAM_ID)[0];
 const cardPda = (id: Uint8Array) => PublicKey.findProgramAddressSync([enc.encode("card"), id], PRIVATE_PROGRAM_ID)[0];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toCard(address: PublicKey, a: any): Card {
+  return {
+    address,
+    room: a.room,
+    publisher: a.publisher,
+    fields: {
+      show: a.fields.show,
+      amountMin: BigInt(a.fields.amountMin.toString()),
+      amountMax: BigInt(a.fields.amountMax.toString()),
+      maxInterestBps: a.fields.maxInterestBps,
+      durationSeconds: a.fields.durationSeconds.toNumber(),
+      collateralNote: new TextDecoder().decode(Uint8Array.from(a.fields.collateralNote)).replace(/\0+$/, ""),
+    },
+  };
+}
+
 /** Every published card. Only fields the publisher chose are non-zero. */
 export async function listCards(base: Connection): Promise<Card[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const all = await (programFor(base).account as any).discoveryCard.all();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return all.map((c: any) => ({
-    address: c.publicKey,
-    room: c.account.room,
-    publisher: c.account.publisher,
-    fields: {
-      show: c.account.fields.show,
-      amountMin: BigInt(c.account.fields.amountMin.toString()),
-      amountMax: BigInt(c.account.fields.amountMax.toString()),
-      maxInterestBps: c.account.fields.maxInterestBps,
-      durationSeconds: c.account.fields.durationSeconds.toNumber(),
-      collateralNote: new TextDecoder().decode(Uint8Array.from(c.account.fields.collateralNote)).replace(/\0+$/, ""),
-    },
-  }));
+  return all.map((c: any) => toCard(c.publicKey, c.account));
+}
+
+/** Decodes a card from a subscription. Null for any other layout. */
+export function decodeCard(base: Connection, address: PublicKey, data: Buffer): Card | null {
+  try {
+    return toCard(address, programFor(base).coder.accounts.decode("discoveryCard", data));
+  } catch {
+    return null;
+  }
 }
 
 async function sendEr(er: Connection, signer: LoanSigner, tx: Transaction, intent: string) {

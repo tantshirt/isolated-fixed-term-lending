@@ -59,6 +59,8 @@ export const BRAND = {
 export const OFFER_SEED = Buffer.from("offer");
 export const USDC_VAULT_SEED = Buffer.from("usdc-vault");
 export const WSOL_VAULT_SEED = Buffer.from("wsol-vault");
+export const REQUEST_SEED = Buffer.from("request");
+export const REQUEST_WSOL_VAULT_SEED = Buffer.from("request-wsol");
 
 export const STORAGE_KEYS = {
   role: `isolated-loan-active-role:${NETWORK}:${PROGRAM_ID.toBase58()}`,

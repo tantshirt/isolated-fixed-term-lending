@@ -39,7 +39,7 @@ export type Offer = {
 
 const DEFAULT_KEY = PublicKey.default.toBase58();
 
-function readOnlyProgram(connection: Connection): Program<Idl> {
+export function readOnlyProgram(connection: Connection): Program<Idl> {
   // Reads need no signer; Anchor only asks the wallet for a public key.
   const provider = new AnchorProvider(
     connection,
@@ -118,4 +118,21 @@ export async function fetchOfferByKey(
 ): Promise<Offer | null> {
   const a = await offerNamespace(connection).fetchNullable(key);
   return a ? toOffer(key, a) : null;
+}
+
+/** Decodes a raw account from a subscription. Null for other mints or layouts. */
+export function decodeOffer(
+  connection: Connection,
+  key: PublicKey,
+  data: Buffer
+): Offer | null {
+  try {
+    const a = readOnlyProgram(connection).coder.accounts.decode<OfferAccount>(
+      "offer",
+      data
+    );
+    return supportedOfferMints(a) ? toOffer(key, a) : null;
+  } catch {
+    return null;
+  }
 }

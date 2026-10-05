@@ -54,6 +54,24 @@ export type OfferAccount = {
   bump: number;
 };
 
+export type RequestAccount = {
+  borrower: PublicKey;
+  requestId: BN;
+  usdcMint: PublicKey;
+  wsolMint: PublicKey;
+  principal: BN;
+  interestBps: number;
+  durationSeconds: BN;
+  collateralAmount: BN;
+  maxLtvBps: number;
+  liquidationLtvBps: number;
+  createdTs: BN;
+  status: Record<string, unknown>;
+  lender: PublicKey;
+  offer: PublicKey;
+  bump: number;
+};
+
 export function offerStatusKey(status: Record<string, unknown>): string {
   return Object.keys(status)[0] ?? "unknown";
 }

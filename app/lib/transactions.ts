@@ -10,7 +10,13 @@ import {
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { asSigner, type LoanSigner } from "./keypair-wallet";
 import { bnU64, getProgram } from "./program";
-import { offerPda, usdcVaultPda, wsolVaultPda } from "./pda";
+import {
+  offerPda,
+  requestPda,
+  requestVaultPda,
+  usdcVaultPda,
+  wsolVaultPda,
+} from "./pda";
 
 type AnySigner = Keypair | LoanSigner;
 
@@ -237,6 +243,123 @@ export async function sendCloseOffer(
   return getProgram(signer)
     .methods.closeOffer()
     .accountsPartial({ lender: signer.publicKey, offer })
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
+}
+
+export type CreateRequestParams = Omit<CreateOfferParams, "offerId"> & {
+  requestId: bigint;
+};
+
+/** Borrower locks collateral and posts terms. Creates the borrower's USDC account so funding can pay into it. */
+export async function sendCreateRequest(
+  borrowerSigner: AnySigner,
+  params: CreateRequestParams
+): Promise<{ request: PublicKey; signature: string }> {
+  if (
+    !IS_LOCAL &&
+    (!params.usdcMint.equals(DEVNET_USDC_MINT) ||
+      !params.wsolMint.equals(NATIVE_WSOL_MINT))
+  )
+    throw new Error(
+      "Devnet requests require canonical Devnet USDC and native wSOL"
+    );
+  const signer = asSigner(borrowerSigner);
+  const borrower = signer.publicKey;
+  const request = requestPda(borrower, params.requestId);
+  const signature = await getProgram(signer)
+    .methods.createRequest(
+      bnU64(params.requestId),
+      bnU64(params.principal),
+      params.interestBps,
+      bnU64(params.durationSeconds),
+      bnU64(params.collateralAmount),
+      params.maxLtvBps,
+      params.liquidationLtvBps
+    )
+    .accountsPartial({
+      borrower,
+      request,
+      usdcMint: params.usdcMint,
+      wsolMint: params.wsolMint,
+      requestVault: requestVaultPda(request),
+      borrowerWsol: getAssociatedTokenAddressSync(params.wsolMint, borrower),
+      borrowerUsdc: getAssociatedTokenAddressSync(params.usdcMint, borrower),
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .preInstructions([ensureAta(borrower, borrower, params.usdcMint)])
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
+  return { request, signature };
+}
+
+export async function sendCancelRequest(
+  borrowerSigner: AnySigner,
+  request: PublicKey,
+  wsolMint: PublicKey
+): Promise<string> {
+  const signer = asSigner(borrowerSigner);
+  const borrower = signer.publicKey;
+  return getProgram(signer)
+    .methods.cancelRequest()
+    .accountsPartial({
+      borrower,
+      request,
+      requestVault: requestVaultPda(request),
+      borrowerWsol: getAssociatedTokenAddressSync(wsolMint, borrower),
+      tokenProgram: TOKEN_PROGRAM_ID,
+    })
+    .preInstructions([ensureAta(borrower, borrower, wsolMint)])
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
+}
+
+/** Lender funds an open request. The result is a filled offer at `offerPda(lender, offerId)`. */
+export async function sendFundRequest(
+  lenderSigner: AnySigner,
+  request: PublicKey,
+  borrower: PublicKey,
+  offerId: bigint,
+  usdcMint: PublicKey,
+  wsolMint: PublicKey,
+  priceUpdate: PublicKey
+): Promise<{ offer: PublicKey; signature: string }> {
+  const signer = asSigner(lenderSigner);
+  const lender = signer.publicKey;
+  const offer = offerPda(lender, offerId);
+  const signature = await getProgram(signer)
+    .methods.fundRequest(bnU64(offerId))
+    .accountsPartial({
+      lender,
+      request,
+      borrower,
+      priceUpdate,
+      offer,
+      wsolMint,
+      requestVault: requestVaultPda(request),
+      wsolVault: wsolVaultPda(offer),
+      lenderUsdc: getAssociatedTokenAddressSync(usdcMint, lender),
+      borrowerUsdc: getAssociatedTokenAddressSync(usdcMint, borrower),
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction()
+    .then((tx) => submitTransaction(getConnection(), signer, tx));
+  return { offer, signature };
+}
+
+/** Borrower reclaims the request account's rent once it is funded or cancelled. */
+export async function sendCloseRequest(
+  borrowerSigner: AnySigner,
+  request: PublicKey
+): Promise<string> {
+  const signer = asSigner(borrowerSigner);
+  return getProgram(signer)
+    .methods.closeRequest()
+    .accountsPartial({ borrower: signer.publicKey, request })
     .transaction()
     .then((tx) => submitTransaction(getConnection(), signer, tx));
 }

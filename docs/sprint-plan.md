@@ -73,7 +73,7 @@ Borrower-posted public requests and a top-level Discover page. Each story ships 
 | Order | Story | Status |
 | --- | --- | --- |
 | 1 | [14.1 Borrower requests](stories.md) | Done |
-| 2 | [14.2 Client and live reads](stories.md) | Open |
+| 2 | [14.2 Client and live reads](stories.md) | Done |
 | 3 | [14.3 Discover page](stories.md) | Open |
 | 4 | [14.4 Request a loan](stories.md) | Open |
 
@@ -93,3 +93,4 @@ Borrower-posted public requests and a top-level Discover page. Each story ships 
 - 2026-10-05: Phase 3 done (11.1, 11.2). The copilot runs as a Vercel Function through AI Gateway (budgeted key); no Docker or separate worker. The oracle pattern lives in `private_loan/src/ai.rs`, not a separate program, which saves a deployment.
 - 2026-10-05: Phase 4 done (12.1 live expiry plus LiteSVM liquidation; 12.2 live receipt). Vercel Cron triggers the cranker every minute; its key and `CRON_SECRET` are Vercel env vars.
 - 2026-10-06: Story 14.1 done. `LoanRequest` is a separate account, so existing Devnet offers keep deserializing; funding creates a normal filled `Offer`. The program grows from 368,160 to 476,952 bytes, so the Devnet upgrade needs `solana program extend` by about 109 KB first.
+- 2026-10-06: Program upgraded on Devnet with the request instructions ([upgrade](https://explorer.solana.com/tx/3K5WSc7vQ6mPGEbohBxWxqsRmHcSkv5HZhtGVZCLBtxbtAFa1dqoz711ZUguWhtfE2jof2PkpohcuGppWrewsVJo?cluster=devnet)); program data extended by 110,000 bytes first. Story 14.2 done: `lib/requests.ts`, request senders in `lib/transactions.ts`, `lib/request-service.ts`, and `lib/client/live.ts` (account subscriptions with a slot heartbeat, polling fallback). Create, cancel and close were proven on Devnet ([evidence](devnet-request-evidence.json)); funding waits on a Hermes API key because public Hermes now returns 401.

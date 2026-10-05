@@ -2,6 +2,8 @@ import { PublicKey } from "@solana/web3.js";
 import {
   OFFER_SEED,
   PROGRAM_ID,
+  REQUEST_SEED,
+  REQUEST_WSOL_VAULT_SEED,
   USDC_VAULT_SEED,
   WSOL_VAULT_SEED,
 } from "./constants";
@@ -36,6 +38,22 @@ export function usdcVaultPda(offer: PublicKey): PublicKey {
 export function wsolVaultPda(offer: PublicKey): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [WSOL_VAULT_SEED, offer.toBuffer()],
+    PROGRAM_ID,
+  );
+  return pda;
+}
+
+export function requestPda(borrower: PublicKey, requestId: bigint): PublicKey {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [REQUEST_SEED, borrower.toBuffer(), u64Le(requestId)],
+    PROGRAM_ID,
+  );
+  return pda;
+}
+
+export function requestVaultPda(request: PublicKey): PublicKey {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [REQUEST_WSOL_VAULT_SEED, request.toBuffer()],
     PROGRAM_ID,
   );
   return pda;
