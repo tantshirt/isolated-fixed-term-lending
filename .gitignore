@@ -19,3 +19,4 @@ isolated_loan/.local/
 isolated_loan/target/
 isolated_loan/node_modules/
 app/node_modules/
+.vercel

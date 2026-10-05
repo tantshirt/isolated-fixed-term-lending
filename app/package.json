@@ -40,6 +40,7 @@
   "overrides": {
     "jito-ts": {
       "@solana/web3.js": "1.99.0"
-    }
+    },
+    "rpc-websockets": "9.1.3"
   }
 }

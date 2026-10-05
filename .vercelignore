@@ -1,0 +1,10 @@
+# Only the Next.js app in app/ is built on Vercel.
+isolated_loan/target
+isolated_loan/node_modules
+isolated_loan/test-ledger
+isolated_loan/.surfpool
+**/node_modules
+.design-council/vendor
+docs/brand/originals
+.local
+app/.local
