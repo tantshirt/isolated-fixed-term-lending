@@ -129,3 +129,20 @@ Coverage note: signed-in steps 2–4 were not screenshot-verified (headless brow
 | Each step's Continue is disabled with its reason (borrower, amount, 0–20%, LTV ≤ 70%) | Fovea | Same rules as the old form, surfaced per step instead of a silent disabled submit. |
 
 Coverage note: verified through a temporary preview harness (deleted before commit) at 375 and 1280px, all four steps, no horizontal overflow. The live propose round-trip was not re-run (headless cannot sign a TEE login); `proposeLoan` and its arguments are unchanged.
+
+## Discover marketplace, Epic 14 (2026-10-06)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Discover splits first by side (Borrowers asking / Lenders offering), then venue (Public / Private), both kept in the URL | Sally / Hollis | One place for both sides of the market; deep links and Back keep working. |
+| Private lenders get an explanation and two ways forward, never an invented listing | Sol / Plumb | Private lender terms live in sealed rooms; a fake row would claim data that does not exist. |
+| The live badge says Live / Refreshing every 15 s / Devnet unreachable in words, tone second | Fovea / Kestrel | Status needs words; an unreachable network is not an empty list. |
+| Filters keep cards with withheld fields and sort them last | Plumb | Hiding a card for a withheld field would penalise privacy and imply a value. |
+| The request wizard starts with public or private, then reuses Create's four steps from the borrower's side with a Lender's view summary | Sally / Indigo | Step zero from the brief; one wizard vocabulary for lending and borrowing. |
+| Wrapping SOL is its own button; posting stays disabled while the wallet is short of wSOL | Plumb / Fovea | Wrapping is never a silent step inside posting. |
+| The fund panel says before the click that a stale price means a fresh price post and extra signatures | Plumb | Oracle refresh signatures are announced, not a surprise. |
+| Request terms say "Term, from funding" and "Max LTV at funding" | Sol / Plumb | The clock and the LTV check both start at funding, not at posting. |
+| Under 860px, offer and request rows show their labelled figures below the amount | Fovea / Sol | Phones keep the figures needed to decide before tapping. |
+| List and status transitions are 0.2 s with no layout animation on rows | Nils | A 15-second refresh must not make the list shift. |
+
+Applied council findings: native button reset on the explainer, labelled row figures on phones, translated wallet errors on Ask to join, `num` only on figures, 44px link targets, 0.2 s transitions. Coverage note: Playwright at 390, 820 and 1440px on all Discover views, the request page and the wizard, signed out. Signed-in funding was not run in a browser; Devnet funding waits on a Hermes API key (see [devnet.md](../docs/devnet.md)).

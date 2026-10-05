@@ -82,7 +82,7 @@ function Loaded({ requestKey }: { requestKey: string }) {
             className={styles.title}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             {request.status === "open" ? `Borrow ${formatUsdc(request.principal)} USDC` : requestStatusTitle(request.status)}
           </m.h1>
@@ -92,7 +92,7 @@ function Loaded({ requestKey }: { requestKey: string }) {
                 className={styles.moved}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
               >
                 <span className={styles.movedMark} aria-hidden>
                   <LogoMark size={18} progress={1} />
@@ -159,13 +159,13 @@ function Figures({ request: r, lenderView }: { request: LoanRequest; lenderView:
 }
 
 function Terms({ request: r }: { request: LoanRequest }) {
-  const rows: [string, string, "num" | "address"][] = [
+  const rows: [string, string, "num" | "address" | ""][] = [
     ["Interest for the whole term", formatBpsAsPercent(r.interestBps, 2), "num"],
     ["Term, from funding", formatDuration(r.durationSeconds), "num"],
     ["Max LTV at funding", formatBpsAsPercent(r.maxLtvBps), "num"],
     ["Liquidation LTV", formatBpsAsPercent(r.liquidationLtvBps), "num"],
     ["Borrower", shortKey(r.borrower), "address"],
-    ["Lender", r.lender ? shortKey(r.lender) : "Not funded yet", r.lender ? "address" : "num"],
+    ["Lender", r.lender ? shortKey(r.lender) : "Not funded yet", r.lender ? "address" : ""],
     ["Request account", shortKey(r.publicKey), "address"],
   ];
   return (

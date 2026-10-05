@@ -5,6 +5,9 @@
 }
 
 .back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   justify-self: start;
   padding: 0.25rem 0.5rem;
   margin-left: -0.5rem;
@@ -103,6 +106,9 @@
 }
 
 .textLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   align-self: center;
   padding: 0.375rem 0.625rem;
   border-radius: 8px;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { TeeCard } from "@/components/private/TeeCard";
 import { Button } from "@/components/ui/Button";
+import { messageFromAnchorError } from "@/lib/anchor-errors";
 import { formatBpsAsPercent, formatDuration, formatUsdc } from "@/lib/format";
 import { SHOW, requestJoin, type Card } from "@/lib/private/discovery";
 import { usePrivate } from "@/lib/private/use-private";
@@ -39,15 +40,15 @@ export function PrivateCardList({ cards }: { cards: Card[] }) {
               <dl className={styles.cardFields}>
                 <div>
                   <dt>Amount</dt>
-                  <dd className="num">{f.show & SHOW.amount ? `${formatUsdc(f.amountMax)} USDC` : NOT_SHARED}</dd>
+                  <dd>{f.show & SHOW.amount ? <span className="num">{`${formatUsdc(f.amountMax)} USDC`}</span> : NOT_SHARED}</dd>
                 </div>
                 <div>
                   <dt>Interest</dt>
-                  <dd className="num">{f.show & SHOW.rate ? `Up to ${formatBpsAsPercent(f.maxInterestBps)}` : NOT_SHARED}</dd>
+                  <dd>{f.show & SHOW.rate ? <span className="num">{`Up to ${formatBpsAsPercent(f.maxInterestBps)}`}</span> : NOT_SHARED}</dd>
                 </div>
                 <div>
                   <dt>Term</dt>
-                  <dd className="num">{f.show & SHOW.duration ? formatDuration(f.durationSeconds) : NOT_SHARED}</dd>
+                  <dd>{f.show & SHOW.duration ? <span className="num">{formatDuration(f.durationSeconds)}</span> : NOT_SHARED}</dd>
                 </div>
                 <div>
                   <dt>Collateral</dt>
@@ -74,7 +75,7 @@ export function PrivateCardList({ cards }: { cards: Card[] }) {
                       await requestJoin(base, er, signer, c.room);
                       setAsked((a) => ({ ...a, [key]: "done" }));
                     } catch (e) {
-                      setAsked((a) => ({ ...a, [key]: e instanceof Error ? e.message : "Could not ask" }));
+                      setAsked((a) => ({ ...a, [key]: messageFromAnchorError(e) }));
                     }
                   }}
                 >
