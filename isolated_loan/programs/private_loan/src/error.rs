@@ -46,6 +46,24 @@ pub enum PrivateLoanError {
     SessionExpired,
     #[msg("Message must be 1 to 140 bytes")]
     MessageTooLong,
+    #[msg("Loan does not belong to this room")]
+    WrongRoom,
+    #[msg("Signer is not this loan's lender")]
+    NotLender,
+    #[msg("Signer is not this loan's borrower")]
+    NotBorrower,
+    #[msg("Loan is not in the required status")]
+    WrongStatus,
+    #[msg("Terms changed since this approval; review the current revision")]
+    StaleRevision,
+    #[msg("Token account is not the expected one for this party and mint")]
+    WrongTokenAccount,
+    #[msg("Collateral is insufficient for the max LTV at the current price")]
+    InsufficientCollateral,
+    #[msg("Loan is expired; it can only be claimed")]
+    LoanExpired,
+    #[msg("Loan is not expired yet")]
+    LoanNotExpired,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

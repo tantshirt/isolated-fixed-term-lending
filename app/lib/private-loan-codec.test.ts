@@ -1,0 +1,33 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { Keypair } from "@solana/web3.js";
+import { decodeLoanTerms } from "./private/loan-codec";
+
+test("loan terms decode the worked example", () => {
+  const lender = Keypair.generate().publicKey;
+  const borrower = Keypair.generate().publicKey;
+  const data = new Uint8Array(1 + 32 + 32 + 8 + 2 + 8 + 8 + 2 + 2 + 4 + 4 + 4 + 1 + 8 + 8);
+  const v = new DataView(data.buffer);
+  let o = 0;
+  data[o++] = 1;
+  data.set(lender.toBytes(), o); o += 32;
+  data.set(borrower.toBytes(), o); o += 32;
+  v.setBigUint64(o, 100_000_000n, true); o += 8;
+  v.setUint16(o, 500, true); o += 2;
+  v.setBigInt64(o, 604_800n, true); o += 8;
+  v.setBigUint64(o, 1_001_001_002n, true); o += 8;
+  v.setUint16(o, 7000, true); o += 2;
+  v.setUint16(o, 8000, true); o += 2;
+  v.setUint32(o, 2, true); o += 4;
+  v.setUint32(o, 2, true); o += 4;
+  v.setUint32(o, 0, true); o += 4;
+  data[o++] = 1;
+  v.setBigInt64(o, 0n, true); o += 8;
+  v.setBigInt64(o, 0n, true);
+  const t = decodeLoanTerms(data);
+  assert.ok(t.lender.equals(lender) && t.borrower.equals(borrower));
+  assert.equal(t.principal, 100_000_000n);
+  assert.equal(t.collateralAmount, 1_001_001_002n);
+  assert.equal(t.revision, 2);
+  assert.equal(t.status, "funded");
+});

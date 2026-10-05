@@ -11,12 +11,14 @@ pub mod constants;
 pub mod custody;
 pub mod error;
 pub mod espl;
+pub mod loan;
 pub mod probe;
 pub mod record;
 pub mod room;
 pub mod schedule;
 
 use custody::*;
+use loan::*;
 use probe::*;
 use record::*;
 use room::*;
@@ -107,6 +109,51 @@ pub mod private_loan {
     /// Ephemeral rollup. A member, or a session with post scope, posts a message.
     pub fn post_message(ctx: Context<PostMessage>, body: Vec<u8>) -> Result<()> {
         room::post_message(ctx, body)
+    }
+
+    /// Base layer. Creates the loan anchor and its two empty, delegated eATAs.
+    pub fn create_loan(ctx: Context<CreateLoan>, loan_id: [u8; 32]) -> Result<()> {
+        loan::create_loan(ctx, loan_id)
+    }
+
+    /// Base layer. Delegates the loan anchor (same transaction as `create_loan`).
+    pub fn delegate_loan(ctx: Context<DelegateLoan>, loan_id: [u8; 32]) -> Result<()> {
+        loan::delegate_loan(ctx, loan_id)
+    }
+
+    /// Ephemeral rollup. Lender proposes exact terms to a borrower in the same room.
+    pub fn propose_terms(ctx: Context<ProposeTerms>, args: TermsArgs) -> Result<()> {
+        loan::propose_terms(ctx, args)
+    }
+
+    /// Ephemeral rollup. Lender edits terms before funding; the revision moves.
+    pub fn edit_terms(ctx: Context<EditTerms>, args: TermsArgs) -> Result<()> {
+        loan::edit_terms(ctx, args)
+    }
+
+    /// Ephemeral rollup. Lender locks the principal for `revision`.
+    pub fn fund_loan(ctx: Context<LenderMoves>, revision: u32) -> Result<()> {
+        loan::fund_loan(ctx, revision)
+    }
+
+    /// Ephemeral rollup. Lender cancels before acceptance; principal returns.
+    pub fn cancel_loan(ctx: Context<LenderMoves>) -> Result<()> {
+        loan::cancel_loan(ctx)
+    }
+
+    /// Ephemeral rollup. Borrower accepts `revision`: collateral in, principal out.
+    pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32) -> Result<()> {
+        loan::accept_loan(ctx, revision)
+    }
+
+    /// Ephemeral rollup. Borrower repays the exact debt before the deadline.
+    pub fn repay_loan(ctx: Context<BorrowerMoves>) -> Result<()> {
+        loan::repay_loan(ctx)
+    }
+
+    /// Ephemeral rollup. Anyone, at or after the deadline: collateral to the lender.
+    pub fn claim_expired(ctx: Context<ClaimExpired>) -> Result<()> {
+        loan::claim_expired(ctx)
     }
 
     /// Base layer. Creates a custody PDA, its ATA, and its eATA.

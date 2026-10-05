@@ -19,7 +19,9 @@ import {
   type RoomView as RoomData,
 } from "@/lib/private/rooms";
 import { usePrivate } from "@/lib/private/use-private";
+import { LoanPanel } from "./LoanPanel";
 import { TeeCard } from "./TeeCard";
+import { LOAN_MESSAGE_PREFIX, loansInThread } from "@/lib/private/loans";
 import styles from "./private.module.css";
 
 const short = (k: PublicKey) => `${k.toBase58().slice(0, 4)}…${k.toBase58().slice(-4)}`;
@@ -145,7 +147,11 @@ export function RoomView({ roomId }: { roomId: string }) {
                     <span className={styles.messageMeta}>
                       {mine ? "You" : short(m.author)} · {new Date(m.ts * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                     </span>
-                    <span className={styles.bubble}>{m.body}</span>
+                    {m.body.startsWith(LOAN_MESSAGE_PREFIX) ? (
+                      <span className={`${styles.bubble} ${styles.loanRef}`}>Proposed a private loan · see Loans</span>
+                    ) : (
+                      <span className={styles.bubble}>{m.body}</span>
+                    )}
                   </li>
                 );
               })}
@@ -198,6 +204,17 @@ export function RoomView({ roomId }: { roomId: string }) {
           </section>
 
           <aside className={styles.side}>
+            {signer && er && (
+              <LoanPanel
+                signer={signer}
+                base={base}
+                er={er}
+                room={ref.anchor}
+                members={member.state.members}
+                loanIds={loansInThread(member.messages.map((m) => m.body))}
+                onChange={() => void load()}
+              />
+            )}
             <section className={styles.panel} aria-labelledby="members-h">
               <header className={styles.panelHead}>
                 <h2 id="members-h">Members</h2>
@@ -262,12 +279,6 @@ export function RoomView({ roomId }: { roomId: string }) {
                 {copied ? "Link copied" : "Copy room link"}
               </button>
               <p className={styles.hint}>The link only works for wallets you have invited.</p>
-            </section>
-            <section className={styles.panel}>
-              <header className={styles.panelHead}>
-                <h2>Loan terms</h2>
-              </header>
-              <p className={`${styles.muted} ${styles.panelBody}`}>Proposals and exact terms arrive with private loans in Phase 2.</p>
             </section>
           </aside>
         </div>

@@ -4,15 +4,23 @@ import type { Connection } from "@solana/web3.js";
 import { useCallback, useEffect, useState } from "react";
 import { AmountInput } from "@/components/ui/AmountInput";
 import { Button } from "@/components/ui/Button";
-import { DEVNET_USDC_MINT } from "@/lib/constants";
+import { DEVNET_USDC_MINT, NATIVE_WSOL_MINT } from "@/lib/constants";
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { depositPrivately, readPrivateBalance, withdrawPrivately, type PrivateBalanceState } from "@/lib/private/balances";
 import styles from "./private.module.css";
 
-const fmt = (atoms: bigint | null) =>
-  atoms === null ? "—" : (Number(atoms) / 1_000_000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+const TOKENS = {
+  USDC: { mint: DEVNET_USDC_MINT, decimals: 6, wallet: "In your wallet", hint: "Lenders lock USDC; borrowers receive and repay it." },
+  wSOL: { mint: NATIVE_WSOL_MINT, decimals: 9, wallet: "SOL available to wrap", hint: "Borrowers lock wSOL (wrapped SOL) as collateral. It is wrapped from your SOL as you deposit." },
+} as const;
+type TokenName = keyof typeof TOKENS;
+
+const fmt = (atoms: bigint | null, decimals: number) =>
+  atoms === null ? "—" : (Number(atoms) / 10 ** decimals).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: decimals });
 
 export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigner | null; base: Connection; er: Connection | null; onChange: () => void }) {
+  const [token, setToken] = useState<TokenName>("USDC");
+  const t = TOKENS[token];
   const [state, setState] = useState<PrivateBalanceState | null>(null);
   const [amount, setAmount] = useState("0.10");
   const [busy, setBusy] = useState<"deposit" | "withdraw" | null>(null);
@@ -21,16 +29,16 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
   const refresh = useCallback(async () => {
     if (!signer) return setState(null);
     try {
-      setState(await readPrivateBalance(base, er, signer.publicKey, DEVNET_USDC_MINT));
+      setState(await readPrivateBalance(base, er, signer.publicKey, t.mint));
     } catch {
       setState(null);
     }
-  }, [signer, base, er]);
+  }, [signer, base, er, t.mint]);
   useEffect(() => void refresh(), [refresh]);
 
   const atoms = (() => {
     const n = Number(amount);
-    return Number.isFinite(n) && n > 0 ? BigInt(Math.round(n * 1_000_000)) : 0n;
+    return Number.isFinite(n) && n > 0 ? BigInt(Math.round(n * 10 ** t.decimals)) : 0n;
   })();
 
   async function run(kind: "deposit" | "withdraw") {
@@ -38,8 +46,8 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
     setBusy(kind);
     setMessage(null);
     try {
-      if (kind === "deposit") await depositPrivately(base, er, signer, DEVNET_USDC_MINT, atoms);
-      else await withdrawPrivately(base, er, signer, DEVNET_USDC_MINT);
+      if (kind === "deposit") await depositPrivately(base, er, signer, t.mint, atoms);
+      else await withdrawPrivately(base, er, signer, t.mint);
       setMessage({ tone: "ok", text: kind === "deposit" ? "Deposited. Your balance is now private." : "Withdrawn to your wallet." });
       onChange();
       await refresh();
@@ -52,18 +60,31 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
 
   return (
     <div className={styles.panelBody}>
+      <div className={styles.roleChoice} role="radiogroup" aria-label="Token">
+        {(Object.keys(TOKENS) as TokenName[]).map((k) => (
+          <button type="button" key={k} role="radio" aria-checked={token === k} onClick={() => (setToken(k), setAmount(k === "USDC" ? "0.10" : "0.01"), setMessage(null))}>
+            {k}
+          </button>
+        ))}
+      </div>
       <dl className={styles.balances}>
         <div>
-          <dt>Private USDC</dt>
-          <dd className="num">{er ? fmt(state?.privateAmount ?? (state?.exists ? 0n : null)) : <span className={styles.pending}>Private until you sign in</span>}</dd>
+          <dt>Private {token}</dt>
+          <dd className="num">{er ? fmt(state?.privateAmount ?? (state?.exists ? 0n : null), t.decimals) : <span className={styles.pending}>Private until you sign in</span>}</dd>
         </div>
         <div>
-          <dt>In your wallet</dt>
-          <dd className="num">{fmt(state?.walletAmount ?? null)}</dd>
+          <dt>{t.wallet}</dt>
+          <dd className="num">{fmt(state?.walletAmount ?? null, t.decimals)}</dd>
         </div>
       </dl>
+      <p className={styles.hint}>{t.hint}</p>
+      {state?.loanBlocked && (
+        <p className={styles.error}>
+          This balance was made private with an older setting that private loans cannot use. Withdraw it to your wallet, then deposit again.
+        </p>
+      )}
       <div className={styles.depositRow}>
-        <AmountInput label="Amount" value={amount} onChange={setAmount} unit="USDC" decimals={6} />
+        <AmountInput label="Amount" value={amount} onChange={setAmount} unit={token} decimals={t.decimals} />
         <Button block onClick={() => run("deposit")} loading={busy === "deposit"} disabled={!er || atoms === 0n || atoms > (state?.walletAmount ?? 0n)}>
           Deposit privately
         </Button>

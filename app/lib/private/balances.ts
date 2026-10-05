@@ -1,14 +1,13 @@
 // A wallet's private balance (story 9.3), from the browser.
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import type { LoanSigner } from "@/lib/keypair-wallet";
+import { NATIVE_MINT, createAssociatedTokenAccountIdempotentInstruction, createSyncNativeInstruction } from "@solana/spl-token";
+import { SystemProgram } from "@solana/web3.js";
 import {
   DELEGATION_PROGRAM_ID,
   ESPL_PROGRAM_ID,
-  FLAG,
   ata,
-  createEataPermission,
   delegate,
-  delegateEataPermission,
   deposit,
   eataAmount,
   eataPda,
@@ -21,6 +20,8 @@ import { advance, newReceipt, saveReceipt } from "./receipts";
 import { assertDevnet, validateTransaction } from "./tx-validator";
 
 export type PrivateBalanceState = {
+  /** An explicit owner-only permission from an older deposit blocks private loans. */
+  loanBlocked: boolean;
   /** Private balance as the TEE reports it to the owner, when delegated. */
   privateAmount: bigint | null;
   /** True while the balance lives in the TEE. */
@@ -40,9 +41,12 @@ async function tokenAmount(c: Connection, account: PublicKey): Promise<bigint | 
 
 export async function readPrivateBalance(base: Connection, er: Connection | null, owner: PublicKey, mint: PublicKey): Promise<PrivateBalanceState> {
   const eata = eataPda(owner, mint);
-  const [info, walletAmount, eataRent, permRent] = await Promise.all([
+  const isSol = mint.equals(NATIVE_MINT);
+  const [info, perm, walletAmount, eataRent, permRent] = await Promise.all([
     base.getAccountInfo(eata),
-    tokenAmount(base, ata(owner, mint)),
+    base.getAccountInfo(permissionPda(eata)),
+    // wSOL is wrapped from plain SOL at deposit time, so the wallet figure is SOL.
+    isSol ? base.getBalance(owner).then((l) => BigInt(Math.max(0, l - 10_000_000))) : tokenAmount(base, ata(owner, mint)),
     base.getMinimumBalanceForRentExemption(80),
     base.getMinimumBalanceForRentExemption(600),
   ]);
@@ -50,12 +54,14 @@ export async function readPrivateBalance(base: Connection, er: Connection | null
   let privateAmount: bigint | null = null;
   if (delegated && er) privateAmount = await tokenAmount(er, ata(owner, mint));
   else if (info?.owner.equals(ESPL_PROGRAM_ID)) privateAmount = eataAmount(info.data);
+  void permRent;
   return {
+    loanBlocked: !!perm,
     privateAmount,
     delegated,
     exists: !!info,
     walletAmount: walletAmount ?? 0n,
-    setupLamports: info ? 0 : eataRent + permRent,
+    setupLamports: info ? 0 : eataRent,
   };
 }
 
@@ -108,12 +114,18 @@ export async function depositPrivately(base: Connection, er: Connection, signer:
     await bringToSolana(base, er, signer, mint);
     info = await base.getAccountInfo(eata);
   }
-  const tx = new Transaction();
+  // No explicit permission. Inside the TEE an un-permissioned eATA is already
+  // readable only by its owner (outsiders see 0), and an explicit permission
+  // would stop the private loan program from moving these funds (gateway 403).
+  const tx = new Transaction().add(createAssociatedTokenAccountIdempotentInstruction(owner, ata(owner, mint), owner, mint));
+  if (mint.equals(NATIVE_MINT)) {
+    tx.add(
+      SystemProgram.transfer({ fromPubkey: owner, toPubkey: ata(owner, mint), lamports: Number(amount) }),
+      createSyncNativeInstruction(ata(owner, mint)),
+    );
+  }
   if (!info) tx.add(initializeEata(owner, mint));
-  const perm = await base.getAccountInfo(permissionPda(eata));
-  if (!perm) tx.add(createEataPermission(owner, mint, FLAG.txLogs | FLAG.txBalances | FLAG.txMessage));
   tx.add(deposit(owner, mint, amount));
-  if (!perm || !perm.owner.equals(DELEGATION_PROGRAM_ID)) tx.add(delegateEataPermission(owner, mint));
   tx.add(delegate(owner, mint));
   return sendBase(base, signer, tx, "Deposit into private balance", {
     feePayer: owner,

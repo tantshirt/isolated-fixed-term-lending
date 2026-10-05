@@ -39,15 +39,14 @@ export function PrivateHome() {
     },
     {
       title: "Agree on exact terms",
-      body: "Both sides approve the same revision. Any change resets approval.",
+      body: "The lender locks USDC on one revision; the borrower accepts that same revision. Any change resets approval.",
       state: "later",
-      note: "Arrives with private loans (Phase 2)",
     },
     {
       title: "Settle",
-      body: "Repay, expire, or liquidate with the same rules as public loans. Only balances settle on Solana.",
+      body: "Repay before the deadline, or the lender receives the wSOL. Same rules as public loans; terms never reach Solana.",
       state: "later",
-      note: "Arrives with private loans (Phase 2)",
+      note: "Automatic expiry and liquidation arrive in Phase 4",
     },
   ];
 

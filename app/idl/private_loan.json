@@ -8,6 +8,156 @@
   },
   "instructions": [
     {
+      "name": "accept_loan",
+      "docs": [
+        "Ephemeral rollup. Borrower accepts `revision`: collateral in, principal out."
+      ],
+      "discriminator": [
+        115,
+        234,
+        176,
+        73,
+        152,
+        3,
+        37,
+        221
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "signer": true
+        },
+        {
+          "name": "anchor"
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "borrower_usdc",
+          "writable": true
+        },
+        {
+          "name": "borrower_wsol",
+          "writable": true
+        },
+        {
+          "name": "loan_usdc",
+          "writable": true
+        },
+        {
+          "name": "loan_wsol",
+          "writable": true
+        },
+        {
+          "name": "lender_usdc",
+          "writable": true
+        },
+        {
+          "name": "price_update"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "revision",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "cancel_loan",
+      "docs": [
+        "Ephemeral rollup. Lender cancels before acceptance; principal returns."
+      ],
+      "discriminator": [
+        214,
+        125,
+        161,
+        106,
+        51,
+        186,
+        69,
+        148
+      ],
+      "accounts": [
+        {
+          "name": "lender",
+          "signer": true
+        },
+        {
+          "name": "anchor"
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lender_usdc",
+          "writable": true
+        },
+        {
+          "name": "loan_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "check_price",
       "docs": [
         "Ephemeral rollup. Runs the shared Pyth check against the cloned receiver account."
@@ -36,6 +186,67 @@
         },
         {
           "name": "price_update"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_expired",
+      "docs": [
+        "Ephemeral rollup. Anyone, at or after the deadline: collateral to the lender."
+      ],
+      "discriminator": [
+        124,
+        78,
+        197,
+        187,
+        210,
+        66,
+        255,
+        1
+      ],
+      "accounts": [
+        {
+          "name": "anchor"
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "loan_wsol",
+          "writable": true
+        },
+        {
+          "name": "lender_wsol",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -241,6 +452,404 @@
       "args": [
         {
           "name": "id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_loan",
+      "docs": [
+        "Base layer. Creates the loan anchor and its two empty, delegated eATAs."
+      ],
+      "discriminator": [
+        166,
+        131,
+        118,
+        219,
+        138,
+        218,
+        206,
+        140
+      ],
+      "accounts": [
+        {
+          "name": "lender",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "anchor",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "loan_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "room"
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "wsol_mint"
+        },
+        {
+          "name": "usdc_ata",
+          "docs": [
+            "Base token accounts the ER mirrors for this loan's custody. Without them",
+            "the custody ATAs do not exist inside the rollup."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "anchor"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "wsol_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "anchor"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "wsol_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_eata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "anchor"
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                6,
+                128,
+                200,
+                234,
+                115,
+                202,
+                172,
+                225,
+                29,
+                240,
+                193,
+                184,
+                192,
+                229,
+                47,
+                173,
+                17,
+                234,
+                44,
+                108,
+                0,
+                194,
+                128,
+                125,
+                224,
+                239,
+                6,
+                229,
+                135,
+                199,
+                95,
+                71
+              ]
+            }
+          }
+        },
+        {
+          "name": "wsol_eata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "anchor"
+              },
+              {
+                "kind": "account",
+                "path": "wsol_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                6,
+                128,
+                200,
+                234,
+                115,
+                202,
+                172,
+                225,
+                29,
+                240,
+                193,
+                184,
+                192,
+                229,
+                47,
+                173,
+                17,
+                234,
+                44,
+                108,
+                0,
+                194,
+                128,
+                125,
+                224,
+                239,
+                6,
+                229,
+                135,
+                199,
+                95,
+                71
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_buffer",
+          "writable": true
+        },
+        {
+          "name": "usdc_record",
+          "writable": true
+        },
+        {
+          "name": "usdc_metadata",
+          "writable": true
+        },
+        {
+          "name": "wsol_buffer",
+          "writable": true
+        },
+        {
+          "name": "wsol_record",
+          "writable": true
+        },
+        {
+          "name": "wsol_metadata",
+          "writable": true
+        },
+        {
+          "name": "espl_program",
+          "address": "SPLxh1LVZzEkX99H6rqYizhytLWPZVV296zyYDPagv2"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "loan_id",
           "type": {
             "array": [
               "u8",
@@ -643,6 +1252,204 @@
         {
           "name": "amount",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "delegate_loan",
+      "docs": [
+        "Base layer. Delegates the loan anchor (same transaction as `create_loan`)."
+      ],
+      "discriminator": [
+        205,
+        141,
+        134,
+        16,
+        79,
+        216,
+        98,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "lender",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "buffer_anchor",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                4,
+                86,
+                179,
+                253,
+                240,
+                143,
+                255,
+                255,
+                250,
+                2,
+                237,
+                87,
+                31,
+                255,
+                93,
+                92,
+                195,
+                245,
+                174,
+                121,
+                48,
+                99,
+                128,
+                176,
+                218,
+                149,
+                200,
+                83,
+                140,
+                120,
+                244,
+                232
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_anchor",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_anchor",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "anchor",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "loan_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_program",
+          "address": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "loan_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ]
     },
@@ -1068,6 +1875,68 @@
       ]
     },
     {
+      "name": "edit_terms",
+      "docs": [
+        "Ephemeral rollup. Lender edits terms before funding; the revision moves."
+      ],
+      "discriminator": [
+        83,
+        230,
+        75,
+        75,
+        103,
+        18,
+        49,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "lender",
+          "signer": true
+        },
+        {
+          "name": "anchor"
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "TermsArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "fund_and_delegate",
       "docs": [
         "Base layer. Moves tokens into the custody eATA and delegates it to the TEE."
@@ -1352,6 +2221,76 @@
         {
           "name": "amount",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "fund_loan",
+      "docs": [
+        "Ephemeral rollup. Lender locks the principal for `revision`."
+      ],
+      "discriminator": [
+        50,
+        221,
+        51,
+        13,
+        3,
+        142,
+        116,
+        215
+      ],
+      "accounts": [
+        {
+          "name": "lender",
+          "signer": true
+        },
+        {
+          "name": "anchor"
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lender_usdc",
+          "writable": true
+        },
+        {
+          "name": "loan_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "revision",
+          "type": "u32"
         }
       ]
     },
@@ -1825,6 +2764,195 @@
           }
         }
       ]
+    },
+    {
+      "name": "propose_terms",
+      "docs": [
+        "Ephemeral rollup. Lender proposes exact terms to a borrower in the same room."
+      ],
+      "discriminator": [
+        43,
+        146,
+        195,
+        161,
+        215,
+        132,
+        135,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "lender",
+          "signer": true
+        },
+        {
+          "name": "anchor",
+          "writable": true
+        },
+        {
+          "name": "room"
+        },
+        {
+          "name": "room_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  111,
+                  111,
+                  109,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "room"
+              }
+            ]
+          }
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "terms_permission",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "permission_program",
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "TermsArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "repay_loan",
+      "docs": [
+        "Ephemeral rollup. Borrower repays the exact debt before the deadline."
+      ],
+      "discriminator": [
+        224,
+        93,
+        144,
+        77,
+        61,
+        17,
+        137,
+        54
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "signer": true
+        },
+        {
+          "name": "anchor"
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "borrower_usdc",
+          "writable": true
+        },
+        {
+          "name": "borrower_wsol",
+          "writable": true
+        },
+        {
+          "name": "loan_usdc",
+          "writable": true
+        },
+        {
+          "name": "loan_wsol",
+          "writable": true
+        },
+        {
+          "name": "lender_usdc",
+          "writable": true
+        },
+        {
+          "name": "price_update"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
     },
     {
       "name": "revoke_member",
@@ -2485,6 +3613,19 @@
       ]
     },
     {
+      "name": "LoanAnchor",
+      "discriminator": [
+        149,
+        196,
+        15,
+        252,
+        80,
+        197,
+        220,
+        154
+      ]
+    },
+    {
       "name": "Probe",
       "discriminator": [
         232,
@@ -2621,6 +3762,51 @@
       "code": 6021,
       "name": "MessageTooLong",
       "msg": "Message must be 1 to 140 bytes"
+    },
+    {
+      "code": 6022,
+      "name": "WrongRoom",
+      "msg": "Loan does not belong to this room"
+    },
+    {
+      "code": 6023,
+      "name": "NotLender",
+      "msg": "Signer is not this loan's lender"
+    },
+    {
+      "code": 6024,
+      "name": "NotBorrower",
+      "msg": "Signer is not this loan's borrower"
+    },
+    {
+      "code": 6025,
+      "name": "WrongStatus",
+      "msg": "Loan is not in the required status"
+    },
+    {
+      "code": 6026,
+      "name": "StaleRevision",
+      "msg": "Terms changed since this approval; review the current revision"
+    },
+    {
+      "code": 6027,
+      "name": "WrongTokenAccount",
+      "msg": "Token account is not the expected one for this party and mint"
+    },
+    {
+      "code": 6028,
+      "name": "InsufficientCollateral",
+      "msg": "Collateral is insufficient for the max LTV at the current price"
+    },
+    {
+      "code": 6029,
+      "name": "LoanExpired",
+      "msg": "Loan is expired; it can only be claimed"
+    },
+    {
+      "code": 6030,
+      "name": "LoanNotExpired",
+      "msg": "Loan is not expired yet"
     }
   ],
   "types": [
@@ -2644,6 +3830,42 @@
           },
           {
             "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanAnchor",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "loan_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "room",
+            "docs": [
+              "Room the loan was agreed in. An opaque id; it names no wallet."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "usdc_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wsol_mint",
             "type": "pubkey"
           },
           {
@@ -2711,6 +3933,42 @@
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TermsArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "principal",
+            "type": "u64"
+          },
+          {
+            "name": "interest_bps",
+            "type": "u16"
+          },
+          {
+            "name": "duration_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "max_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "liquidation_ltv_bps",
+            "type": "u16"
           }
         ]
       }

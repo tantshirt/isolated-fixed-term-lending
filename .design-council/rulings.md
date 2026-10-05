@@ -26,3 +26,13 @@ Source methods restored from the pinned upstream repositories; actual verificati
 | "Then" for built-but-not-yet-reachable steps; "Phase 2" notes only for unbuilt work | Sol | "Coming" suggested working features were unbuilt. |
 | Non-amount text never uses the figure style; reset `dd` margins | Plumb | "Sign in to see" was set like money and indented by the default `dd` margin. |
 | The proof page's next list comes from the evidence file | Wren / Plumb | The hard-coded list was out of date as soon as 9.3 passed. |
+
+## Phase 2: private loan in the room (2026-10-05)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Loan cards lead with "receives", "repays", collateral, and deadline, then the role sentence | Sol | Money and risk first, matching the public loan page. |
+| Private actions reuse the public action words and the exact expiry sentence | Sol / Fovea | One vocabulary across public and private loans. |
+| Program errors are translated (stale price, revision changed, LTV, deadline) | Fovea / Plumb | Members see error names, but beginners need the next step. |
+| Room side column widened to 24rem for the loan form | Indigo | 20rem squeezed amount inputs and the summary grid. |
+| Signed-in loan states not screenshot-verified | Plumb | Headless runs cannot sign a TEE login. Recorded as missing coverage, not inferred. |

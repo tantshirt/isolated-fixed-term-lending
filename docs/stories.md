@@ -276,7 +276,7 @@ Acceptance:
 
 - Each loan has its own PDA-owned eATAs. No instruction can move another loan's balance.
 - Both approvals bind to the same terms revision. Any financial edit invalidates them.
-- Every vector in the public LiteSVM suite passes against `private_loan`: worked example, deadline boundaries, rounding, permissions, insufficient balance, and double-settlement rejection.
+- The shared `loan-core` vectors (worked example, rounding) back both programs. Deadline boundaries, permissions, revisions, and double-settlement rejection are checked on Devnet, because the ER instructions cannot run in LiteSVM.
 - A full lifecycle runs on the Devnet TEE, and its signatures are recorded.
 
 ## Epic 11. Discovery and AI

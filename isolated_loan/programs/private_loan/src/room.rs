@@ -109,13 +109,13 @@ impl SessionScope {
     pub const LEN: usize = 32 * 3 + 8 + 4 + 1;
 }
 
-fn load<T: AnchorDeserialize>(info: &AccountInfo) -> Result<T> {
+pub(crate) fn load<T: AnchorDeserialize>(info: &AccountInfo) -> Result<T> {
     require_keys_eq!(*info.owner, crate::ID, PrivateLoanError::InvalidRecord);
     let data = info.try_borrow_data()?;
     T::deserialize(&mut &data[..]).map_err(|_| error!(PrivateLoanError::InvalidRecord))
 }
 
-fn store<T: AnchorSerialize>(info: &AccountInfo, value: &T) -> Result<()> {
+pub(crate) fn store<T: AnchorSerialize>(info: &AccountInfo, value: &T) -> Result<()> {
     let mut data = info.try_borrow_mut_data()?;
     value
         .serialize(&mut &mut data[..])
