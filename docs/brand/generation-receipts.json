@@ -1,0 +1,20 @@
+[
+  {
+    "name": "lendspan-bridge",
+    "taskId": "ba74495db14a1d06710c11d85338860f",
+    "creditsConsumed": 10.0,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "lendspan-collateral",
+    "taskId": "5fefa2f85593bf2a55ea9b57475663d9",
+    "creditsConsumed": 10.0,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "lendspan-return",
+    "taskId": "cd0662eb40633487c803cd6860f2b7d4",
+    "creditsConsumed": 10.0,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  }
+]

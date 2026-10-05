@@ -5,10 +5,11 @@ Local Anchor program. No backend. One offer account is one loan. The formulas ar
 ## Stack
 
 - Rust program written with Anchor, tested with LiteSVM. Use the Anchor and Solana CLI versions that Anchor's own install docs pair together. Do not guess a combination.
-- Classic SPL Token for both vaults. Test mints: 6 decimals for the dollar mint, 9 for the wrapped-SOL mint.
+- Classic SPL Token for both vaults. Test mints: 6 decimals for the dollar mint, 9 for the wrapped-SOL mint. `create_offer` rejects any other decimals (`InvalidUsdcMint`, `InvalidWsolMint`) and rejects the same mint on both legs (`SameMint`).
+- Version pairing in this repo: the program builds with `anchor-lang` 1.x; the TypeScript client still uses `@coral-xyz/anchor` 0.32, which reads the 1.x IDL. Upgrading the client is its own change.
 - Pyth pull price via `PriceUpdateV2` and `pyth-solana-receiver-sdk`. Receiver program `rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ`. Feed id `ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d`.
 - Clock sysvar for the deadline. Do not trust a client timestamp.
-- Client scripts are thin: they build the six transactions and print the resulting status and balances. They are not a server.
+- Client scripts are thin: they build the transactions and print the resulting status and balances. They are not a server.
 
 Week 2 may add a web client on the design in [design-and-experience.md](design-and-experience.md). Week 1 does not.
 
@@ -58,7 +59,7 @@ Move `principal` USDC from the lender's token account into the USDC vault. Rejec
 
 ### cancel_offer
 
-Signer: lender. Status must be `Open`. Move the vault balance back to the lender, close the vault, set `Cancelled`, close the offer if it is empty of responsibility. Emit `OfferCancelled`.
+Signer: lender. Status must be `Open`. Move the vault balance back to the lender, close the vault, set `Cancelled`. Emit `OfferCancelled`. The offer account stays as a receipt; see `close_offer`.
 
 ### accept_offer
 
@@ -66,7 +67,7 @@ Signer: borrower. Status must be `Open`. The borrower must not be the lender.
 
 Read Pyth as specified in the research note. Compute `debt` and collateral value. Require `current_ltv_bps <= max_ltv_bps`. If the posted collateral would not cover the max LTV, fail with `InsufficientCollateral`. The required `collateral_amount` on the offer is what moves; the LTV check is on top of that amount, at the current price.
 
-Move the USDC vault balance to the borrower. Move `collateral_amount` wSOL from the borrower into the wSOL vault. Set `borrower`, `start_ts`, `expiry_ts`, and status `Filled`. Close the USDC vault. Emit `OfferAccepted`.
+Move the USDC vault balance to the borrower. Move `collateral_amount` wSOL from the borrower into the wSOL vault. Set `borrower`, `start_ts`, `expiry_ts`, and status `Filled`. Close the USDC vault; its rent returns to the lender, who paid it at create. Emit `OfferAccepted`.
 
 ### repay_loan
 
@@ -78,7 +79,7 @@ Move `debt` USDC from the borrower to the lender. Move all wSOL from the vault t
 
 Signer: anyone. Status must be `Filled`. Require `clock.unix_timestamp >= expiry_ts`.
 
-Move all wSOL to the lender. Close the vault. Set `Expired`. Emit `LoanExpired`. No USDC moves. The principal already left at accept.
+Move all wSOL to the lender. Close the vault; its rent returns to the borrower, who paid it at accept. Set `Expired`. Emit `LoanExpired`. No USDC moves. The principal already left at accept.
 
 ### liquidate_loan
 
@@ -86,7 +87,13 @@ Signer: anyone except the borrower. Status must be `Filled`. The loan must not b
 
 Read Pyth with the same checks. Require `current_ltv_bps >= liquidation_ltv_bps`, else `LoanHealthy`.
 
-Move `debt` USDC from the caller to the lender. Split the wSOL as in the research note: caller receives the seized amount, borrower receives the remainder. Close the vault. Set `Liquidated`. Emit `LoanLiquidated` with the amounts.
+Move `debt` USDC from the caller to the lender. Split the wSOL as in the research note: caller receives the seized amount, borrower receives the remainder. Close the vault; its rent returns to the borrower. Set `Liquidated`. Emit `LoanLiquidated` with the amounts.
+
+### close_offer
+
+Signer: lender. Status must be `Repaid`, `Expired`, `Liquidated`, or `Cancelled`, else `OfferNotSettled`. Closes the offer account and returns its rent to the lender. Emit `OfferClosed`. Until then the account is the on-chain receipt the interface reads the final status from.
+
+Every vault and account rent goes back to whoever paid it. No caller is paid rent for calling an open instruction.
 
 ## What fails closed
 
@@ -108,6 +115,11 @@ Instruction tests on LiteSVM:
 - A healthy loan cannot be liquidated. An unhealthy loan can. A stale price and a wrong feed id cannot.
 - After any settlement, the same instruction fails, and the other settlement instructions fail.
 - Vault balances are zero after each ending, and the closed accounts are gone.
+- Vault rent returns to the party that paid it. A loan whose LTV is past `65_535` bps can still be liquidated.
+- A mint with the wrong decimals, or the same mint twice, cannot create an offer.
+- Only the lender can close an offer, and only after it has ended.
+
+These live in `isolated_loan/programs/isolated_loan/tests/litesvm.rs`. Run `npm run test:litesvm`.
 
 ## Client scripts
 

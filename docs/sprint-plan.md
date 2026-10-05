@@ -8,24 +8,24 @@ When a story is finished, change its status here from Open to Done and, if usefu
 
 | Order | Story | Day | Status |
 | --- | --- | --- | --- |
-| 1 | [1.1 Anchor project and offer account](stories.md) | 2 | Open |
-| 2 | [2.1 Create and cancel](stories.md) | 3 | Open |
-| 3 | [3.1 Repay](stories.md) | 4 | Open |
-| 4 | [4.2 Integer value and LTV](stories.md) | 5 | Open |
-| 5 | [6.1 Clean errors and a fresh run](stories.md) | 7 | Open |
+| 1 | [1.1 Anchor project and offer account](stories.md) | 2 | Done |
+| 2 | [2.1 Create and cancel](stories.md) | 3 | Done |
+| 3 | [3.1 Repay](stories.md) | 4 | Done |
+| 4 | [4.2 Integer value and LTV](stories.md) | 5 | Done |
+| 5 | [6.1 Clean errors and a fresh run](stories.md) | 7 | Done |
 
 ## Oracle and client lane
 
 | Order | Story | Day | Status |
 | --- | --- | --- | --- |
-| 1 | [1.2 Local mints and wallets](stories.md) | 2 | Open |
-| 2 | [2.2 Accept](stories.md) | 3 | Open |
-| 3 | [3.2 Claim expired](stories.md) | 4 | Open |
-| 4 | [4.1 Price checks](stories.md) | 5 | Open |
-| 5 | [4.3 Liquidate](stories.md) | 5 | Open |
-| 6 | [5.1 Permission and double-settlement sweep](stories.md) | 6 | Open |
-| 7 | [5.2 Three client scripts](stories.md) | 6 | Open |
-| 8 | [6.1 Clean errors and a fresh run](stories.md) | 7 | Open |
+| 1 | [1.2 Local mints and wallets](stories.md) | 2 | Done |
+| 2 | [2.2 Accept](stories.md) | 3 | Done |
+| 3 | [3.2 Claim expired](stories.md) | 4 | Done |
+| 4 | [4.1 Price checks](stories.md) | 5 | Done |
+| 5 | [4.3 Liquidate](stories.md) | 5 | Done |
+| 6 | [5.1 Permission and double-settlement sweep](stories.md) | 6 | Done |
+| 7 | [5.2 Three client scripts](stories.md) | 6 | Done |
+| 8 | [6.1 Clean errors and a fresh run](stories.md) | 7 | Done |
 
 Story 2.2, 4.2, 4.3, and 6.1 need both lanes in the same day. Whoever starts one should leave the other lane's half explicit in the pull request.
 
@@ -37,8 +37,13 @@ Days 2 through 7 follow the tables. At the end of each day, both lanes read the 
 
 ## Week 2, not queued
 
-[7.1 Interface](stories.md) and [7.2 Devnet, indexer, fuzz](stories.md) stay unscheduled until the three local scripts pass from a fresh setup.
+| Story | Status |
+| --- | --- |
+| [7.1 Interface](stories.md) | Done |
+| [7.2 Devnet, indexer, fuzz](stories.md) | Open |
 
 ## Notes
 
-None yet.
+- Program and UI live under `isolated_loan/` and `app/`. Outcome scripts: `npm run script:repay|liquidate|expire` in `isolated_loan/`.
+- Story 5.1 is covered by the LiteSVM suite in `isolated_loan/programs/isolated_loan/tests/litesvm.rs` (`npm run test:litesvm`).
+- 2026-10-05: Devnet deployment and live repayment/cancellation/expiry/close checks completed; see [evidence](devnet-evidence.json). Story 7.2 remains Open because indexer and fuzz work are excluded from the approved Lendspan redesign.

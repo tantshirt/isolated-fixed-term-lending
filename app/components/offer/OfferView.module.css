@@ -1,0 +1,213 @@
+.layout {
+  display: grid;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 4rem;
+  }
+}
+
+.main {
+  display: grid;
+  gap: 2rem;
+  min-width: 0;
+}
+
+@media (min-width: 960px) {
+  .aside {
+    position: sticky;
+    top: 6rem;
+  }
+}
+
+.back {
+  justify-self: start;
+  padding: 0.25rem 0.5rem;
+  margin-left: -0.5rem;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.back:hover {
+  color: var(--color-text-primary);
+  background: var(--color-legacy-overlay-3);
+}
+
+.head {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: -1rem;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.expiredTag {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-red);
+}
+
+.role {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+}
+
+.title {
+  font-size: var(--text-3xl);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.moved {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-self: start;
+  padding: 0.5rem 0.875rem 0.5rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-background-green);
+  color: var(--color-text-green);
+  font-weight: 600;
+}
+
+.movedMark {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-background-surface);
+}
+
+.figures {
+  display: grid;
+  gap: 1px;
+  border-radius: var(--radius-container);
+  overflow: hidden;
+  background: var(--color-border);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+@media (min-width: 640px) {
+  .figures {
+    grid-template-columns: 1.3fr 1fr 1fr;
+  }
+}
+
+.figure {
+  display: grid;
+  align-content: start;
+  gap: 0.375rem;
+  padding: 1.25rem;
+  background: var(--color-background-surface);
+}
+
+.figureHero {
+  background: var(--color-panel);
+  color: var(--color-on-panel);
+}
+
+.figureLabel {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.figureHero .figureLabel,
+.figureHero .unit {
+  color: var(--color-on-panel-muted);
+}
+
+.figureValue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem;
+  font-size: var(--text-xl);
+  letter-spacing: -0.02em;
+}
+
+.figureHero .figureValue {
+  font-size: var(--text-2xl);
+  letter-spacing: -0.03em;
+}
+
+.unit {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.deadlineLine,
+.sentence {
+  max-width: 62ch;
+  color: var(--color-text-secondary);
+}
+
+.deadlineLine b {
+  color: var(--color-text-primary);
+}
+
+.block {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.blockNote {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  margin-bottom: -0.5rem;
+}
+
+.blockTitle {
+  font-size: var(--text-md);
+}
+
+.terms {
+  display: grid;
+  margin: 0;
+}
+
+.terms div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+
+.terms div:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.terms dt {
+  color: var(--color-text-secondary);
+}
+
+.terms dd {
+  margin: 0;
+}
+
+.missing {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  max-width: 560px;
+}

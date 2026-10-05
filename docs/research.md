@@ -68,7 +68,7 @@ value_usdc  = floor( lamports * (price - conf) / 10^divisor_exp )
 current_ltv_bps = ceil(debt * 10_000 / value_usdc)
 ```
 
-If `value_usdc` is 0, the loan is unhealthy. Round the LTV up so a position that is even one atom over the line is caught.
+If `value_usdc` is 0, the loan is unhealthy. Round the LTV up so a position that is even one atom over the line is caught. The result is stored as a `u16`, so it saturates at `65_535` instead of failing. A loan whose collateral has collapsed must still read as liquidatable.
 
 At accept, require `current_ltv_bps <= max_ltv_bps`.
 
@@ -91,7 +91,7 @@ seize_usdc = ceil(debt * 10_500 / 10_000)
 to_caller  = ceil(lamports * seize_usdc / value_usdc)
 ```
 
-If `to_caller` is greater than the vault balance, the caller receives all of the collateral and the borrower receives none. A caller who would lose money simply does not send the transaction. The lender can also call it.
+If `to_caller` is greater than the vault balance, the caller receives all of the collateral and the borrower receives none. A caller who would lose money simply does not send the transaction. The lender and borrower cannot liquidate this loan; the program requires a distinct liquidator.
 
 The 5% is a capstone choice informed by marginfi's 5% liquidation fee. There is no insurance fund, so the whole bonus goes to the caller. The 5-point gap we require between max LTV and liquidation LTV leaves room for that bonus at the moment a loan first becomes liquidatable, until the price gaps through.
 

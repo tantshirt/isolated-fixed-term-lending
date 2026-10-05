@@ -1,5 +1,10 @@
 # Local-only tooling and planning notes.
 _*/
+!_bmad/
+_bmad/*
+!_bmad/custom/
+_bmad/custom/*
+!_bmad/custom/bmad-party-mode.toml
 .agents/
 .cursor/skills/
 .claude/skills/
@@ -8,3 +13,9 @@ _*/
 .DS_Store
 *.log
 node_modules/
+app/.next/
+app/.local/
+isolated_loan/.local/
+isolated_loan/target/
+isolated_loan/node_modules/
+app/node_modules/

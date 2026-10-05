@@ -1,0 +1,75 @@
+.panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: var(--color-background-surface);
+  box-shadow: var(--shadow-med), 0 0 0 1px var(--color-border);
+}
+
+.panel[data-tone="risk"] {
+  box-shadow: var(--shadow-med), 0 0 0 1px var(--color-legacy-overlay-2);
+}
+
+.panel[data-tone="risk"] .title {
+  color: var(--color-text-red);
+}
+
+.title {
+  font-size: var(--text-lg);
+}
+
+.body {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.note {
+  font-size: var(--text-sm);
+  color: var(--color-text-yellow);
+}
+
+.error {
+  font-size: var(--text-sm);
+  color: var(--color-text-red);
+}
+
+.confirm {
+  display: grid;
+  gap: 1rem;
+}
+
+.confirmQ {
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.sheet {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--color-background-body);
+}
+
+.sheet div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: var(--text-sm);
+}
+
+.sheet dt {
+  color: var(--color-text-secondary);
+}
+
+.sheet dd {
+  margin: 0;
+  font-size: var(--text-base);
+}

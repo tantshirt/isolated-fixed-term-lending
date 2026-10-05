@@ -1,0 +1,235 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import {
+  motion as m,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { AssetLabel } from "@/components/brand/AssetLabel";
+import s from "./LoanStory.module.css";
+
+export function HeroArtwork() {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], [0, 45]);
+  const rotate = useTransform(scrollYProgress, [0, 1], [0, -3]);
+  return (
+    <div ref={ref} className={s.heroArtwork}>
+      <m.div style={reduced ? undefined : { y, rotate }}>
+        <Image
+          src="/illustrations/lendspan-bridge.webp"
+          width={1536}
+          height={1024}
+          priority
+          sizes="(max-width: 800px) 100vw, 52vw"
+          alt="A blue ribbon bridges two platforms, connecting both sides of one agreement."
+        />
+      </m.div>
+      <div className={s.heroCaption}>
+        <span>Two sides. One clear agreement.</span>
+        <a href="#how-it-works">
+          Follow one loan <span aria-hidden>↓</span>
+        </a>
+      </div>
+    </div>
+  );
+}
+
+const steps = [
+  {
+    title: "An offer, with everything up front.",
+    label: "Set the terms",
+    status: "Waiting for a borrower",
+    amount: "100",
+    unit: "USDC" as const,
+    detail: "Held in the offer’s own vault",
+    body: "Start with 100 USDC. Choose a 7-day term, 5% full-term interest, and 1.1 wSOL in collateral. A borrower sees the same terms you do.",
+    note: "Until someone accepts, the lender can cancel and take back the USDC.",
+  },
+  {
+    title: "Their SOL stays behind. Your USDC moves ahead.",
+    label: "Make the exchange",
+    status: "Loan active",
+    amount: "1.1",
+    unit: "wSOL" as const,
+    detail: "Held as collateral for this loan",
+    body: "The borrower locks 1.1 wSOL and receives 100 USDC. That exchange starts the seven-day clock. At the example SOL price of $150, the collateral is worth $165.",
+    note: "The program checks the collateral limit against a fresh SOL price before acceptance.",
+    image: "lendspan-collateral",
+    alt: "A blue solid rests inside an open white frame, representing collateral held separately.",
+  },
+  {
+    title: "105 USDC back. The collateral goes home.",
+    label: "Close the loop",
+    status: "Repaid before the deadline",
+    amount: "105",
+    unit: "USDC" as const,
+    detail: "100 principal + 5 fixed interest",
+    body: "Before the deadline, the borrower repays 105 USDC. The lender receives the principal and interest; the borrower gets all 1.1 wSOL back.",
+    note: "Repay early if you like. The 5 USDC full-term interest stays the same.",
+    image: "lendspan-return",
+    alt: "A blue ribbon loops between two white pieces, representing a completed agreement.",
+  },
+];
+
+export function LoanStory() {
+  const ref = useRef<HTMLElement>(null);
+  const [active, setActive] = useState(0);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start center", "end center"],
+  });
+  useEffect(() => {
+    const sections =
+      ref.current?.querySelectorAll<HTMLElement>("[data-chapter]");
+    if (!sections) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries)
+          if (entry.isIntersecting)
+            setActive(Number((entry.target as HTMLElement).dataset.chapter));
+      },
+      { rootMargin: "-25% 0px -45% 0px", threshold: 0 }
+    );
+    sections.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <section
+      ref={ref}
+      id="how-it-works"
+      className={s.story}
+      aria-labelledby="story-title"
+    >
+      <div className={s.intro}>
+        <p className={s.caption}>Follow the money</p>
+        <h2 id="story-title">
+          One loan.
+          <br />
+          From both sides.
+        </h2>
+        <p>
+          Follow an example from the first offer to the final repayment. Same
+          terms. Shared understanding.
+        </p>
+      </div>
+      <div className={s.journey}>
+        <aside className={s.tracker} aria-label="Example loan progress">
+          <div className={s.trackerHeading}>
+            <span>Our example loan</span>
+            <span className={s.example}>Illustrative</span>
+          </div>
+          <ol className={s.trackSteps}>
+            {steps.map((step, i) => (
+              <li key={step.label}>
+                <a
+                  href={`#loan-chapter-${i}`}
+                  aria-current={active === i ? "step" : undefined}
+                >
+                  <span className={s.stepNumber}>{i + 1}</span>
+                  {step.label}
+                </a>
+              </li>
+            ))}
+          </ol>
+          <div className={s.progress} aria-hidden>
+            <m.div
+              style={{ scaleX: reduced ? (active + 1) / 3 : scrollYProgress }}
+            />
+          </div>
+          <div className={s.readout}>
+            <p>{steps[active].status}</p>
+            <strong>
+              <AssetLabel symbol={steps[active].unit}>
+                {steps[active].amount} {steps[active].unit}
+              </AssetLabel>
+            </strong>
+            <p>{steps[active].detail}</p>
+          </div>
+          <dl className={s.terms}>
+            <div>
+              <dt>Principal</dt>
+              <dd>100 USDC</dd>
+            </div>
+            <div>
+              <dt>Full-term cost</dt>
+              <dd>5 USDC</dd>
+            </div>
+            <div>
+              <dt>Term</dt>
+              <dd>7 days</dd>
+            </div>
+          </dl>
+          <Link className={s.storyLink} href="/demo">
+            Try these terms in the demo <span aria-hidden>↗</span>
+          </Link>
+        </aside>
+        <div className={s.chapters}>
+          {steps.map((step, i) => (
+            <article
+              key={step.label}
+              id={`loan-chapter-${i}`}
+              data-chapter={i}
+              className={s.chapter}
+            >
+              <p className={s.chapterLabel}>
+                <span>{i + 1}</span>
+                {step.label}
+              </p>
+              <h3>{step.title}</h3>
+              <p className={s.body}>{step.body}</p>
+              {step.image ? (
+                <m.figure
+                  className={s.art}
+                  initial={false}
+                  whileInView={
+                    reduced ? undefined : { y: [24, 0], rotate: [1.5, 0] }
+                  }
+                  viewport={{ once: true, amount: 0.25 }}
+                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <Image
+                    src={`/illustrations/${step.image}.webp`}
+                    alt={step.alt!}
+                    width={1024}
+                    height={1024}
+                    sizes="(max-width: 800px) 90vw, 45vw"
+                  />
+                </m.figure>
+              ) : (
+                <div className={s.agreement}>
+                  <div>
+                    <span>Lender supplies</span>
+                    <strong>
+                      <AssetLabel symbol="USDC">100 USDC</AssetLabel>
+                    </strong>
+                  </div>
+                  <div className={s.agreementArrow} aria-hidden>
+                    ↓
+                  </div>
+                  <div>
+                    <span>Borrower agrees to repay</span>
+                    <strong>
+                      <AssetLabel symbol="USDC">105 USDC</AssetLabel>
+                    </strong>
+                  </div>
+                  <p>Both sides see the cost before the loan begins.</p>
+                </div>
+              )}
+              <p className={s.note}>{step.note}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

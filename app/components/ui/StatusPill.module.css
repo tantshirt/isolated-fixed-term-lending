@@ -1,0 +1,63 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 1.625rem;
+  padding: 0 0.625rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--color-background-muted);
+  color: var(--color-text-secondary);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.open {
+  background: var(--color-accent-muted);
+  color: var(--color-text-accent);
+}
+
+.open .dot {
+  animation: breathe 2.4s var(--ease-in-out) infinite;
+}
+
+.filled {
+  background: var(--color-background-yellow);
+  color: var(--color-text-yellow);
+}
+
+.repaid,
+.good {
+  background: var(--color-background-green);
+  color: var(--color-text-green);
+}
+
+.watch {
+  background: var(--color-background-yellow);
+  color: var(--color-text-yellow);
+}
+
+.liquidated,
+.risk {
+  background: var(--color-background-red);
+  color: var(--color-text-red);
+}
+
+.expired,
+.cancelled {
+  background: var(--color-background-muted);
+  color: var(--color-text-secondary);
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.35;
+  }
+}

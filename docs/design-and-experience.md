@@ -1,100 +1,64 @@
-# Design and experience
+# Lendspan design and experience
 
-Week 1 does not build these screens. Week 2 does, and it follows this file. The program rules in [architecture.md](architecture.md) win if a screen and an instruction ever disagree.
+The approved Lendspan redesign replaces Tenor. Product intent lives in [PRODUCT.md](../PRODUCT.md); financial rules in [research.md](research.md) and [architecture.md](architecture.md) remain authoritative. The [design council](../.design-council/README.md) records project-specific decisions and upstream provenance.
 
-## Feel
+## Identity and type
 
-A calm lending desk. Light, quiet, and a little spacious. One primary action on each screen. Money figures line up. Nothing blinks, and nothing looks like a trading terminal.
+Lendspan's voice is direct, approachable and precise. Tagline: **Clear terms. One loan at a time.** Use Inter for headings, text, controls and financial values, with tabular numerals where values align or change. Reserve monospace for addresses or technical details. Body text starts at 16px; controls on phones do not shrink below 16px. Headings wrap naturally, with tracking no tighter than -0.04em.
 
-Use the Astryx Neutral theme and stay in light mode even if the operating system is dark. Do not invent a parallel palette. Cite the tokens below. Semantic tokens only; do not hardcode a hex in the app.
-
-| Role | Token |
-| --- | --- |
-| Page background | `--color-background-body` |
-| Cards and sheets | `--color-background-surface` |
-| Primary text | `--color-text-primary` |
-| Secondary text | `--color-text-secondary` |
-| Disabled | `--color-text-disabled` |
-| The one primary button, and focus | `--color-accent`, `--color-on-accent`, `--focus-outline-color` |
-| Hairline | `--color-border` |
-| Money received, loan healthy | `--color-text-green` on `--color-background-green` |
-| Risk, unhealthy, failed transaction | `--color-text-red` on `--color-background-red` |
-| Approaching the line, not yet liquidatable | `--color-text-yellow` on `--color-background-yellow` |
-| Loading | `--color-skeleton` |
-| Card radius | `--radius-container` |
-| Control radius | `--radius-element` |
-| Card elevation | `--shadow-low` |
-| Page padding | `--spacing-12` on large screens, `--spacing-6` on a phone |
-| Space inside a card | `--spacing-6` |
-| Gap between sections | `--spacing-8` |
-| Control height | `--size-element-lg` for the primary button, `--size-element-md` for inputs |
-| Words | `--font-family-heading` and `--font-family-body` (Figtree) |
-| Figures | `--font-family-code`, tabular numbers, right-aligned in any column |
-
-Page content sits in a column about 720px wide for a single loan, and about 960px for the offer list. Do not stretch a loan across a ultrawide monitor. That empty margin is intentional.
-
-The accent stays the Neutral ink. Green is for "you receive" and for a healthy loan. Red is for a real problem. Yellow is a warning, used sparingly. Do not paint the whole page green because it is a finance app.
-
-Motion stays inside `--duration-fast` and `--ease-standard`. A status change fades. It does not bounce.
+Light mode only: white surfaces, cool neutral layers, blue primary actions, distinct semantic success/warning/error states. Keep Astryx semantic tokens. Palette literals belong in the token block in `app/app/globals.css`; components consume tokens. The previous ivory/green/brass palette and requirement for mono financial figures are superseded.
 
 ## Information architecture
 
-- Offers. The list of open offers.
-- Offer. One loan, from creation through settlement.
-- Create. A lender's new offer, on one page, with the summary above the button.
+- `/`: explanatory landing page, primary **Try the demo**, secondary **Use Devnet**.
+- `/demo`: wallet-free guided simulation and free exploration.
+- `/devnet`: actual offer list and wallet-based transactions.
+- Create and offer details live under their respective experience. Existing create/offer links redirect into Devnet.
 
-A person always knows which of those three they are on. The title is the loan's state in plain language: "Open offer", "Waiting for repayment", "Repaid", "Expired", "Liquidated".
+Landing and simulation do not initialize wallet providers or depend on chain availability. The Devnet shell identifies the network, displays readiness and connects a wallet only when the visitor chooses to. No registration or sign-in.
 
-## Shared states
+## Landing story
 
-Every screen has the same four states.
+Explain what the loan does, what the lender and borrower supply, how terms are fixed, and what happens at settlement. Use actual product components or a clear fund-flow diagram. Scroll motion follows the story and enhances already-visible content; never hijack scrolling. Include repayment, price-drop risk and expiry, a concise FAQ, and another invitation to try the demo. No invented traction, testimonials or financial guarantees.
 
-- Empty: a short sentence and one action. The offer list says "No open offers" and shows "Create offer" only as a text button, not a second competing primary if the reader is here to borrow.
-- Loading: skeleton bars in `--color-skeleton`, the same size as the numbers they replace. No spinner in the middle of a blank page.
-- Success: the status title changes, the balances update, and a single line says what moved. "You received 100.00 USDC" or "You received your wSOL back."
-- Error: the primary button returns to rest, and one sentence from the program sits under it in `--color-text-red`. Do not show a stack trace. If the price is stale, say "The SOL price is too old. Wait for a fresh price and try again."
+## Guided journey
 
-## Lender
+**Set terms → Borrow → Manage → Settle.** Follow one loan across clearly named perspectives, preserving the same figures. Start with editable example terms. Keep an exit to free exploration available. Simulation roles are explicit; Devnet authority comes exclusively from the connected wallet.
 
-Create, on one page, in this order: USDC amount, interest for the whole term, duration, wSOL required, max LTV, liquidation LTV. Under the fields, a summary in figures: what the borrower will owe, the last second they can repay, and the line "If they miss that time, you receive the wSOL." The only primary button is "Lock USDC".
+### Lender wizard
 
-While the offer is open, the offer screen's primary button is "Cancel offer". Cancelling asks once: "Return the USDC to your wallet?"
+Four named steps: **Amount, Rate and term, Collateral, Review**. Back and refresh preserve valid drafts. Invalid deep links return to the earliest unmet step. Each step shows inline feedback and a live summary of what each side gives and receives. Review allows editing earlier choices.
 
-While the loan is filled, there is no primary button for the lender unless the loan is unhealthy or expired. If it is unhealthy, the primary is "Liquidate". If it is expired, the primary is "Claim collateral". The summary shows principal, debt, collateral, health, and the deadline. Health uses `health_bps` from the research note, shown as a percent with one decimal.
+Collateral begins with understandable choices and a visible collateral amount. Advanced LTV controls and exact calculations remain accessible through detail disclosure. Always explain that interest applies to the whole term, even if the borrower repays early.
 
-Settled screens have no primary button. They show the ending in one line and the amounts.
+### Borrower and active loan
 
-## Borrower
+Before accepting, show USDC received, total USDC repayment, required wSOL, duration and estimated deadline, and liquidation consequences. Explain that wSOL is wrapped SOL. The actual deadline starts on acceptance; after confirmation show its absolute time and remaining time.
 
-The offer list is a quiet table: principal, wSOL required, term, interest, max LTV. One row action, "Review", opens the offer. Rows are not cards stacked in a carnival.
+The exact expiry sentence is: **If you do not repay by then, the lender receives your wSOL.**
 
-The review screen leads with three figures: USDC you receive, USDC you will repay, wSOL you lock. Under them, the deadline in absolute local time, and this sentence with no softer paraphrase: "If you do not repay by then, the lender receives your wSOL." Health at the current price is shown so they can see the gap to liquidation. The only primary button is "Lock wSOL and borrow". It stays disabled until the price is fresh and the LTV check would pass.
+Offer repayment with an inline review of what is paid and returned. At the first expired second, repayment is no longer available. Keep price age and loan status truthful when the network is unavailable.
 
-After accept, the primary button is "Repay". The repay sheet repeats the debt and "You receive your wSOL back." If the deadline has passed, the button is gone and the screen says the collateral has gone, or is going, to the lender.
+### Settlement and replay
 
-## Liquidator
+After each action, say what moved and what can happen next. Devnet receipts link confirmed transactions to the Devnet explorer. Simulation receipts identify themselves as simulated and offer reset/replay through repayment, liquidation and expiry. A reset never changes any Devnet state.
 
-Unhealthy loans are not a separate casino page. On the offer, when the loan is filled and unhealthy and not yet expired, a section titled "This loan can be liquidated" shows three figures: USDC you pay the lender, wSOL you receive, wSOL returned to the borrower. The primary button is "Pay the lender and take collateral". If the price is stale or the loan is healthy, that section is absent. Do not show a disabled liquidate button on a healthy loan. Absence is clearer than a grey button.
+Liquidation uses exact existing integer calculations and real eligibility rules. The simulation can change its sample market; Devnet cannot change the market or skip time. Live liquidation is conditional on genuine price eligibility. Lender self-liquidation remains unavailable under the current program's duplicate-account constraint.
 
-The lender sees the same section and may press it. The borrower never does. They see "Repay" instead, for as long as the deadline has not passed.
+## Transaction and network feedback
 
-## What good feng shui means here
+Distinguish checking, waiting for a wallet, submitting, confirming, confirmed, rejected, failed and uncertain outcomes. Preserve an uncertain signature and reconcile it before another submission. A disconnected RPC is not an empty balance or a closed offer. Display actionable reasons for disabled actions. Clear old wallet-specific success messages when the signer changes.
 
-- One column of content, generous margin, cards with `--shadow-low` rather than heavy frames.
-- The primary action sits at the end of the reading order, once. A second action is a text button.
-- Figures share a baseline and a width so 100.00 and 1,001.001002 do not jump.
-- Warnings sit next to the number they qualify, not in a banner at the top of the app.
-- The expiry sentence is on the accept screen in body text, `--color-text-primary`, not muted to `--color-text-disabled`.
+Guide Devnet users to test SOL and canonical test USDC, and provide explicit wrapping when needed. Oracle refresh may require additional signatures; say so before starting. Local validator controls are development-only and unavailable in public deployments.
 
-## Copy deck
+## Motion and accessibility
 
-Use these words. Do not rename the actions per screen.
+Use the existing Motion library for short state transitions, not decorative loops. Typical product transitions are 150–250ms without financial overshoot. Native scrolling remains intact. Reduced motion retains every state and explanation with instant or gentle transitions. Keyboard navigation, meaningful step focus, announcements, readable contrast and status words are required.
 
-- Lock USDC
-- Cancel offer
-- Lock wSOL and borrow
-- Repay
-- Claim collateral
-- Pay the lender and take collateral
+Desktop layouts pair the decision area with a stable summary; phones stack them without losing the figures needed to make the decision. Validate 390px, tablet and 1440px layouts, including long addresses and fractional token amounts.
 
-Statuses the title may use: Open offer, Waiting for repayment, Repaid, Expired, Liquidated, Cancelled.
+## Action vocabulary
+
+Keep actions understandable and consistent: **Lock USDC**, **Cancel offer**, **Lock wSOL and borrow**, **Repay**, **Claim collateral**, **Pay the lender and take collateral**, and **Close and reclaim rent**. Simulation may use explanatory introductions but must preserve each action's actual consequence.
+
+States remain **Open offer**, **Waiting for repayment**, **Repaid**, **Expired**, **Liquidated**, **Cancelled**, with a separate closed-account result. A transaction submission alone does not establish a new loan state.

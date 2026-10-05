@@ -1,6 +1,6 @@
 # Agent guide
 
-This repo is an isolated fixed-term USDC / wSOL loan on Solana. Week 1 is the local program, its tests, and three client scripts. The interface is specified and is not built yet.
+This repo is Lendspan, an isolated fixed-term USDC / wSOL loan on Solana. The local program and first interface are implemented. The approved redesign adds a wallet-free simulation and a genuine Devnet experience.
 
 You do not need any extra planning tools. The work queue is in this repo.
 
@@ -21,7 +21,7 @@ You do not need any extra planning tools. The work queue is in this repo.
 
 Week 1 does not start the frontend. If the story is Epic 7, or the person explicitly asks for the interface, follow [docs/design-and-experience.md](docs/design-and-experience.md).
 
-That file is a light fintech layout on Astryx semantic tokens, Neutral theme, light mode only. One primary action per screen. Figures use the code font and line up. Use the words in that file's copy deck. Do not switch the app to a dark canvas.
+That file describes Lendspan: Astryx semantic tokens, light white/cool-neutral surfaces and blue primary actions. Inter carries words and aligned tabular figures; monospace is for addresses and technical details. Create is a four-step wizard with a live summary. The landing page tells the loan story with native scroll animations. Simulation and Devnet remain explicitly separate, with no sign-in. Do not switch the app to a dark canvas or hardcode hex outside the token block in `app/app/globals.css`. The project design council is documented in `.design-council/README.md`.
 
 ## Leave these alone
 

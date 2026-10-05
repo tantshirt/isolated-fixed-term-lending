@@ -1,0 +1,241 @@
+@import "@astryxdesign/theme-neutral/theme.css";
+
+/* Lendspan light palette. Legacy variable names keep existing components compatible.
+   Components consume semantic tokens; palette literals are contained here. */
+html[data-astryx-theme="neutral"] {
+  /* Palette */
+  --tenor-ivory: #f8faff;
+  --tenor-surface: #ffffff;
+  --tenor-sunk: #eef2f8;
+  --tenor-line: #dfe5ef;
+  --tenor-line-strong: #bac6da;
+  --tenor-ink: #14213b;
+  --tenor-ink-2: #526079;
+  --tenor-ink-3: #64718a;
+  --tenor-ink-4: #8592a7;
+  --tenor-green: #245be8;
+  --tenor-green-hover: #194ac9;
+  --tenor-green-pressed: #143ca3;
+  --tenor-green-deep: #edf3ff;
+  --tenor-green-tint: #eaf0ff;
+  --tenor-on-green: #f8faff;
+  --tenor-on-green-muted: #526079;
+  --tenor-brass: #245be8;
+  --tenor-brass-bright: #245be8;
+  --tenor-brass-ink: #785513;
+  --tenor-brass-tint: #fff4d9;
+  --tenor-healthy: #276f50;
+  --tenor-healthy-tint: #e1efe6;
+  --tenor-risk: #b4432f;
+  --tenor-risk-tint: #f7e4de;
+
+  /* Astryx semantic tokens → Lendspan */
+  --color-background-body: var(--tenor-ivory);
+  --color-background-surface: var(--tenor-surface);
+  --color-background-card: var(--tenor-surface);
+  --color-background-muted: var(--tenor-sunk);
+  --color-background-popover: var(--tenor-surface);
+  --color-text-primary: var(--tenor-ink);
+  --color-text-secondary: var(--tenor-ink-2);
+  --color-text-disabled: var(--tenor-ink-4);
+  --color-text-accent: var(--tenor-green);
+  --color-accent: var(--tenor-green);
+  --color-accent-muted: var(--tenor-green-tint);
+  --color-on-accent: var(--tenor-on-green);
+  --color-border: var(--tenor-line);
+  --color-border-emphasized: var(--tenor-line-strong);
+  --color-text-green: var(--tenor-healthy);
+  --color-background-green: var(--tenor-healthy-tint);
+  --color-text-red: var(--tenor-risk);
+  --color-background-red: var(--tenor-risk-tint);
+  --color-text-yellow: var(--tenor-brass-ink);
+  --color-background-yellow: var(--tenor-brass-tint);
+  --color-skeleton: var(--tenor-sunk);
+  --focus-outline-color: var(--tenor-brass);
+
+  /* Brand additions */
+  --color-brass: var(--tenor-brass);
+  --color-brass-ink: var(--tenor-brass-ink);
+  --color-text-tertiary: var(--tenor-ink-3);
+  --color-panel: var(--tenor-green-deep);
+  --color-on-panel: var(--tenor-ink);
+  --color-on-panel-muted: var(--tenor-on-green-muted);
+  --color-on-panel-brass: var(--tenor-brass-bright);
+
+  --color-legacy-overlay-1: rgb(255 255 255 / 0.08);
+  --color-legacy-overlay-2: rgb(180 67 47 / 0.35);
+  --color-legacy-overlay-3: rgb(20 32 27 / 0.04);
+  --color-legacy-overlay-4: rgb(246 242 234 / 0.6);
+  --color-legacy-overlay-5: rgb(13 51 40 / 0.85);
+  --color-legacy-overlay-6: rgb(246 242 234 / 0.86);
+  --color-legacy-overlay-7: rgb(13 51 40 / 0.32);
+  --color-legacy-overlay-8: rgb(246 242 234 / 0.22);
+  --color-legacy-overlay-9: rgb(217 185 110 / 0.14);
+  --color-legacy-overlay-10: rgb(246 242 234 / 0.12);
+  --color-legacy-overlay-11: rgb(246 242 234 / 0.06);
+
+  /* Type */
+  --font-family-body: var(--font-inter), Inter, ui-sans-serif, system-ui,
+    sans-serif;
+  --font-family-heading: var(--font-inter), Inter, ui-sans-serif, system-ui,
+    sans-serif;
+  --font-family-code: var(--font-plex-mono), "IBM Plex Mono", ui-monospace,
+    SFMono-Regular, Menlo, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 1rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.75rem;
+
+  /* Shape and depth */
+  --radius-element: 10px;
+  --radius-container: 14px;
+  --radius-full: 999px;
+  --shadow-low: 0 1px 2px rgb(20 32 27 / 0.06), 0 1px 1px rgb(20 32 27 / 0.04);
+  --shadow-med: 0 4px 8px -2px rgb(20 32 27 / 0.1),
+    0 2px 4px -2px rgb(20 32 27 / 0.06);
+  --shadow-high: 0 12px 24px -8px rgb(20 32 27 / 0.22),
+    0 4px 8px -4px rgb(20 32 27 / 0.1);
+  --ring-brass: 0 0 0 3px rgb(201 164 92 / 0.45);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 140ms;
+  --duration-medium: 220ms;
+  --duration-slow: 420ms;
+
+  /* Layers */
+  --z-sticky: 10;
+  --z-popover: 20;
+  --z-backdrop: 30;
+  --z-drawer: 40;
+  --z-toast: 50;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light only;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-background-body);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-outline-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--tenor-brass-tint);
+}
+
+/* Financial figures use Inter with aligned digits. */
+.num {
+  font-family: var(--font-family-body);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.page {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 2rem 1rem 6rem;
+}
+
+.page-narrow {
+  max-width: 760px;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 3rem 2rem 6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+button,
+select {
+  min-height: 44px;
+}
+button {
+  touch-action: manipulation;
+}
+input,
+select {
+  max-width: 100%;
+}
+
+.address {
+  font-family: var(--font-family-code);
+  overflow-wrap: anywhere;
+}
