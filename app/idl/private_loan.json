@@ -2558,6 +2558,452 @@
       ]
     },
     {
+      "name": "fund_quote",
+      "docs": [
+        "Ephemeral rollup. A liquidator funds the current quote revision."
+      ],
+      "discriminator": [
+        79,
+        197,
+        65,
+        255,
+        173,
+        35,
+        41,
+        247
+      ],
+      "accounts": [
+        {
+          "name": "liquidator",
+          "signer": true
+        },
+        {
+          "name": "quote",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  113,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "liquidator_usdc",
+          "writable": true
+        },
+        {
+          "name": "pool_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "revision",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "init_liquidation_pool",
+      "docs": [
+        "Base layer. Admin creates the liquidation pool and its delegated eATAs."
+      ],
+      "discriminator": [
+        126,
+        148,
+        247,
+        243,
+        31,
+        79,
+        13,
+        37
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "address": "3dh3Bxu1hJzH3aHfwNAibRqTxyrPsUFyteiuGxycoohh"
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  113,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "wsol_mint"
+        },
+        {
+          "name": "usdc_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "wsol_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "wsol_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_eata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                6,
+                128,
+                200,
+                234,
+                115,
+                202,
+                172,
+                225,
+                29,
+                240,
+                193,
+                184,
+                192,
+                229,
+                47,
+                173,
+                17,
+                234,
+                44,
+                108,
+                0,
+                194,
+                128,
+                125,
+                224,
+                239,
+                6,
+                229,
+                135,
+                199,
+                95,
+                71
+              ]
+            }
+          }
+        },
+        {
+          "name": "wsol_eata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "wsol_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                6,
+                128,
+                200,
+                234,
+                115,
+                202,
+                172,
+                225,
+                29,
+                240,
+                193,
+                184,
+                192,
+                229,
+                47,
+                173,
+                17,
+                234,
+                44,
+                108,
+                0,
+                194,
+                128,
+                125,
+                224,
+                239,
+                6,
+                229,
+                135,
+                199,
+                95,
+                71
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_buffer",
+          "writable": true
+        },
+        {
+          "name": "usdc_record",
+          "writable": true
+        },
+        {
+          "name": "usdc_metadata",
+          "writable": true
+        },
+        {
+          "name": "wsol_buffer",
+          "writable": true
+        },
+        {
+          "name": "wsol_record",
+          "writable": true
+        },
+        {
+          "name": "wsol_metadata",
+          "writable": true
+        },
+        {
+          "name": "espl_program",
+          "address": "SPLxh1LVZzEkX99H6rqYizhytLWPZVV296zyYDPagv2"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "init_room",
       "docs": [
         "Ephemeral rollup. Creates the private member list and thread."
@@ -3725,6 +4171,116 @@
       ]
     },
     {
+      "name": "schedule_watch",
+      "docs": [
+        "Ephemeral rollup. Anyone schedules the Hydra watch for an active loan."
+      ],
+      "discriminator": [
+        246,
+        13,
+        176,
+        28,
+        156,
+        214,
+        54,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "anchor",
+          "writable": true
+        },
+        {
+          "name": "terms",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "quote",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  113,
+                  117,
+                  111,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  113,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "price_update"
+        },
+        {
+          "name": "crank",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "hydra_program",
+          "address": "eHyd5BU8QffvHi4GnXwxrK4WpS7pM2x9UGKHBWii7mf"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "set_ai_worker",
       "docs": [
         "Base layer. Admin sets the AI worker key and turns the copilot on or off."
@@ -3783,6 +4339,73 @@
           "type": "bool"
         }
       ]
+    },
+    {
+      "name": "settle_ticket",
+      "docs": [
+        "Ephemeral rollup. A liquidator collects a payout or a refund, once."
+      ],
+      "discriminator": [
+        201,
+        80,
+        119,
+        145,
+        208,
+        184,
+        168,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "liquidator",
+          "signer": true
+        },
+        {
+          "name": "quote",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  113,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "liquidator_usdc",
+          "writable": true
+        },
+        {
+          "name": "liquidator_wsol",
+          "writable": true
+        },
+        {
+          "name": "pool_usdc",
+          "writable": true
+        },
+        {
+          "name": "pool_wsol",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
     },
     {
       "name": "undelegate_custody",
@@ -3920,6 +4543,138 @@
           "name": "magic_context",
           "writable": true,
           "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "watch_loan",
+      "docs": [
+        "Ephemeral rollup. Signer-free: expiry, liquidation quotes, and execution."
+      ],
+      "discriminator": [
+        134,
+        107,
+        226,
+        239,
+        119,
+        89,
+        48,
+        95
+      ],
+      "accounts": [
+        {
+          "name": "anchor",
+          "writable": true
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "quote",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  113,
+                  117,
+                  111,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "loan_wsol",
+          "writable": true
+        },
+        {
+          "name": "lender_usdc",
+          "writable": true
+        },
+        {
+          "name": "lender_wsol",
+          "writable": true
+        },
+        {
+          "name": "borrower_wsol",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  113,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool_usdc",
+          "writable": true
+        },
+        {
+          "name": "pool_wsol",
+          "writable": true
+        },
+        {
+          "name": "price_update"
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -4269,6 +5024,19 @@
       ]
     },
     {
+      "name": "LiquidationPool",
+      "discriminator": [
+        186,
+        109,
+        201,
+        30,
+        97,
+        204,
+        140,
+        231
+      ]
+    },
+    {
       "name": "LoanAnchor",
       "discriminator": [
         149,
@@ -4488,6 +5256,11 @@
       "code": 6035,
       "name": "RequestExpired",
       "msg": "This request expired before an answer arrived"
+    },
+    {
+      "code": 6036,
+      "name": "TicketInPlay",
+      "msg": "This ticket can still execute; wait until the quote expires or moves on"
     }
   ],
   "types": [
@@ -4613,6 +5386,26 @@
           {
             "name": "active",
             "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LiquidationPool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "usdc_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "wsol_mint",
+            "type": "pubkey"
           },
           {
             "name": "bump",

@@ -15,18 +15,22 @@ pub mod error;
 pub mod espl;
 pub mod loan;
 pub mod probe;
+pub mod receipt;
 pub mod record;
 pub mod room;
 pub mod schedule;
+pub mod settle;
 
 use ai::*;
 use custody::*;
 use discovery::*;
 use loan::*;
 use probe::*;
+use receipt::*;
 use record::*;
 use room::*;
 use schedule::*;
+use settle::*;
 
 declare_id!("HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK");
 
@@ -200,6 +204,42 @@ pub mod private_loan {
     /// Ephemeral rollup. The worker stores the typed answer once.
     pub fn ai_callback(ctx: Context<AiCallback>, result: Vec<u8>) -> Result<()> {
         ai::ai_callback(ctx, result)
+    }
+
+    /// Base layer. Admin creates the liquidation pool and its delegated eATAs.
+    pub fn init_liquidation_pool(ctx: Context<InitLiquidationPool>) -> Result<()> {
+        settle::init_liquidation_pool(ctx)
+    }
+
+    /// Ephemeral rollup. Anyone schedules the Hydra watch for an active loan.
+    pub fn schedule_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
+        settle::schedule_watch(ctx)
+    }
+
+    /// Ephemeral rollup. Signer-free: expiry, liquidation quotes, and execution.
+    pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
+        settle::watch_loan(ctx)
+    }
+
+    /// Ephemeral rollup. A liquidator funds the current quote revision.
+    pub fn fund_quote(ctx: Context<FundQuote>, revision: u32) -> Result<()> {
+        settle::fund_quote(ctx, revision)
+    }
+
+    /// Ephemeral rollup. A liquidator collects a payout or a refund, once.
+    pub fn settle_ticket(ctx: Context<SettleTicket>) -> Result<()> {
+        settle::settle_ticket(ctx)
+    }
+
+    /// Ephemeral rollup. Commits the loan anchor with a post-commit action that
+    /// writes the settlement receipt on Solana.
+    pub fn publish_receipt(ctx: Context<PublishReceipt>) -> Result<()> {
+        receipt::publish_receipt(ctx)
+    }
+
+    /// Base layer, Magic Action only: writes the receipt once.
+    pub fn record_receipt(ctx: Context<RecordReceipt>, status: u8, commitment: [u8; 32], settled_at: i64) -> Result<()> {
+        receipt::record_receipt(ctx, status, commitment, settled_at)
     }
 
     /// Base layer. Creates a custody PDA, its ATA, and its eATA.

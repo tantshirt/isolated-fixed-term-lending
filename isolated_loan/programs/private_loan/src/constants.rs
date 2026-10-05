@@ -14,6 +14,9 @@ pub const CARD_SEED: &[u8] = b"card";
 pub const JOIN_QUEUE_SEED: &[u8] = b"join-queue";
 pub const AI_CONFIG_SEED: &[u8] = b"ai-config";
 pub const AI_REQUEST_SEED: &[u8] = b"ai";
+pub const LIQ_POOL_SEED: &[u8] = b"liq-pool";
+pub const QUOTE_SEED: &[u8] = b"quote";
+pub const RECEIPT_SEED: &[u8] = b"receipt";
 
 /// MagicBlock Devnet TEE validator (docs/architecture.md, Private protocol).
 pub const TEE_VALIDATOR: Pubkey = pubkey!("MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo");

@@ -24,6 +24,17 @@ anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }
 anchor-spl = "1.0.2"
 ephemeral-rollups-sdk = { version = "=0.17.3", features = ["anchor", "access-control"] }
 loan-core = { path = "../../crates/loan-core" }
+solana-sha256-hasher = "3.1.0"
+
+[dev-dependencies]
+litesvm = "0.10.0"
+solana-account = "3.4.0"
+solana-clock = "3.2.1"
+solana-message = "3.0.1"
+solana-transaction = "3.0.2"
+solana-signer = "3.0.0"
+solana-keypair = "3.0.1"
+pyth-solana-receiver-sdk = "2.0.0"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
