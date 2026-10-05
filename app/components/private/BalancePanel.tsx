@@ -1,9 +1,10 @@
 "use client";
 
 import type { Connection } from "@solana/web3.js";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AmountInput } from "@/components/ui/AmountInput";
 import { Button } from "@/components/ui/Button";
+import { messageFromAnchorError } from "@/lib/anchor-errors";
 import { DEVNET_USDC_MINT, NATIVE_WSOL_MINT } from "@/lib/constants";
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { depositPrivately, readPrivateBalance, withdrawPrivately, type PrivateBalanceState } from "@/lib/private/balances";
@@ -30,15 +31,29 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
   const [sendAmount, setSendAmount] = useState("");
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
+  const key = signer?.publicKey.toBase58() ?? null;
+  const current = useRef(key);
+  current.current = key;
   const refresh = useCallback(async () => {
     if (!signer) return setState(null);
+    const asked = signer.publicKey.toBase58();
+    let next: PrivateBalanceState | null = null;
     try {
-      setState(await readPrivateBalance(base, er, signer.publicKey, t.mint));
+      next = await readPrivateBalance(base, er, signer.publicKey, t.mint);
     } catch {
-      setState(null);
+      next = null;
     }
+    if (current.current === asked) setState(next); // drop reads for a wallet that was switched away
   }, [signer, base, er, t.mint]);
   useEffect(() => void refresh(), [refresh]);
+
+  // A different wallet never inherits the previous one's draft or messages.
+  useEffect(() => {
+    setMessage(null);
+    setTo("");
+    setSendAmount("");
+    setState(null);
+  }, [key]);
 
   const atoms = (() => {
     const n = Number(amount);
@@ -57,6 +72,13 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
     return Number.isFinite(n) && n > 0 ? BigInt(Math.round(n * 10 ** t.decimals)) : 0n;
   })();
 
+  function chooseToken(k: TokenName) {
+    setToken(k);
+    setAmount(k === "USDC" ? "0.10" : "0.01");
+    setSendAmount("");
+    setMessage(null);
+  }
+
   async function send() {
     if (!signer || !er || !toKey) return;
     setBusy("send");
@@ -68,7 +90,7 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
       onChange();
       await refresh();
     } catch (e) {
-      setMessage({ tone: "error", text: e instanceof Error ? e.message : String(e) });
+      setMessage({ tone: "error", text: messageFromAnchorError(e) });
     } finally {
       setBusy(null);
     }
@@ -85,7 +107,7 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
       onChange();
       await refresh();
     } catch (e) {
-      setMessage({ tone: "error", text: e instanceof Error ? e.message : String(e) });
+      setMessage({ tone: "error", text: messageFromAnchorError(e) });
     } finally {
       setBusy(null);
     }
@@ -93,9 +115,9 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
 
   return (
     <div className={styles.panelBody}>
-      <div className={styles.roleChoice} role="group" aria-label="Token">
+      <div className={styles.tokenSwitch} role="group" aria-label="Token">
         {(Object.keys(TOKENS) as TokenName[]).map((k) => (
-          <button type="button" key={k} aria-pressed={token === k} onClick={() => (setToken(k), setAmount(k === "USDC" ? "0.10" : "0.01"), setMessage(null))}>
+          <button type="button" key={k} aria-pressed={token === k} onClick={() => chooseToken(k)}>
             {k}
           </button>
         ))}
@@ -103,7 +125,7 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
       <dl className={styles.balances}>
         <div>
           <dt>Private {token}</dt>
-          <dd className="num">{er ? fmt(state?.privateAmount ?? (state?.exists ? 0n : null), t.decimals) : <span className={styles.pending}>Private until you sign in</span>}</dd>
+          <dd className={er ? "num" : undefined}>{er ? fmt(state?.privateAmount ?? (state?.exists ? 0n : null), t.decimals) : <span className={styles.pending}>Private until you sign in</span>}</dd>
         </div>
         <div>
           <dt>{t.wallet}</dt>

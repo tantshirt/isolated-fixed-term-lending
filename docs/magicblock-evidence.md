@@ -61,3 +61,17 @@ Findings from building it:
 - **The cranker must exist on Solana.** Hydra's trigger marks the cranker writable (it receives the reward). An unfunded cranker key fails with `InvalidWritableAccount`, so the production cranker key holds Devnet SOL.
 - **Action accounts arrive in a fixed order.** The delegation program calls the handler with `[action accounts…, destination program, escrow_auth, escrow]`, and signs `escrow = balance PDA(escrow_auth, 255)`. With a PDA as escrow authority, the intent builder copies `AccountInfo.is_signer`, so the PDA must be marked as a signer before `invoke_signed`.
 - **The program had to shrink to deploy.** Epic 8 gate instructions now build only with `--features gates` (677 KB instead of 831 KB), which let the upgrade buffer fit the Devnet balance while faucets were rate-limited.
+
+## Phase 5: optional integrations
+
+| Story | Status | Date | Evidence |
+| --- | --- | --- | --- |
+| 13.1 Private transfers | PASS | 2026-10-05 | `isolated_loan/scripts/private/transfer.ts`: a private USDC send executes in the ER between two eATAs. Both balances change by exactly the amount, an outsider sees a masked 0, and the app's validator signs only a checked transfer to the shown destination. |
+| 13.1 VRF lab | PASS | 2026-10-05 | `isolated_loan/scripts/private/vrf-lab.ts`: `request_scenario` asks MagicBlock VRF for randomness; the callback writes 32 bytes the learner did not choose. A direct `scenario_callback` from any other signer is rejected. `app/lib/lab-scenario.ts` turns the bytes into a scenario with the same integer math as the program (5 unit tests). |
+| 13.1 SOAR achievements | PASS | 2026-10-05 | `isolated_loan/scripts/private/soar-lab.ts` with a fresh wallet: the app's `/api/lab/register` returns a registration that touches only SOAR and is paid and signed by the learner. `/api/lab/achievement` refuses a wrong answer, then unlocks "Read the line" for the right one after recomputing the outcome from the learner's on-chain randomness. A repeat claim unlocks nothing. Opt-in and public; no loan rate, limit, or priority reads it. |
+| 13.1 Bounded sponsorship | PASS | 2026-10-05 | `isolated_loan/scripts/private/sponsor-lab.ts`: a wallet with 0 SOL draws its first scenario. The server builds the whole transaction: the sponsor pays the fee and sends exactly the scenario rent plus the 0.0005 SOL VRF fee, which the same transaction spends. The learner ends with 0 SOL. A second sponsored draw and a funded wallet are refused, and the sponsor keeps a reserve for SOAR unlocks. |
+
+Findings from building it:
+
+- **SOAR's SDK pays from the provider key.** Registration is built with the learner as the provider's public key and no server signature, so the learner is the fee payer.
+- **The VRF program charges the requester.** Each request moves 0.0005 SOL from the learner to the oracle queue, so sponsorship covers it too.

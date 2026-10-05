@@ -1003,6 +1003,102 @@
           }
         }
       }
+    },
+    "13.1-vrf": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "scenario": "A98CxZGuzzrt7DbGhNVErvbUT54grSe26JYPfT3mgUBu",
+      "request": "2G3EN3Rd3C8pZ4iLYoApkguioQdYMtDPfaRNgcTmuDg2t9JqCsMz93XSGzbMrK5eTerofL1MW8TvrHCnE3oUzJdX",
+      "failed": [],
+      "checks": {
+        "vrf-callback-wrote-randomness": {
+          "ok": true,
+          "detail": {
+            "rounds": 1,
+            "randomness": "e642cc613b3c1871"
+          }
+        },
+        "direct-callback-rejected": {
+          "ok": true,
+          "detail": "only the VRF program identity may call back"
+        }
+      }
+    },
+    "13.1-soar": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "learner": "HfAnoBzSMcZLkYVfgihuKn5DSvQujiycww1QSUcBf6pN",
+      "registration": "3M5JxbQcugnKXzmGsmpLJQZdeDy37qmdRXLzkEzNiQcsM2LQVovJrxus1C3vMyqvsDbdfT5mpBWo7XkAqPoXLjPE",
+      "unlock": "3nvk6UpvmSuwpViQKQh4mu1VfabJQyCvsQkMoZf4Vkh2FTXun2ASMoy7WntcRg4PMK7oAgUvs4avH72Ambfp9wTa",
+      "failed": [],
+      "checks": {
+        "registration-touches-only-soar": {
+          "ok": true,
+          "detail": [
+            "SoarNN",
+            "SoarNN"
+          ]
+        },
+        "learner-registered": {
+          "ok": true,
+          "detail": "3M5JxbQcugnKXzmGsmpLJQZdeDy37qmdRXLzkEzNiQcsM2LQVovJrxus1C3vMyqvsDbdfT5mpBWo7XkAqPoXLjPE"
+        },
+        "wrong-answer-refused": {
+          "ok": true,
+          "detail": {
+            "error": "That is not how this scenario ends. Try another one."
+          }
+        },
+        "right-answer-unlocks": {
+          "ok": "3nvk6UpvmSuwpViQKQh4mu1VfabJQyCvsQkMoZf4Vkh2FTXun2ASMoy7WntcRg4PMK7oAgUvs4avH72Ambfp9wTa",
+          "detail": {
+            "already": false,
+            "signature": "3nvk6UpvmSuwpViQKQh4mu1VfabJQyCvsQkMoZf4Vkh2FTXun2ASMoy7WntcRg4PMK7oAgUvs4avH72Ambfp9wTa"
+          }
+        },
+        "repeat-claim-not-reunlocked": {
+          "ok": true,
+          "detail": {
+            "already": true
+          }
+        }
+      }
+    },
+    "13.1-sponsorship": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "learner": "3j73DHEjaSGpA6kx6dogT3nUCfzFyXo4kp6hpiFmyGzk",
+      "transaction": "55JdthAmvhdTPf45h18ypUe8ZoHJte6XsgutTEsekuooSFGmWFgziPGFV6K4BQ1zDsDQbGMytsjHWxBuHLGzHefE",
+      "failed": [],
+      "checks": {
+        "sponsored-tx-is-rent-plus-own-request": {
+          "ok": true,
+          "detail": {
+            "feePayer": "14YjSNFR7Em7uNgopu6vRq1fBnhBaKypVps9575sKmtL",
+            "lamports": 1587120
+          }
+        },
+        "zero-sol-wallet-drew-a-scenario": {
+          "ok": true,
+          "detail": "55JdthAmvhdTPf45h18ypUe8ZoHJte6XsgutTEsekuooSFGmWFgziPGFV6K4BQ1zDsDQbGMytsjHWxBuHLGzHefE"
+        },
+        "learner-kept-no-sponsored-sol": {
+          "ok": true,
+          "detail": 0
+        },
+        "second-draw-refused": {
+          "ok": true,
+          "detail": {
+            "error": "Sponsorship covers a wallet's first scenario only."
+          }
+        },
+        "funded-wallet-refused": {
+          "ok": true,
+          "detail": {
+            "error": "This wallet can pay for its own scenario."
+          }
+        }
+      }
     }
   }
 }

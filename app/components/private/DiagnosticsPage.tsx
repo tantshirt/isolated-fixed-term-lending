@@ -19,6 +19,10 @@ const priceAge = (d: Uint8Array) => {
   return Math.floor(Date.now() / 1000) - Number(v.getBigInt64(off + 20, true));
 };
 
+/** Base58 addresses inside a detail render in mono; prose stays in Inter. */
+const withMono = (text: string) =>
+  text.split(/([1-9A-HJ-NP-Za-km-z]{32,44})/).map((part, i) => (i % 2 ? <span key={i} className={styles.mono}>{part}</span> : part));
+
 /** Live health of everything the private protocol depends on. Read-only. */
 export function DiagnosticsPage() {
   const { base, er, status, connect } = usePrivate();
@@ -94,13 +98,18 @@ export function DiagnosticsPage() {
         <p className={styles.lede}>Live checks of the rollup, the program, prices, automation, and the copilot. Nothing here signs or spends.</p>
       </header>
       <section className={styles.panel} aria-live="polite">
+        {checks.length > 0 && (
+          <p className={styles.checkSummary}>
+            {checks.filter((c) => c.state === "ok").length} of {checks.length} checks OK{running ? ", still checking" : ""}
+          </p>
+        )}
         <ul className={styles.checks}>
           {checks.map((c) => (
             <li key={c.name} className={styles.check} data-state={c.state}>
               <span className={styles.checkDot} aria-hidden />
               <span className={styles.checkName}>{c.name}</span>
-              <span className="visually-hidden">{c.state === "ok" ? "OK" : c.state === "warn" ? "Needs attention" : "Failing"}</span>
-              <span className={styles.checkDetail}>{c.detail}</span>
+              <span className={styles.badge}>{c.state === "ok" ? "OK" : c.state === "warn" ? "Needs attention" : c.state === "fail" ? "Failing" : "Checking"}</span>
+              <span className={styles.checkDetail}>{withMono(c.detail)}</span>
             </li>
           ))}
         </ul>

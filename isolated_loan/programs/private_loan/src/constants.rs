@@ -17,6 +17,7 @@ pub const AI_REQUEST_SEED: &[u8] = b"ai";
 pub const LIQ_POOL_SEED: &[u8] = b"liq-pool";
 pub const QUOTE_SEED: &[u8] = b"quote";
 pub const RECEIPT_SEED: &[u8] = b"receipt";
+pub const LAB_SEED: &[u8] = b"lab";
 
 /// MagicBlock Devnet TEE validator (docs/architecture.md, Private protocol).
 pub const TEE_VALIDATOR: Pubkey = pubkey!("MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo");

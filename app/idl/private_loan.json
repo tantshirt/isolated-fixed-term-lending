@@ -3099,6 +3099,92 @@
       "args": []
     },
     {
+      "name": "request_scenario",
+      "docs": [
+        "Base layer. A learner asks MagicBlock VRF for a random lab scenario."
+      ],
+      "discriminator": [
+        129,
+        161,
+        82,
+        174,
+        180,
+        23,
+        104,
+        83
+      ],
+      "accounts": [
+        {
+          "name": "learner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "scenario",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  98
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "learner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_queue",
+          "writable": true,
+          "address": "Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "program_identity",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vrf_program",
+          "address": "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz"
+        },
+        {
+          "name": "slot_hashes",
+          "address": "SysvarS1otHashes111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "client_seed",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "retract_card",
       "docs": [
         "Base layer. Publisher removes the card and reclaims rent."
@@ -3263,6 +3349,47 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "scenario_callback",
+      "docs": [
+        "Base layer, VRF program only: stores the randomness."
+      ],
+      "discriminator": [
+        186,
+        207,
+        226,
+        120,
+        86,
+        75,
+        103,
+        240
+      ],
+      "accounts": [
+        {
+          "name": "vrf_program_identity",
+          "docs": [
+            "Scoped VRF identity PDA, bound to this program. Its presence as a signer proves",
+            "the callback was issued by the VRF program for this program."
+          ],
+          "signer": true
+        },
+        {
+          "name": "scenario",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "randomness",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "schedule_watch",
@@ -3654,6 +3781,19 @@
       ]
     },
     {
+      "name": "LabScenario",
+      "discriminator": [
+        87,
+        171,
+        103,
+        218,
+        240,
+        22,
+        34,
+        225
+      ]
+    },
+    {
       "name": "LiquidationPool",
       "discriminator": [
         186,
@@ -3987,6 +4127,46 @@
           {
             "name": "active",
             "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LabScenario",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "learner",
+            "type": "pubkey"
+          },
+          {
+            "name": "randomness",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "docs": [
+              "0 waiting for VRF, 1 ready."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "rounds",
+            "type": "u32"
+          },
+          {
+            "name": "requested_at",
+            "type": "i64"
           },
           {
             "name": "bump",

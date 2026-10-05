@@ -14,6 +14,7 @@ pub mod custody;
 pub mod discovery;
 pub mod error;
 pub mod espl;
+pub mod lab;
 pub mod loan;
 #[cfg(feature = "gates")]
 pub mod probe;
@@ -28,6 +29,7 @@ use ai::*;
 #[cfg(feature = "gates")]
 use custody::*;
 use discovery::*;
+use lab::*;
 use loan::*;
 #[cfg(feature = "gates")]
 use probe::*;
@@ -219,6 +221,16 @@ pub mod private_loan {
     /// Ephemeral rollup. The worker stores the typed answer once.
     pub fn ai_callback(ctx: Context<AiCallback>, result: Vec<u8>) -> Result<()> {
         ai::ai_callback(ctx, result)
+    }
+
+    /// Base layer. A learner asks MagicBlock VRF for a random lab scenario.
+    pub fn request_scenario(ctx: Context<RequestScenario>, client_seed: u8) -> Result<()> {
+        lab::request_scenario(ctx, client_seed)
+    }
+
+    /// Base layer, VRF program only: stores the randomness.
+    pub fn scenario_callback(ctx: Context<ScenarioCallback>, randomness: [u8; 32]) -> Result<()> {
+        lab::scenario_callback(ctx, randomness)
     }
 
     /// Base layer. Admin creates the liquidation pool and its delegated eATAs.
