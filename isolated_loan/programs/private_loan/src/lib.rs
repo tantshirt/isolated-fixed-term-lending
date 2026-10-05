@@ -1,7 +1,8 @@
 //! Lendspan private protocol on MagicBlock Private Ephemeral Rollups.
 //!
-//! Epic 8 gate code only. `probe` exists to prove permissions, delegation,
-//! and the canonical Pyth read inside the TEE before any loan state is built.
+//! `probe`, `custody`, `record`, and `schedule` are the Epic 8 gate modules.
+//! `room` is the private foundation (Epic 9.2): rooms, invitations, scoped
+//! sessions, and messages, with all sensitive state in ER-only records.
 
 use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::anchor::ephemeral;
@@ -12,11 +13,13 @@ pub mod error;
 pub mod espl;
 pub mod probe;
 pub mod record;
+pub mod room;
 pub mod schedule;
 
 use custody::*;
 use probe::*;
 use record::*;
+use room::*;
 use schedule::*;
 
 declare_id!("HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK");
@@ -64,6 +67,46 @@ pub mod private_loan {
     /// Ephemeral rollup. Creates a private ER-only record sponsored by the probe.
     pub fn create_record(ctx: Context<CreateRecord>, payload: [u8; 32]) -> Result<()> {
         record::create_record(ctx, payload)
+    }
+
+    /// Base layer. Creates the room anchor and funds it to sponsor private records.
+    pub fn open_room(ctx: Context<OpenRoom>, room_id: [u8; 32]) -> Result<()> {
+        room::open_room(ctx, room_id)
+    }
+
+    /// Base layer. Delegates the room anchor to the TEE (same transaction as `open_room`).
+    pub fn delegate_room(ctx: Context<DelegateRoom>, room_id: [u8; 32]) -> Result<()> {
+        room::delegate_room(ctx, room_id)
+    }
+
+    /// Ephemeral rollup. Creates the private member list and thread.
+    pub fn init_room(ctx: Context<InitRoom>) -> Result<()> {
+        room::init_room(ctx)
+    }
+
+    /// Ephemeral rollup. Owner adds a member and widens both permissions.
+    pub fn invite_member(ctx: Context<ManageMembers>, member: Pubkey, role: u8) -> Result<()> {
+        room::invite_member(ctx, member, role)
+    }
+
+    /// Ephemeral rollup. Owner removes a member and narrows both permissions.
+    pub fn revoke_member(ctx: Context<ManageMembers>, member: Pubkey) -> Result<()> {
+        room::revoke_member(ctx, member)
+    }
+
+    /// Ephemeral rollup. A member authorises a session key for nonfinancial actions.
+    pub fn create_session(ctx: Context<CreateSession>, session_key: Pubkey, expires_at: i64, scope: u32) -> Result<()> {
+        room::create_session(ctx, session_key, expires_at, scope)
+    }
+
+    /// Ephemeral rollup. The authorising wallet revokes its session.
+    pub fn revoke_session(ctx: Context<RevokeSession>) -> Result<()> {
+        room::revoke_session(ctx)
+    }
+
+    /// Ephemeral rollup. A member, or a session with post scope, posts a message.
+    pub fn post_message(ctx: Context<PostMessage>, body: Vec<u8>) -> Result<()> {
+        room::post_message(ctx, body)
     }
 
     /// Base layer. Creates a custody PDA, its ATA, and its eATA.

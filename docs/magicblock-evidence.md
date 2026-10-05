@@ -16,3 +16,11 @@ One row per Epic 8 gate. All seven gates ran on 2026-10-05 against the Devnet TE
 
 - `private_loan` program id: `HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK`. The keypair stays in `isolated_loan/target/deploy/` and is not committed, the same as `isolated_loan`.
 - Every other id is in the Private protocol table in [architecture.md](architecture.md).
+
+## Phase 1: private foundation
+
+| Story | Status | Date | Evidence |
+| --- | --- | --- | --- |
+| 9.2 Rooms, invitations, scoped sessions | PASS | 2026-10-05 | `isolated_loan/scripts/private/rooms.ts`, with an owner, an invitee, and an outsider. The room anchor is opened, funded, and delegated in one base transaction. The member list, thread, and sessions are ER-only records with permissions listing active members. The invitee reads only after an invite. The outsider never reads. A session key posts without the wallet but cannot invite. Expired and revoked sessions are rejected. A revoked member can neither read nor post. None of the records exist on Solana. **Finding:** a non-member's failed transaction shows only the error number, because its logs are private. |
+| 9.3 Private balances | PASS | 2026-10-05 | `isolated_loan/scripts/private/balances.ts`, with a fresh funded test wallet. An owner-only eATA permission, deposit, and delegation land in one transaction. Inside the TEE the owner reads 0.1 USDC and an outsider reads a masked 0. Undelegate and withdraw return exactly 0.1 USDC. Every base transaction passed the reviewed-transaction validator, which refuses an unreviewed destination. **Note:** the main wallet's own USDC eATA was already delegated on 2026-10-04 by earlier work and was left untouched. |
+| 9.4 Execution receipts and recovery | PASS (unit) | 2026-10-05 | `app/lib/private-receipts.test.ts`: ER actions are "executed", commits stay "settling" until Solana confirms, unknown statuses never advance, and open receipts are never dropped. `app/lib/private-tee.test.ts`: private requests go only to the TEE. Browser wallet signing was not automated. |

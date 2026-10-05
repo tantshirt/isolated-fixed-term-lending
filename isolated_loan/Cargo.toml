@@ -13,3 +13,7 @@ codegen-units = 1
 opt-level = 3
 incremental = false
 codegen-units = 1
+
+# private_loan is deployed and redeployed often; optimise it for size.
+[profile.release.package.private_loan]
+opt-level = "z"

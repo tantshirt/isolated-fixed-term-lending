@@ -56,9 +56,9 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 | 6 | [8.5 Canonical Pyth inside the PER](stories.md) | Done |
 | 7 | [8.6 Private scheduled execution](stories.md) | Done |
 | 8 | [8.7 Commit visibility](stories.md) | Done |
-| 9 | [9.2 Rooms, invitations, and scoped sessions](stories.md) | Open |
-| 10 | [9.3 Private balances](stories.md) | Open |
-| 11 | [9.4 Execution receipts and recovery](stories.md) | Open |
+| 9 | [9.2 Rooms, invitations, and scoped sessions](stories.md) | Done |
+| 10 | [9.3 Private balances](stories.md) | Done |
+| 11 | [9.4 Execution receipts and recovery](stories.md) | Done |
 | 12 | [10.1 Fund, accept, repay, cancel, expire, withdraw](stories.md) | Open |
 | 13 | [11.1 Discovery cards and competing proposals](stories.md) | Open |
 | 14 | [11.2 AI request and callback](stories.md) | Open |
@@ -77,3 +77,4 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 - 2026-10-05: Story 8.5 done on Devnet TEE; see [evidence](magicblock-evidence.md). Private accept and liquidate can use the same Pyth account and checks as the public program.
 - 2026-10-05: Story 8.4 done on Devnet TEE; see [evidence](magicblock-evidence.md). Wallets cannot read custody token balances inside the TEE, so private loan state must carry its own accounting and the interface reads that, not token accounts.
 - 2026-10-05: Epic 8 complete. 8.7 found that committed accounts are plaintext on Solana, so private loan records must be ER-only (8.3) and only balances and opaque receipts settle. 8.6 found no hosted cranker, so the worker runs one. Next: 9.2 rooms, invitations, and scoped sessions.
+- 2026-10-05: Phase 1 done (9.2–9.4). `/devnet/private` is a guided workflow with TEE sign-in, rooms, private balance, and receipts; gate proof moved to `/devnet/private/proof`. Room threads are written in place because a 2.9 KB struct overflows the SBF stack.

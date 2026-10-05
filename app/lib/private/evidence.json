@@ -459,6 +459,135 @@
         },
         "cancel": "Error: ER tx 55rSYy8dsGdTCX85uvKKztuxQZRtrVnRUR9qVLhiGjQqdLQiE9P31UrYG3MC5iGmVvF8mTsR6N8Rf5GvgYkeDZYt failed: \"InvalidAccountForFee\""
       }
+    },
+    "9.3": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "eata": "G9hCzdy7bHox9QGR9HnBWTQdSbZycRWGvrbeyuJHryv5",
+      "signatures": {
+        "setup": "5WEkMXWhugeh5EznZgju4cik3BR18tQvJyck1CKV12JBNXUARowZYrcQn3skhnh46dJHZ1Jw9263hYt1Jp1siWYm",
+        "deposit": "3suc9c7FWB8UVtdroAwYjcjCzj4Vy5ez4zWwNGQLEXJN7dz1gf4EpRHVL593KgVnpuzvn7Cv2yQ8wRaJrapNHNU8",
+        "undelegate": "2DG9tEUzNaF3ZKyez694c3B7FMVg8pg72LnVeCAtPhPxbiuuBs3aYAMycvFpi5Jou5cLrzXZw4yx3yjNkLmQhyb4",
+        "withdraw": "5fgoCaFNo9XcQeD6Lg8s3hXm33fQvYwuRcdL1UvhW8qxo69zqZGMJQYfefouG79quHPYmz56N2QfC3BRkrCMQmVA"
+      },
+      "failed": [],
+      "checks": {
+        "wallet-debited-exactly": {
+          "ok": true,
+          "detail": {
+            "start": "100000"
+          }
+        },
+        "owner-reads-private-balance": {
+          "ok": true,
+          "detail": {
+            "owner": "100000"
+          }
+        },
+        "outsider-cannot-read-balance": {
+          "ok": true,
+          "detail": {
+            "outsider": "0"
+          }
+        },
+        "undelegate-in-er": {
+          "ok": true,
+          "detail": null
+        },
+        "exact-round-trip": {
+          "ok": true,
+          "detail": {
+            "start": "100000",
+            "end": "100000",
+            "committed": "100000"
+          }
+        },
+        "validator-refuses-unreviewed-destination": {
+          "ok": true,
+          "detail": "checked before signing"
+        }
+      }
+    },
+    "9.2": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "anchor": "GmkB2sCou7iDC7FbqCRy8FF5u6UpsxfnqCjRGGnMysp5",
+      "signatures": {
+        "open": "2uaPyvXSkyKB27DYvHGgFxmgpocxYFeiatvfns2SaToBCRdzQ8MCtti5CqdgordWdyJcbfeqHsgiKFyPkxP1WRYU",
+        "init": "34BcVafi1kFyWfKDQy54yfzc1XciSdEDa8dYgc1Yhe4fmsJr8hnSr6AmP7UjT9qZ9UF4ENuoci7bo5iF5XwCPcN2",
+        "invite": "3Mm6AQthQaTkntaEDKUyucc8bveBbFLyUmhK7Zm1Vhez6LqNGsRafg1LpXD4FEXpXGXQkqMvuKFfy35jYMXdSBn9",
+        "revoke": "2A9MKAF1LtNEsCnHFyQZgbKSVVjmUmDudJkzdhdj433KBoAX7pVyNTQm6WjJis6AMT1qahtN5kihG6zNNtsXuyMa"
+      },
+      "failed": [],
+      "checks": {
+        "owner-reads-room": {
+          "ok": true,
+          "detail": {
+            "members": 1
+          }
+        },
+        "invitee-cannot-read-before-invite": {
+          "ok": true,
+          "detail": "thread hidden"
+        },
+        "non-owner-cannot-invite": {
+          "ok": true,
+          "detail": "Error: 4xeuVnisAhVjpSWvY7E3Fq6r9k2Gnzfg6pWVpiya7p8DELtY7b2748bCiv9WoksPq8ANf4gqFS5UrFCiHXKyvDSm failed: {\"InstructionError\":[0,{\"Custom\":6010}]} "
+        },
+        "invitee-reads-after-invite": {
+          "ok": true,
+          "detail": {
+            "visible": true
+          }
+        },
+        "outsider-cannot-read": {
+          "ok": true,
+          "detail": "hidden"
+        },
+        "session-key-posts-without-wallet": {
+          "ok": true,
+          "detail": "2RNykmJUbHCrruxmE9Wy1iopKqAA41BVHURmNLkcn7yDzugtqpaSHjxGTUGnZMg4FXhBCQhZUmB7Rvs7pmNkXLne"
+        },
+        "session-cannot-grant-access": {
+          "ok": true,
+          "detail": "Error: 43GvKEU9zppEpoYdbgc2wtBJ62ZjCz7UscAqLMUndbWdRGhy8XRnD54xEaddkPe9Gh7bWM31KTwABCEJB7HxLq2n failed: {\"InstructionError\":[0,{\"Custom\":6010}]} Program log: AnchorError thrown in programs/private_loan/src/room.rs:285. E"
+        },
+        "expired-session-rejected": {
+          "ok": true,
+          "detail": "Error: TJpJRBNVt64LjfLrF3A2cfTC6QSnVpUXXtUWJcenkxcyt8Wm7aKSmud9W7YQMKos1BGPcKHpxWqVFJksC3LdCxx failed: {\"InstructionError\":[0,{\"Custom\":6020}]} Program log: AnchorError thrown in programs/private_loan/src/room.rs:368. Er"
+        },
+        "revoked-session-rejected": {
+          "ok": true,
+          "detail": "Error: 2hd84Lc9TfXBHe6xAg2Yro2mPFh237ae6FbzLzmc2YuZNfeEBRVeFtDMRWrJaZ8DcBBr7ENDjS4Sk9c3TkzAg94z failed: {\"InstructionError\":[0,{\"Custom\":6019}]} Program log: AnchorError thrown in programs/private_loan/src/room.rs:367. E"
+        },
+        "thread-has-member-and-session-messages": {
+          "ok": true,
+          "detail": {
+            "messages": [
+              "Hello from the lender",
+              "Sent by a session key"
+            ]
+          }
+        },
+        "revoked-member-cannot-read": {
+          "ok": true,
+          "detail": "thread hidden after revoke"
+        },
+        "revoked-member-cannot-post": {
+          "ok": true,
+          "detail": "Error: 22ozqmp2T99Xhcf6FsZ6UDa2yzAa2xcBzqRVx41GPL4hrCeikVt8ZD7g9aBsmtijsby8Y8xBF6uoPRXXLvx8Kipy failed: {\"InstructionError\":[0,{\"Custom\":6012}]} "
+        },
+        "room-records-absent-on-base": {
+          "ok": true,
+          "detail": "state, thread, session"
+        },
+        "anchor-delegated-not-plaintext-members": {
+          "ok": true,
+          "detail": {
+            "owner": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+          }
+        }
+      }
     }
   }
 }
