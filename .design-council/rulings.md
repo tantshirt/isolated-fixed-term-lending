@@ -103,3 +103,16 @@ Coverage note: signed-in states remain unverified (unchanged). The "1 issue" dev
 | The active tab scrolls into view on phones; the "Private" label hides under 720px | Fovea / Indigo | At 375px "Loan lab" was off-screen with no cue that it was selected. |
 | Loan lab moves to `/devnet/private/lab`; `/devnet/lab` redirects | Hollis | One layout owns the tabs; old links keep working. |
 | Breadcrumbs are removed from tab pages; the room keeps "Overview / Room abcd" | Sol | Tabs already say where you are; a room is not a tab, so it keeps its way back. |
+
+## Private refactor B: Overview as a stepped flow (2026-10-05)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Overview shows one step at a time (Sign in, Room, Fund, Terms) using the Create wizard's kicker, dots and question heading | Sally / Indigo | Five equal panels plus a six-step rail was "a lot going on"; Create is the pattern the user already likes. |
+| Steps unlock from real state, not from Continue; the URL keeps `?step=` | Plumb / Hollis | A step cannot claim progress the wallet has not made; deep links still work and fall back safely. |
+| Terms is readable before sign-in and explains propose, compare, commit, and the three endings | Sol / Fovea | The user could not tell how private terms worked. The rules should be clear before a wallet is involved. |
+| A blocked step shows a reason and "How terms work", never a dead Continue button | Fovea | Disabled buttons need an actionable reason (design brief). |
+| Funding is skippable; the "What stays private" grid moves into a sticky "Your private desk" aside | Ravi / Sol | Funding is not needed to read or join a room; privacy facts are reference, not a step. |
+| Recent activity is collapsed below the flow | Ravi | Receipts are history, not the next action. |
+
+Coverage note: signed-in steps 2–4 were not screenshot-verified (headless browsers cannot sign a TEE login). Signed-out steps 1 and 4 were checked at 375 and 1280px with no horizontal overflow.
