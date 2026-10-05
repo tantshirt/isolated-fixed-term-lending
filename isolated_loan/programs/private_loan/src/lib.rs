@@ -11,9 +11,13 @@ pub mod custody;
 pub mod error;
 pub mod espl;
 pub mod probe;
+pub mod record;
+pub mod schedule;
 
 use custody::*;
 use probe::*;
+use record::*;
+use schedule::*;
 
 declare_id!("HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK");
 
@@ -45,6 +49,21 @@ pub mod private_loan {
     /// Ephemeral rollup. Commits and undelegates the probe back to the base layer.
     pub fn undelegate_probe(ctx: Context<UndelegateProbe>) -> Result<()> {
         probe::undelegate_probe(ctx)
+    }
+
+    /// Ephemeral rollup. Permissionless scheduled tick; a no-op once settled.
+    pub fn crank_tick(ctx: Context<CrankTick>) -> Result<()> {
+        probe::crank_tick(ctx)
+    }
+
+    /// Ephemeral rollup. Creates a Hydra crank for `crank_tick`, sponsored by the probe.
+    pub fn schedule_tick(ctx: Context<ScheduleTick>, seed: [u8; 32], interval_slots: u64, remaining: u64) -> Result<()> {
+        schedule::schedule_tick(ctx, seed, interval_slots, remaining)
+    }
+
+    /// Ephemeral rollup. Creates a private ER-only record sponsored by the probe.
+    pub fn create_record(ctx: Context<CreateRecord>, payload: [u8; 32]) -> Result<()> {
+        record::create_record(ctx, payload)
     }
 
     /// Base layer. Creates a custody PDA, its ATA, and its eATA.

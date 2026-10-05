@@ -51,11 +51,11 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 | 1 | [8.1 Pin the toolchain](stories.md) | Done |
 | 2 | [9.1 Shared loan core](stories.md) | Done |
 | 3 | [8.2 TEE auth and permissions](stories.md) | Done |
-| 4 | [8.3 ER-only accounts](stories.md) | Open |
+| 4 | [8.3 ER-only accounts](stories.md) | Done |
 | 5 | [8.4 Program-controlled eSPL custody](stories.md) | Done |
 | 6 | [8.5 Canonical Pyth inside the PER](stories.md) | Done |
-| 7 | [8.6 Private scheduled execution](stories.md) | Open |
-| 8 | [8.7 Commit visibility](stories.md) | Open |
+| 7 | [8.6 Private scheduled execution](stories.md) | Done |
+| 8 | [8.7 Commit visibility](stories.md) | Done |
 | 9 | [9.2 Rooms, invitations, and scoped sessions](stories.md) | Open |
 | 10 | [9.3 Private balances](stories.md) | Open |
 | 11 | [9.4 Execution receipts and recovery](stories.md) | Open |
@@ -76,3 +76,4 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 - 2026-10-05: Story 8.2 done on Devnet TEE; see [evidence](magicblock-evidence.md). The Rust SDK's `delegate_*` helper appends the PDA bump itself, so pass seeds without it. Use a full `anchor build`; `anchor build -p` writes to the program's own `target/`.
 - 2026-10-05: Story 8.5 done on Devnet TEE; see [evidence](magicblock-evidence.md). Private accept and liquidate can use the same Pyth account and checks as the public program.
 - 2026-10-05: Story 8.4 done on Devnet TEE; see [evidence](magicblock-evidence.md). Wallets cannot read custody token balances inside the TEE, so private loan state must carry its own accounting and the interface reads that, not token accounts.
+- 2026-10-05: Epic 8 complete. 8.7 found that committed accounts are plaintext on Solana, so private loan records must be ER-only (8.3) and only balances and opaque receipts settle. 8.6 found no hosted cranker, so the worker runs one. Next: 9.2 rooms, invitations, and scoped sessions.

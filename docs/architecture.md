@@ -156,6 +156,8 @@ Decisions:
 - **Settlement evidence.** ER execution, commit, and base-layer settlement are tracked separately. Queue acceptance is never shown as settlement.
 - **Custody accounting.** Inside the TEE, no wallet can read a custody PDA's token balance; the ER returns a masked value. Loan state records principal and collateral itself, and the interface reads loan state. Token balances are checked on the base layer after settlement.
 - **eSPL calls.** `private_loan/src/espl.rs` builds eSPL instructions in the order the deployed program's processors read them. Do not switch to the SDK's `spl` CPI helpers: the feature does not build for SBF, and its withdraw order is wrong in 0.17.3.
+- **What may be committed.** Committing a delegated account writes its data to Solana in plaintext (gate 8.7). Terms, negotiation, approvals, and the ticket-to-loan mapping live in ER-only records (gate 8.3) and are never committed. Only token balances and opaque receipts settle.
+- **Cranks.** Hydra cranks are created inside the ER by the program, with a delegated PDA as sponsor and as cancel authority. Lendspan's worker runs the cranker; no hosted cranker was observed on the Devnet TEE.
 - **Gates.** Each MagicBlock capability needs a passing Epic 8 gate in [magicblock-evidence.md](magicblock-evidence.md). A failed gate leaves the feature off.
 
 Pinned ids (verified 2026-10-05):

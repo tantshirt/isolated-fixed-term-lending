@@ -174,3 +174,22 @@ pub struct UndelegateProbe<'info> {
     #[account(mut, has_one = authority @ PrivateLoanError::Unauthorized)]
     pub probe: Account<'info, Probe>,
 }
+
+/// Value that marks a probe as settled. `crank_tick` leaves it untouched.
+pub const SETTLED: u64 = u64::MAX;
+
+/// Permissionless and signer-free, so a Hydra crank can call it. Counts ticks
+/// until the probe is settled, then does nothing: a retry after settlement is harmless.
+pub fn crank_tick(ctx: Context<CrankTick>) -> Result<()> {
+    let probe = &mut ctx.accounts.probe;
+    if probe.value != SETTLED {
+        probe.value = probe.value.saturating_add(1).min(SETTLED - 1);
+    }
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct CrankTick<'info> {
+    #[account(mut)]
+    pub probe: Account<'info, Probe>,
+}

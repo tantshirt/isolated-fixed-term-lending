@@ -326,6 +326,139 @@
           }
         }
       }
+    },
+    "8.7": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "probe": "5bTTYCn9BJDtK9n8efqvV2oKGdWUDM3ym1LmHn7nCaA5",
+      "signatures": {
+        "setup": "3CX1xyJtMpM4sUrXim4CrjiAMMWmZd8nyRF3ZXBkA38PNSimJaPLVCTtXRrKVoPCqYDL4zZmwTqCPMvrMBC9dd7Y",
+        "write": "qHMPT2YAmNyQ2eYaaUykw8YJscmmAkEdoTsGcucoLgRCTi737BRAgCBu993fRyAiidJyJFVvdun6YCn62s15qtM",
+        "undelegate": "3kLd7Augq6pa7esdcqgaxHoZotgDyiaiA7PGsZmhqd8qN2enuo7eBfPo9h19hWLjGCDf5E7r4TEvL2YLbyvAycp9"
+      },
+      "plaintextOnBaseAfterCommit": true,
+      "blocks": [
+        "committing private terms or negotiation records to Solana"
+      ],
+      "finding": "Committing a permissioned account writes its plaintext data to Solana. Terms, negotiations, and approvals must never be committed; keep them ER-only and settle only opaque receipts and token balances.",
+      "checks": {
+        "base-before-commit": {
+          "containsMarker": false
+        },
+        "base-account-after-commit": {
+          "owner": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+          "containsMarker": true
+        },
+        "base-commit-transactions": [
+          {
+            "signature": "4fAuae6RRehMJenwvpXMN8KMwyw5qK2c3Rc65vjSMSuKMUuS55w4EaC6S7W5Hju8LKkKJcrS7Y4X1WzyeLrbjxWr",
+            "programs": [
+              "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+              "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+            ],
+            "markerInMessage": true,
+            "markerInLogs": false
+          }
+        ]
+      }
+    },
+    "8.3": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "probe": "3cnKQLAkEbvwUFsZFitRNAn66bfaj9krdE6YzNxDzU3n",
+      "record": "147fnHUZNTbTEA9MCNK8AhjgpHEbaXPipfdTWAWdRSiC",
+      "signatures": {
+        "setup": "28rm4vJ8ZLrbde9VvU3YAojK4qgLiwNc4RUigBvWpam4ZGPGty87tcR4sKkdjZVoJTT8Vke2Zx7oSt66Ru22Nvag",
+        "create": "4DrWrzx1dFo91XQwm7yKGMkwWfVjZ6ode8EfAYN5haUT15wuiqrYxsSUDYBhZL31ZehpUTtN7GsiR52cyMKPDUtu",
+        "undelegate": "4XtiMPCWqsY1NPHbV47ZMGa9gNzKCJVjvGmRt7Q47aMYzEmqx72WMdxueiMzkohFq2en4d5aezLoAqNUNoAKuDBy"
+      },
+      "failed": [],
+      "checks": {
+        "member-reads-record": {
+          "ok": true,
+          "detail": {
+            "visible": true,
+            "owner": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+            "hasMarker": true
+          }
+        },
+        "outsider-cannot-read-record": {
+          "ok": true,
+          "detail": {
+            "visible": false
+          }
+        },
+        "anonymous-cannot-read-record": {
+          "ok": true,
+          "detail": {
+            "visible": false
+          }
+        },
+        "record-absent-on-base-while-delegated": {
+          "ok": true,
+          "detail": "147fnHUZNTbTEA9MCNK8AhjgpHEbaXPipfdTWAWdRSiC"
+        },
+        "record-absent-on-base-after-sponsor-commit": {
+          "ok": true,
+          "detail": "147fnHUZNTbTEA9MCNK8AhjgpHEbaXPipfdTWAWdRSiC"
+        },
+        "marker-never-in-base-transactions": {
+          "ok": true,
+          "detail": {
+            "transactionsChecked": 2
+          }
+        },
+        "record-in-er-after-sponsor-undelegated": {
+          "visible": true,
+          "owner": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+          "hasMarker": true
+        },
+        "validator-restart": "Not testable: the Devnet TEE is hosted by MagicBlock. ER-only records are treated as non-durable until a restart is observed."
+      }
+    },
+    "8.6": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "probe": "G3LaRptcyeSsEwwkp3kzF7rYLs9VaaEJSujJZF1jazxP",
+      "crank": "DzRVGAGbooGtVZ1zRdSaHYjf3QqBciD5HLMXXXcP1V5c",
+      "setup": "4NTH68KokKrR6c92qgMrNKohpK8WL3A8zTUrdw3vR7H64PWJDkLrrZXgSgeLuuygoNYM5t37JGeqkV4komKDRFwN",
+      "failed": [],
+      "checks": {
+        "crank-created-in-er": {
+          "ok": true,
+          "detail": {
+            "crank": "DzRVGAGbooGtVZ1zRdSaHYjf3QqBciD5HLMXXXcP1V5c",
+            "createSig": "3AxdaYZmXJjGFqUhtxw5kSQvppWGyAYixUkqGzfHUSYQFHpzfpZK7jdCmkfnevpUtoYEb8UiSeQbmnczzgeYG9rm"
+          }
+        },
+        "hosted-cranker-observed": {
+          "observed": false,
+          "ticksAfterWait": "0"
+        },
+        "manual-trigger": "2d3ekBzMgzJ5JycgGXX97MKnfdiusZE1tYZ5px2QbvYAiBpux25MUMris37X3ujX8JFEC9H1sdA46gFk1Pm2ZCwp",
+        "scheduled-tick-ran-on-private-probe": {
+          "ok": true,
+          "detail": {
+            "value": "1",
+            "via": "manual trigger"
+          }
+        },
+        "outsider-crank-view": {
+          "owner": "eHyd5BU8QffvHi4GnXwxrK4WpS7pM2x9UGKHBWii7mf",
+          "len": 197
+        },
+        "outsider-cannot-read-probe": {
+          "ok": true,
+          "detail": "probe hidden"
+        },
+        "tick-after-settlement-is-noop": {
+          "ok": true,
+          "detail": {
+            "value": "18446744073709551615"
+          }
+        },
+        "cancel": "Error: ER tx 55rSYy8dsGdTCX85uvKKztuxQZRtrVnRUR9qVLhiGjQqdLQiE9P31UrYG3MC5iGmVvF8mTsR6N8Rf5GvgYkeDZYt failed: \"InvalidAccountForFee\""
+      }
     }
   }
 }
