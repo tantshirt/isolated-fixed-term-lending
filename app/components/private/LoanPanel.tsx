@@ -2,42 +2,28 @@
 
 import type { Connection, PublicKey } from "@solana/web3.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AmountInput } from "@/components/ui/AmountInput";
 import { Button } from "@/components/ui/Button";
 import { usePrice } from "@/lib/client/hooks";
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { collateralValueUsdc, currentLtvBps, debt } from "@/lib/loan-math";
 import { LOAN_STATUS_LABEL, type LoanTerms } from "@/lib/private/loan-codec";
 import {
-  LOAN_MESSAGE_PREFIX,
   acceptLoan,
   cancelLoan,
   claimLoan,
   explainLoanError,
   fundLoan,
   loanFromId,
-  proposeLoan,
   readLoan,
   repayLoan,
 } from "@/lib/private/loans";
 import type { RoomMember } from "@/lib/private/room-codec";
 import { publishReceipt, readReceipt, scheduleWatch, watchStatus } from "@/lib/private/liquidation";
 import { utils } from "@coral-xyz/anchor";
-import { postMessage } from "@/lib/private/rooms";
 import styles from "./private.module.css";
 
 const usdc = (a: bigint) => (Number(a) / 1e6).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 const wsol = (a: bigint) => (Number(a) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 9 });
-const short = (k: PublicKey) => `${k.toBase58().slice(0, 4)}…${k.toBase58().slice(-4)}`;
-
-const DURATIONS = [
-  { label: "1 day", seconds: 86_400 },
-  { label: "7 days", seconds: 604_800 },
-  { label: "30 days", seconds: 2_592_000 },
-  { label: "2 minutes (try expiry)", seconds: 120 },
-];
-
-export type Prefill = { principalUsdc: number; interestPercent: number; durationDays: number; collateralWsol: number };
 
 type Ctx = {
   signer: LoanSigner;
@@ -47,9 +33,13 @@ type Ctx = {
   members: RoomMember[];
   loanIds: string[];
   loans: { anchor: PublicKey; terms: LoanTerms }[];
-  prefill?: Prefill | null;
   onChange: () => void;
 };
+
+/** Members a lender can propose to: borrowers and the room owner, never yourself. */
+export function proposalCounterparties(members: RoomMember[], me: PublicKey) {
+  return members.filter((m) => !m.pubkey.equals(me) && (m.role === "borrower" || m.owner));
+}
 
 /** Borrower's side-by-side view of offers they can read. Competing lenders never see this. */
 function Compare({ loans, me }: { loans: Ctx["loans"]; me: PublicKey }) {
@@ -118,13 +108,9 @@ function Compare({ loans, me }: { loans: Ctx["loans"]; me: PublicKey }) {
   );
 }
 
-export function LoanPanel(ctx: Ctx) {
-  const [proposing, setProposing] = useState(false);
-  useEffect(() => {
-    if (ctx.prefill) setProposing(true);
-  }, [ctx.prefill]);
+export function LoanPanel({ onPropose, ...ctx }: Ctx & { onPropose: () => void }) {
   const me = ctx.signer.publicKey;
-  const counterparties = ctx.members.filter((m) => !m.pubkey.equals(me) && (m.role === "borrower" || m.owner));
+  const counterparties = proposalCounterparties(ctx.members, me);
   return (
     <section className={styles.panel} aria-labelledby="loans-h">
       <header className={styles.panelHead}>
@@ -132,17 +118,15 @@ export function LoanPanel(ctx: Ctx) {
         <span className={styles.badge}>Lender and borrower only</span>
       </header>
       <div className={styles.panelBody}>
-        {ctx.loanIds.length === 0 && !proposing && (
+        {ctx.loanIds.length === 0 && (
           <p className={styles.muted}>No loan yet. A lender proposes exact terms; only the lender and that borrower can read them.</p>
         )}
         <Compare loans={ctx.loans} me={me} />
         {ctx.loanIds.map((id) => (
           <LoanCard key={id} id={id} {...ctx} />
         ))}
-        {proposing ? (
-          <ProposeForm {...ctx} counterparties={counterparties} onDone={() => (setProposing(false), ctx.onChange())} />
-        ) : counterparties.length ? (
-          <Button variant="secondary" onClick={() => setProposing(true)}>
+        {counterparties.length ? (
+          <Button variant="secondary" onClick={onPropose}>
             Propose a loan as lender
           </Button>
         ) : (
@@ -150,107 +134,6 @@ export function LoanPanel(ctx: Ctx) {
         )}
       </div>
     </section>
-  );
-}
-
-function ProposeForm({ signer, base, er, room, counterparties, prefill, onDone }: Ctx & { counterparties: RoomMember[]; onDone: () => void }) {
-  const { price } = usePrice();
-  const [borrower, setBorrower] = useState(counterparties[0]?.pubkey.toBase58() ?? "");
-  const [principal, setPrincipal] = useState(prefill ? String(prefill.principalUsdc) : "0.10");
-  const [rate, setRate] = useState(prefill ? String(prefill.interestPercent) : "5");
-  const [duration, setDuration] = useState(prefill ? Math.max(60, Math.round(prefill.durationDays * 86_400)) : DURATIONS[1].seconds);
-  const [collateral, setCollateral] = useState(prefill ? String(prefill.collateralWsol) : "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const p = BigInt(Math.round(Number(principal || "0") * 1e6));
-  const bps = Math.round(Number(rate || "0") * 100);
-  const owed = p > 0n ? debt(p, bps) : 0n;
-  const c = BigInt(Math.round(Number(collateral || "0") * 1e9));
-  const ltv = price && c > 0n && owed > 0n ? currentLtvBps(owed, collateralValueUsdc(c, price.price, price.conf, price.exponent)) : null;
-
-  const suggest = useCallback(() => {
-    if (!price || owed === 0n) return;
-    const target = (owed * 10_000n) / 5_000n; // about 50% LTV
-    let lamports = (target * 10n ** BigInt(3 - price.exponent)) / (price.price - price.conf) + 1n;
-    while (collateralValueUsdc(lamports, price.price, price.conf, price.exponent) < target) lamports += 1n;
-    setCollateral((Number(lamports) / 1e9).toFixed(9).replace(/0+$/, ""));
-  }, [price, owed]);
-  useEffect(() => {
-    if (!collateral) suggest();
-  }, [collateral, suggest]);
-
-  const valid = p > 0n && bps >= 0 && bps <= 2000 && c > 0n && ltv !== null && ltv <= 7000 && borrower;
-
-  async function submit() {
-    if (!valid) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const { PublicKey } = await import("@solana/web3.js");
-      const { loanId } = await proposeLoan(base, er, signer, room, {
-        borrower: new PublicKey(borrower),
-        principal: p,
-        interestBps: bps,
-        durationSeconds: duration,
-        collateralAmount: c,
-        maxLtvBps: 7000,
-        liquidationLtvBps: 8000,
-      });
-      await postMessage(base, er, signer, room, `${LOAN_MESSAGE_PREFIX}${loanId}`);
-      onDone();
-    } catch (e) {
-      setError(explainLoanError(e instanceof Error ? e.message : String(e)));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <form className={styles.propose} onSubmit={(e) => (e.preventDefault(), void submit())}>
-      <label htmlFor="borrower">Borrower</label>
-      <select id="borrower" className={styles.input} value={borrower} onChange={(e) => setBorrower(e.target.value)}>
-        {counterparties.map((m) => (
-          <option key={m.pubkey.toBase58()} value={m.pubkey.toBase58()}>
-            {short(m.pubkey)} · {m.owner ? "owner" : m.role}
-          </option>
-        ))}
-      </select>
-      <AmountInput label="You lend" value={principal} onChange={setPrincipal} unit="USDC" decimals={6} />
-      <AmountInput label="Interest for the whole term" value={rate} onChange={setRate} unit="%" decimals={2} hint="Charged in full, even if repaid early." />
-      <div className={styles.roleChoice} role="group" aria-label="Term">
-        {DURATIONS.map((d) => (
-          <button type="button" key={d.seconds} aria-pressed={duration === d.seconds} onClick={() => setDuration(d.seconds)}>
-            {d.label}
-          </button>
-        ))}
-      </div>
-      <AmountInput label="Borrower locks" value={collateral} onChange={setCollateral} unit="wSOL" decimals={9} />
-      <dl className={styles.summary}>
-        <div>
-          <dt>Borrower receives</dt>
-          <dd className="num">{usdc(p)} USDC</dd>
-        </div>
-        <div>
-          <dt>Borrower repays</dt>
-          <dd className="num">{usdc(owed)} USDC</dd>
-        </div>
-        <div>
-          <dt>LTV at today&apos;s price</dt>
-          <dd className="num">{ltv === null ? "—" : `${(ltv / 100).toFixed(1)}%`}</dd>
-        </div>
-      </dl>
-      <p className={styles.hint}>Maximum LTV 70%; liquidation line 80%. If the borrower does not repay by the deadline, the lender receives the wSOL.</p>
-      <Button type="submit" loading={busy} disabled={!valid}>
-        Propose these terms
-      </Button>
-      <p className={styles.hint}>Two signatures: one sets up the loan&apos;s private custody on Solana (about 0.017 SOL of rent), one writes the terms privately.</p>
-      {error && (
-        <p role="alert" className={styles.error}>
-          {error}
-        </p>
-      )}
-    </form>
   );
 }
 

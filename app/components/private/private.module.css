@@ -1200,3 +1200,86 @@ span.receiptLink {
   color: var(--color-text-primary);
   font-weight: 600;
 }
+
+/* Propose wizard: full width over the room */
+
+.proposeWizard {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: fit-content;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.backLink:hover {
+  color: var(--color-text-accent);
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.field > label,
+.fieldLabel {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.ruleList {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-container);
+  background: var(--color-background-muted);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  list-style: none;
+}
+
+.ruleList b {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.figures {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.figures > div {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.figures span {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.figures b {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-align: right;
+}
+
+.figures small {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-sm);
+}
