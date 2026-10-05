@@ -1,0 +1,22 @@
+{
+  "note": "Worked-example vectors from docs/research.md. Read by crates/loan-core (Rust) and tests/loan-math.test.ts (TypeScript). Integers are strings so JavaScript keeps exact values.",
+  "interest": [
+    { "principal": "100000000", "interest_bps": 500, "interest": "5000000", "debt": "105000000" }
+  ],
+  "collateral_value": [
+    { "lamports": "1000000000", "price": "15000000000", "conf": "15000000", "exponent": -8, "value": "149850000" },
+    { "lamports": "1001001002", "price": "15000000000", "conf": "15000000", "exponent": -8, "value": "150000000" }
+  ],
+  "ltv": [
+    { "debt": "105000000", "value": "150000000", "ltv_bps": 7000 },
+    { "debt": "105000000", "value": "1000000", "ltv_bps": 65535 },
+    { "debt": "105000000", "value": "0", "ltv_bps": 65535 }
+  ],
+  "seize": [
+    { "debt": "105000000", "seize": "110250000" },
+    { "debt": "1", "seize": "2" }
+  ],
+  "wsol_to_caller": [
+    { "lamports": "1000", "seize": "110250000", "value": "50000000", "to_caller": "1000" }
+  ]
+}

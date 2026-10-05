@@ -45,3 +45,17 @@ pub enum LoanError {
     #[msg("Offer must be settled before it can be closed")]
     OfferNotSettled,
 }
+
+pub fn core_error(e: loan_core::CoreError) -> Error {
+    use loan_core::CoreError as C;
+    match e {
+        C::MathOverflow => error!(LoanError::MathOverflow),
+        C::InvalidTerms => error!(LoanError::InvalidTerms),
+        C::InvalidPriceOwner => error!(LoanError::InvalidPriceOwner),
+        C::InvalidFeedId => error!(LoanError::InvalidFeedId),
+        C::StalePrice => error!(LoanError::StalePrice),
+        C::InvalidPrice => error!(LoanError::InvalidPrice),
+        C::InvalidExponent => error!(LoanError::InvalidExponent),
+        C::ZeroCollateralValue => error!(LoanError::ZeroCollateralValue),
+    }
+}

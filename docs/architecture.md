@@ -134,3 +134,42 @@ Each script prints the offer status and the three wallets' USDC and wSOL balance
 ## Week-2 boundary
 
 Devnet will swap the test mints for real USDC and wSOL and will post a real Pyth update. The account layout and the caps do not change to make that possible. The interface reads the same statuses and does not compute a second, friendlier LTV.
+
+## Private protocol
+
+A second program, `private_loan`, runs the private lifecycle on MagicBlock Private Ephemeral Rollups on Devnet. The public `isolated_loan` program and its loans do not change or migrate. The wallet-free simulation stays.
+
+Decisions:
+
+- **Shared core.** Interest, collateral value, LTV, seize, payout, term caps, and the Pyth check live in `isolated_loan/crates/loan-core`. Both programs call it, so the same vectors must pass against both.
+- **Three kinds of state.**
+  - Terms, counterparties, negotiation, approvals, and loan details are ER-only or permissioned accounts.
+  - Token custody is in program-controlled eATAs, one set per loan.
+  - Discovery cards, opaque settlement commitments, and infrastructure metadata are the only deliberately public records.
+- **Seeds.** Private accounts use random 32-byte ids. No wallet, amount, or term goes into a public seed, log, task payload, or receipt.
+- **Permissions.** An account and its permission are created in the same transaction. Only program rules change membership.
+- **Prices.**
+  - Acceptance and liquidation use the canonical Pyth Receiver account with the same owner, feed, confidence, age, and exponent checks as the public program.
+  - The MagicBlock pricing oracle (owner `PriCems5tHihc6UDXDjzjeawomAwBduWMGAi8ZUjppd`) is used for charts and alerts only.
+- **Sessions.** Session keys may edit drafts, post messages, revise proposals, and send already-approved AI requests. Lendspan checks room and instruction scope itself. Funding, accepting, repaying, withdrawing, granting access, and approving a disclosure need the primary wallet.
+- **AI.** A request binds the approved payload hash, provider, model, and terms revision. The callback is signed by the oracle identity PDA and checked for replay, deadline, and revision. It cannot write loan state.
+- **Settlement evidence.** ER execution, commit, and base-layer settlement are tracked separately. Queue acceptance is never shown as settlement.
+- **Custody accounting.** Inside the TEE, no wallet can read a custody PDA's token balance; the ER returns a masked value. Loan state records principal and collateral itself, and the interface reads loan state. Token balances are checked on the base layer after settlement.
+- **eSPL calls.** `private_loan/src/espl.rs` builds eSPL instructions in the order the deployed program's processors read them. Do not switch to the SDK's `spl` CPI helpers: the feature does not build for SBF, and its withdraw order is wrong in 0.17.3.
+- **What may be committed.** Committing a delegated account writes its data to Solana in plaintext (gate 8.7). Terms, negotiation, approvals, and the ticket-to-loan mapping live in ER-only records (gate 8.3) and are never committed. Only token balances and opaque receipts settle.
+- **Cranks.** Hydra cranks are created inside the ER by the program, with a delegated PDA as sponsor and as cancel authority. Lendspan's worker runs the cranker; no hosted cranker was observed on the Devnet TEE.
+- **Gates.** Each MagicBlock capability needs a passing Epic 8 gate in [magicblock-evidence.md](magicblock-evidence.md). A failed gate leaves the feature off.
+
+Pinned ids (verified 2026-10-05):
+
+| What | Id |
+| --- | --- |
+| ephemeral-rollups-sdk | 0.17.3 (Rust and TS) |
+| Delegation program | `DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh` |
+| Permission program | `ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1` |
+| eSPL program | `SPLxh1LVZzEkX99H6rqYizhytLWPZVV296zyYDPagv2` |
+| Hydra | `Hydra17i1feui9deaxu6d1TzSQMRNHeBRkDR1Awy7zea` |
+| Devnet TEE validator | `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo` at `https://devnet-tee.magicblock.app` |
+| Magic Router (Devnet) | `https://devnet-router.magicblock.app` |
+
+Known leakage: public deposits and withdrawals, opt-in discovery cards, and liquidation quote amounts. TEE confidentiality depends on the hardware and the operator. A PER outage may block timely repayment, and the expiry rule still applies.

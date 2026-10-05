@@ -1,0 +1,464 @@
+{
+  "programs": {
+    "private_loan": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+    "private_loan_deploys": [
+      "AqrBr4GwAreEKj9pN9ZajPjsQtzMX5Q8zY4mQnmgE7xCaDc6YK6mEsGqfrr6LijNmMciEkdScpYzUUD84KWNF7X",
+      "GfgY3YCJkYvfUQTKd7YhPUS7TqiRHw8w73y1Ya15dEQQXL4LmFtyWwwtdte7Y9vZCGMXanXAz4rdviuEdYxbBgn"
+    ]
+  },
+  "sdk": {
+    "ephemeral-rollups-sdk": "0.17.3",
+    "session-keys": "3.1.1",
+    "anchor-cli": "1.0.2",
+    "anchor-lang": "1.2.0",
+    "rust": "1.89.0"
+  },
+  "gates": {
+    "8.1": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "evidence": "local anchor build of both programs, zero warnings"
+    },
+    "8.2": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "probe": "BAaF6tx1b8FHqkJJSt1ourpfrVTJg4SFrfuUFNiWLzPU",
+      "signatures": {
+        "setup": "KCEJhpPB5SNkcSAtSx4yASf7EHXcPBQerZprtjpJQaUCx4oygKrHJFAa9LGCaLzLhjuy1vTQ54bTVjSdRuSytzf",
+        "write": "2KfMuv2QentL5EPqzcrXnLbx7oCoY7nVLpGxVoUDP9xL9YK7xpQkABD5EtmaXXi4W3unh6kjDDd6fayJf72VizfR"
+      },
+      "failed": [],
+      "checks": {
+        "tee-attestation": {
+          "ok": true,
+          "detail": "verifyTeeRpcIntegrity resolved"
+        },
+        "atomic-create-and-delegate": {
+          "ok": true,
+          "detail": {
+            "probe": "BAaF6tx1b8FHqkJJSt1ourpfrVTJg4SFrfuUFNiWLzPU",
+            "setupSig": "KCEJhpPB5SNkcSAtSx4yASf7EHXcPBQerZprtjpJQaUCx4oygKrHJFAa9LGCaLzLhjuy1vTQ54bTVjSdRuSytzf"
+          }
+        },
+        "auth-tokens": {
+          "ok": true,
+          "detail": "authority, reader, outsider tokens issued"
+        },
+        "member-write-in-er": {
+          "ok": true,
+          "detail": {
+            "writeSig": "2KfMuv2QentL5EPqzcrXnLbx7oCoY7nVLpGxVoUDP9xL9YK7xpQkABD5EtmaXXi4W3unh6kjDDd6fayJf72VizfR"
+          }
+        },
+        "authority-reads": {
+          "ok": true,
+          "detail": {
+            "visible": true,
+            "value": "424242"
+          }
+        },
+        "reader-reads": {
+          "ok": true,
+          "detail": {
+            "visible": true,
+            "value": "424242"
+          }
+        },
+        "outsider-cannot-read": {
+          "ok": true,
+          "detail": {
+            "visible": false,
+            "value": null
+          }
+        },
+        "anonymous-cannot-read": {
+          "ok": true,
+          "detail": {
+            "visible": false,
+            "value": null
+          }
+        },
+        "outsider-gpa-no-contents": {
+          "ok": true,
+          "detail": {
+            "returned": 0
+          }
+        },
+        "reader-sees-tx-logs": {
+          "ok": true,
+          "detail": {
+            "found": true,
+            "logs": 4
+          }
+        },
+        "outsider-no-tx-logs": {
+          "ok": true,
+          "detail": {
+            "found": true,
+            "logs": 0
+          }
+        },
+        "outsider-subscription-silent": {
+          "ok": true,
+          "detail": {
+            "events": 0
+          }
+        },
+        "base-layer-no-er-value": {
+          "ok": true,
+          "detail": {
+            "owner": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh",
+            "baseValue": "0"
+          }
+        }
+      },
+      "outsider_get_transaction": {
+        "keys": [],
+        "instructions": [],
+        "err": null,
+        "preBalances": [],
+        "logs": [],
+        "note": "Outsider learns that the signature exists and succeeded, nothing else."
+      }
+    },
+    "8.5": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "priceAccount": "7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE",
+      "staleAccount": "6bWEn5B8eJCRAek5acd3R7d4Sx3e7JWvt84srqqfYgt",
+      "failed": [],
+      "checks": {
+        "canonical-owner-on-base": {
+          "ok": true,
+          "detail": {
+            "account": "7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE",
+            "owner": "rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ",
+            "price": "12072915274",
+            "exponent": -8,
+            "publishTime": 1791195397,
+            "ageSeconds": 13
+          }
+        },
+        "er-clone-keeps-canonical-owner": {
+          "ok": true,
+          "detail": {
+            "owner": "rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ",
+            "price": "12072915274",
+            "exponent": -8,
+            "publishTime": 1791195397,
+            "ageSeconds": 13
+          }
+        },
+        "fresh-canonical-price-accepted": {
+          "ok": true,
+          "detail": {
+            "sig": "622ZadQevrQFgV21kQw5vK6H1XbaxvmFFWVUkFiEEjGJyFNGYmoajY4HFHpAJRsBTfKYWKVe1Rwf1Dvsk9hTxcBa",
+            "err": null,
+            "logs": [
+              "Program log: Instruction: CheckPrice"
+            ],
+            "storedPrice": "12072915274",
+            "storedExponent": -8
+          }
+        },
+        "stale-canonical-price-fails-closed": {
+          "ok": true,
+          "detail": {
+            "account": "6bWEn5B8eJCRAek5acd3R7d4Sx3e7JWvt84srqqfYgt",
+            "owner": "rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ",
+            "ageSeconds": 2654524,
+            "sig": "3FnpCr23cp3Rsii6dLwaYX4qNHhtHkG9J6pBfH1LSx4Ny6p5VKaDRtbnhzuXdmPNNW2MTwJResK5ziJRsExzw1VH",
+            "err": {
+              "InstructionError": [
+                0,
+                {
+                  "Custom": 6004
+                }
+              ]
+            },
+            "logs": [
+              "Program log: Instruction: CheckPrice",
+              "Program log: AnchorError thrown in programs/private_loan/src/error.rs:32. Error Code: StalePrice. Error Number: 6004. Error Message: Price is stale.",
+              "Program HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK failed: custom program error: 0x1774"
+            ]
+          }
+        },
+        "clone-lag-seconds": {
+          "samples": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "max": 0
+        },
+        "magicblock-feed-rejected-by-owner": {
+          "ok": true,
+          "detail": {
+            "owner": "PriCems5tHihc6UDXDjzjeawomAwBduWMGAi8ZUjppd",
+            "sig": "2R6yLyUfe3qBbrw2Mnt5iT62QCpsR4kgrwKBLyheRtVinYTr6KTTJQsUX8Evc22Cw1XMxoPRJeRRL5mZcF3qv7av",
+            "err": {
+              "InstructionError": [
+                0,
+                {
+                  "Custom": 6002
+                }
+              ]
+            },
+            "logs": [
+              "Program log: Instruction: CheckPrice",
+              "Program log: AnchorError thrown in programs/private_loan/src/error.rs:30. Error Code: InvalidPriceOwner. Error Number: 6002. Error Message: Price feed owner is invalid.",
+              "Program HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK failed: custom program error: 0x1772"
+            ]
+          }
+        }
+      }
+    },
+    "8.4": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "runs": {
+        "usdc": {
+          "sigs": {
+            "create": "5neTbjXuFhDGr4fJG1eG7D12whX9f5ajvhDXdHZrEQJ4ovv8tgzdAKXPxAo1poUjsEcTVn3a1ZJQakubKjXehbLZ",
+            "fund": "hCUiNjU5sBY4ehX1RZuKkykRtYKQx2RCCFRieTw3XDX2cbCKrVVRaVQuEu3TdM41D5ieBZE8nPwVg9z9UkQPRUE",
+            "transfer": "2HVyNsX3GyJnAUxcEN6QvyZAUKuHhwYuxEdK6Vtt2ko5oWrxttThzxvvxGhSvPnJdJu6xxZBqeBwbCvZ5AWFuoFC",
+            "undelegateA": "5DU8gNMMfhEDBGVHoCUCWvk9fe1JDLiXybW5fMZBiUJb7mosQz8JEBa8qyJoEfXmJvUQiXLXTMMzPdZSmEKz3vd7",
+            "undelegateB": "jLMYkYkgrBASKoCKLw5obGLDUBPXtADgVUprsSxw2REJaBUqtHJUyyxMT8sxipVR3GCu591tS63M6es36ZboXw9",
+            "withdraw": "3Z5JLGmWEwq28Kpv64aDigMSx6Hde1zgdCCvKdJxWsMGtawZa37ZRmRAMCWi9kgecg9iHGrZbpAKnpyh1CbAD7Mw"
+          },
+          "custodies": {
+            "A": "AqeAcW5Dk8N4m42bmWYjGKZe1Ymmt7WQWXTDEH4k7RgQ",
+            "B": "2n5hX6wVcXwcM86AFVrK5EfXYARaNVVeCkCMK8yDK2vU"
+          }
+        },
+        "wsol": {
+          "sigs": {
+            "create": "T4JeWCfoPbabgV9BXBghYgbTJXE2EyHRxwSkpyt5EzH3QCDxqMS3DTasZ7tDvPwaV5tyhG4knp5t2G3LxtqSkuo",
+            "fund": "4Q5zPj7ZF41GsoQNNZXVPUXH8FmVLCNh2jXHSk7ySq2UpJw6jr9JHSNoGtPW2W2sPQ5ayc1XEB9uDUhhBv5nWKBk",
+            "transfer": "4M8FebsVdiBDiEuvHwS7GsoLe9b4gvtx9NYNBTwik3nE29nggzEBb76AV3Y6NmG7JBZw7oYpu6Uh2ruDKkgTzDaz",
+            "undelegateA": "KaS3JMHN7gXt9rfQnKSqx1ypVkbHYnk8n6ft6zumc5Cczg33FRKtdevDxaFDUrauoBuLhQGmrDrYbubmL2x2Vmj",
+            "undelegateB": "kiaNGirvgpvqZV3PeUqdCWzCcT3kjnvXntb3K8VxpHja8HN8gqsPWx7fMkTNxQAT4KvURvVwQdXdd6xcCdwJnDn",
+            "withdraw": "54JUqNeJ3EKoGBLvW66fFKfQZ9bM1ogADNdiuY2RintKiwFdfF672xUA2KPoUkvWY5uRCoBubAtje5Phc8JpRDSU"
+          },
+          "custodies": {
+            "A": "K6bRdbfYRqy5f8T8cG7hsTkqJFfc468mRnjx72Shqi5",
+            "B": "7UvhXjLau1UGBuyS7AA1hFyBCKYJZTUz9cPYc3ehrSkQ"
+          }
+        }
+      },
+      "failed": [],
+      "checks": {
+        "usdc:global-vault-exists": {
+          "ok": true,
+          "detail": {
+            "vault": "EiV97BPvmJzP4kzy28ciqddhQW864Wit3r3zYiLXARjG"
+          }
+        },
+        "usdc:deposit-and-delegate": {
+          "ok": true,
+          "detail": {
+            "walletBefore": "1379900",
+            "walletAfter": "1279900",
+            "eataA": "100000"
+          }
+        },
+        "usdc:custody-balance-hidden-in-er": {
+          "ok": true,
+          "detail": {
+            "authority": "0",
+            "outsider": "0",
+            "truth": "60000"
+          }
+        },
+        "usdc:exact-after-er-transfer": {
+          "ok": true,
+          "detail": {
+            "A": "60000",
+            "B": "40000",
+            "moved": "40000"
+          }
+        },
+        "usdc:exact-round-trip": {
+          "ok": true,
+          "detail": {
+            "start": "1379900",
+            "end": "1379900"
+          }
+        },
+        "wsol:global-vault-exists": {
+          "ok": true,
+          "detail": {
+            "vault": "8hJLJSY3xoAhQrT1jmJ3tN94VhcrtVc1iasZEP9aVLA4"
+          }
+        },
+        "wsol:deposit-and-delegate": {
+          "ok": true,
+          "detail": {
+            "walletBefore": "11561859",
+            "walletAfter": "1561859",
+            "eataA": "10000000"
+          }
+        },
+        "wsol:custody-balance-hidden-in-er": {
+          "ok": true,
+          "detail": {
+            "authority": "0",
+            "outsider": "0",
+            "truth": "6000000"
+          }
+        },
+        "wsol:exact-after-er-transfer": {
+          "ok": true,
+          "detail": {
+            "A": "6000000",
+            "B": "4000000",
+            "moved": "4000000"
+          }
+        },
+        "wsol:exact-round-trip": {
+          "ok": true,
+          "detail": {
+            "start": "11561859",
+            "end": "11561859"
+          }
+        }
+      }
+    },
+    "8.7": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "probe": "5bTTYCn9BJDtK9n8efqvV2oKGdWUDM3ym1LmHn7nCaA5",
+      "signatures": {
+        "setup": "3CX1xyJtMpM4sUrXim4CrjiAMMWmZd8nyRF3ZXBkA38PNSimJaPLVCTtXRrKVoPCqYDL4zZmwTqCPMvrMBC9dd7Y",
+        "write": "qHMPT2YAmNyQ2eYaaUykw8YJscmmAkEdoTsGcucoLgRCTi737BRAgCBu993fRyAiidJyJFVvdun6YCn62s15qtM",
+        "undelegate": "3kLd7Augq6pa7esdcqgaxHoZotgDyiaiA7PGsZmhqd8qN2enuo7eBfPo9h19hWLjGCDf5E7r4TEvL2YLbyvAycp9"
+      },
+      "plaintextOnBaseAfterCommit": true,
+      "blocks": [
+        "committing private terms or negotiation records to Solana"
+      ],
+      "finding": "Committing a permissioned account writes its plaintext data to Solana. Terms, negotiations, and approvals must never be committed; keep them ER-only and settle only opaque receipts and token balances.",
+      "checks": {
+        "base-before-commit": {
+          "containsMarker": false
+        },
+        "base-account-after-commit": {
+          "owner": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+          "containsMarker": true
+        },
+        "base-commit-transactions": [
+          {
+            "signature": "4fAuae6RRehMJenwvpXMN8KMwyw5qK2c3Rc65vjSMSuKMUuS55w4EaC6S7W5Hju8LKkKJcrS7Y4X1WzyeLrbjxWr",
+            "programs": [
+              "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+              "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+            ],
+            "markerInMessage": true,
+            "markerInLogs": false
+          }
+        ]
+      }
+    },
+    "8.3": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "probe": "3cnKQLAkEbvwUFsZFitRNAn66bfaj9krdE6YzNxDzU3n",
+      "record": "147fnHUZNTbTEA9MCNK8AhjgpHEbaXPipfdTWAWdRSiC",
+      "signatures": {
+        "setup": "28rm4vJ8ZLrbde9VvU3YAojK4qgLiwNc4RUigBvWpam4ZGPGty87tcR4sKkdjZVoJTT8Vke2Zx7oSt66Ru22Nvag",
+        "create": "4DrWrzx1dFo91XQwm7yKGMkwWfVjZ6ode8EfAYN5haUT15wuiqrYxsSUDYBhZL31ZehpUTtN7GsiR52cyMKPDUtu",
+        "undelegate": "4XtiMPCWqsY1NPHbV47ZMGa9gNzKCJVjvGmRt7Q47aMYzEmqx72WMdxueiMzkohFq2en4d5aezLoAqNUNoAKuDBy"
+      },
+      "failed": [],
+      "checks": {
+        "member-reads-record": {
+          "ok": true,
+          "detail": {
+            "visible": true,
+            "owner": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+            "hasMarker": true
+          }
+        },
+        "outsider-cannot-read-record": {
+          "ok": true,
+          "detail": {
+            "visible": false
+          }
+        },
+        "anonymous-cannot-read-record": {
+          "ok": true,
+          "detail": {
+            "visible": false
+          }
+        },
+        "record-absent-on-base-while-delegated": {
+          "ok": true,
+          "detail": "147fnHUZNTbTEA9MCNK8AhjgpHEbaXPipfdTWAWdRSiC"
+        },
+        "record-absent-on-base-after-sponsor-commit": {
+          "ok": true,
+          "detail": "147fnHUZNTbTEA9MCNK8AhjgpHEbaXPipfdTWAWdRSiC"
+        },
+        "marker-never-in-base-transactions": {
+          "ok": true,
+          "detail": {
+            "transactionsChecked": 2
+          }
+        },
+        "record-in-er-after-sponsor-undelegated": {
+          "visible": true,
+          "owner": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK",
+          "hasMarker": true
+        },
+        "validator-restart": "Not testable: the Devnet TEE is hosted by MagicBlock. ER-only records are treated as non-durable until a restart is observed."
+      }
+    },
+    "8.6": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "probe": "G3LaRptcyeSsEwwkp3kzF7rYLs9VaaEJSujJZF1jazxP",
+      "crank": "DzRVGAGbooGtVZ1zRdSaHYjf3QqBciD5HLMXXXcP1V5c",
+      "setup": "4NTH68KokKrR6c92qgMrNKohpK8WL3A8zTUrdw3vR7H64PWJDkLrrZXgSgeLuuygoNYM5t37JGeqkV4komKDRFwN",
+      "failed": [],
+      "checks": {
+        "crank-created-in-er": {
+          "ok": true,
+          "detail": {
+            "crank": "DzRVGAGbooGtVZ1zRdSaHYjf3QqBciD5HLMXXXcP1V5c",
+            "createSig": "3AxdaYZmXJjGFqUhtxw5kSQvppWGyAYixUkqGzfHUSYQFHpzfpZK7jdCmkfnevpUtoYEb8UiSeQbmnczzgeYG9rm"
+          }
+        },
+        "hosted-cranker-observed": {
+          "observed": false,
+          "ticksAfterWait": "0"
+        },
+        "manual-trigger": "2d3ekBzMgzJ5JycgGXX97MKnfdiusZE1tYZ5px2QbvYAiBpux25MUMris37X3ujX8JFEC9H1sdA46gFk1Pm2ZCwp",
+        "scheduled-tick-ran-on-private-probe": {
+          "ok": true,
+          "detail": {
+            "value": "1",
+            "via": "manual trigger"
+          }
+        },
+        "outsider-crank-view": {
+          "owner": "eHyd5BU8QffvHi4GnXwxrK4WpS7pM2x9UGKHBWii7mf",
+          "len": 197
+        },
+        "outsider-cannot-read-probe": {
+          "ok": true,
+          "detail": "probe hidden"
+        },
+        "tick-after-settlement-is-noop": {
+          "ok": true,
+          "detail": {
+            "value": "18446744073709551615"
+          }
+        },
+        "cancel": "Error: ER tx 55rSYy8dsGdTCX85uvKKztuxQZRtrVnRUR9qVLhiGjQqdLQiE9P31UrYG3MC5iGmVvF8mTsR6N8Rf5GvgYkeDZYt failed: \"InvalidAccountForFee\""
+      }
+    }
+  }
+}

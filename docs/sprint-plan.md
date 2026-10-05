@@ -42,8 +42,38 @@ Days 2 through 7 follow the tables. At the end of each day, both lanes read the 
 | [7.1 Interface](stories.md) | Done |
 | [7.2 Devnet, indexer, fuzz](stories.md) | Open |
 
+## Private lane
+
+MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts only when the gate it depends on has passed in [magicblock-evidence.md](magicblock-evidence.md).
+
+| Order | Story | Status |
+| --- | --- | --- |
+| 1 | [8.1 Pin the toolchain](stories.md) | Done |
+| 2 | [9.1 Shared loan core](stories.md) | Done |
+| 3 | [8.2 TEE auth and permissions](stories.md) | Done |
+| 4 | [8.3 ER-only accounts](stories.md) | Done |
+| 5 | [8.4 Program-controlled eSPL custody](stories.md) | Done |
+| 6 | [8.5 Canonical Pyth inside the PER](stories.md) | Done |
+| 7 | [8.6 Private scheduled execution](stories.md) | Done |
+| 8 | [8.7 Commit visibility](stories.md) | Done |
+| 9 | [9.2 Rooms, invitations, and scoped sessions](stories.md) | Open |
+| 10 | [9.3 Private balances](stories.md) | Open |
+| 11 | [9.4 Execution receipts and recovery](stories.md) | Open |
+| 12 | [10.1 Fund, accept, repay, cancel, expire, withdraw](stories.md) | Open |
+| 13 | [11.1 Discovery cards and competing proposals](stories.md) | Open |
+| 14 | [11.2 AI request and callback](stories.md) | Open |
+| 15 | [12.1 Expiry tasks and liquidation tickets](stories.md) | Open |
+| 16 | [12.2 Magic Actions receipts](stories.md) | Open |
+| 17 | [13.1 Transfers, sponsorship, lab, and accessibility](stories.md) | Open |
+
 ## Notes
 
 - Program and UI live under `isolated_loan/` and `app/`. Outcome scripts: `npm run script:repay|liquidate|expire` in `isolated_loan/`.
 - Story 5.1 is covered by the LiteSVM suite in `isolated_loan/programs/isolated_loan/tests/litesvm.rs` (`npm run test:litesvm`).
 - 2026-10-05: Devnet deployment and live repayment/cancellation/expiry/close checks completed; see [evidence](devnet-evidence.json). Story 7.2 remains Open because indexer and fuzz work are excluded from the approved Lendspan redesign.
+- 2026-10-05: Story 9.1 done. Loan math and the Pyth check live in `isolated_loan/crates/loan-core`; the public program maps `CoreError` onto its own `LoanError` codes. Vectors in `crates/loan-core/vectors.json` are read by both the Rust and TS tests.
+- 2026-10-05: Story 8.1 done. `private_loan` builds on ER SDK 0.17.3 with a gate-only `probe` module (create with permission, delegate to the TEE, write, Pyth check, commit and undelegate). Evidence in [magicblock-evidence.md](magicblock-evidence.md).
+- 2026-10-05: Story 8.2 done on Devnet TEE; see [evidence](magicblock-evidence.md). The Rust SDK's `delegate_*` helper appends the PDA bump itself, so pass seeds without it. Use a full `anchor build`; `anchor build -p` writes to the program's own `target/`.
+- 2026-10-05: Story 8.5 done on Devnet TEE; see [evidence](magicblock-evidence.md). Private accept and liquidate can use the same Pyth account and checks as the public program.
+- 2026-10-05: Story 8.4 done on Devnet TEE; see [evidence](magicblock-evidence.md). Wallets cannot read custody token balances inside the TEE, so private loan state must carry its own accounting and the interface reads that, not token accounts.
+- 2026-10-05: Epic 8 complete. 8.7 found that committed accounts are plaintext on Solana, so private loan records must be ER-only (8.3) and only balances and opaque receipts settle. 8.6 found no hosted cranker, so the worker runs one. Next: 9.2 rooms, invitations, and scoped sessions.

@@ -1,6 +1,8 @@
 import {
   assertWorkedExample,
   collateralValueUsdc,
+  debt,
+  interest,
   currentLtvBps,
   seizeUsdc,
   wsolToCaller,
@@ -8,17 +10,31 @@ import {
 import { offerPda, usdcVaultPda, wsolVaultPda } from "../../app/lib/pda";
 import { PublicKey } from "@solana/web3.js";
 import assert from "node:assert";
+import { readFileSync } from "node:fs";
 
 assertWorkedExample();
 
-// Same vectors as the Rust unit tests in state.rs.
-const minValue = collateralValueUsdc(1_001_001_002n, 15_000_000_000n, 15_000_000n, -8);
-assert.equal(minValue, 150_000_000n);
-assert.equal(currentLtvBps(105_000_000n, minValue), 7000);
-assert.equal(seizeUsdc(105_000_000n), 110_250_000n);
-assert.equal(currentLtvBps(105_000_000n, 1_000_000n), 65_535);
-assert.equal(currentLtvBps(105_000_000n, 0n), 65_535);
-assert.equal(wsolToCaller(1_000n, 110_250_000n, 50_000_000n), 1_000n);
+// Same file the Rust tests in crates/loan-core read.
+const vectors = JSON.parse(
+  readFileSync(new URL("../crates/loan-core/vectors.json", import.meta.url), "utf8"),
+);
+for (const c of vectors.interest) {
+  assert.equal(interest(BigInt(c.principal), c.interest_bps), BigInt(c.interest));
+  assert.equal(debt(BigInt(c.principal), c.interest_bps), BigInt(c.debt));
+}
+for (const c of vectors.collateral_value) {
+  const got = collateralValueUsdc(BigInt(c.lamports), BigInt(c.price), BigInt(c.conf), c.exponent);
+  assert.equal(got, BigInt(c.value));
+}
+for (const c of vectors.ltv) {
+  assert.equal(currentLtvBps(BigInt(c.debt), BigInt(c.value)), c.ltv_bps);
+}
+for (const c of vectors.seize) {
+  assert.equal(seizeUsdc(BigInt(c.debt)), BigInt(c.seize));
+}
+for (const c of vectors.wsol_to_caller) {
+  assert.equal(wsolToCaller(BigInt(c.lamports), BigInt(c.seize), BigInt(c.value)), BigInt(c.to_caller));
+}
 
 const lender = PublicKey.unique();
 const offerId = 42n;
