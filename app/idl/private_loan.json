@@ -28,7 +28,11 @@
           "signer": true
         },
         {
-          "name": "anchor"
+          "name": "anchor",
+          "docs": [
+            "Writable: on first acceptance it pays rent for the room deal record."
+          ],
+          "writable": true
         },
         {
           "name": "terms",
@@ -83,12 +87,118 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "deal",
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  111,
+                  111,
+                  109,
+                  45,
+                  100,
+                  101,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor.room",
+                "account": "LoanAnchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "deal_permission",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "optional": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "optional": true,
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "permission_program",
+          "optional": true,
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
         }
       ],
       "args": [
         {
           "name": "revision",
           "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "ai_callback",
+      "docs": [
+        "Ephemeral rollup. The worker stores the typed answer once."
+      ],
+      "discriminator": [
+        169,
+        128,
+        111,
+        238,
+        46,
+        124,
+        120,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "worker",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "request",
+          "writable": true
+        },
+        {
+          "name": "terms",
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "result",
+          "type": "bytes"
         }
       ]
     },
@@ -273,6 +383,159 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "create_ai_request",
+      "docs": [
+        "Ephemeral rollup. A member binds an approved excerpt hash (and loan revision) to a request."
+      ],
+      "discriminator": [
+        28,
+        228,
+        1,
+        172,
+        244,
+        174,
+        7,
+        208
+      ],
+      "accounts": [
+        {
+          "name": "requester",
+          "signer": true
+        },
+        {
+          "name": "room",
+          "writable": true
+        },
+        {
+          "name": "room_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  111,
+                  111,
+                  109,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "room"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "loan",
+          "optional": true
+        },
+        {
+          "name": "terms",
+          "optional": true
+        },
+        {
+          "name": "request",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "room"
+              },
+              {
+                "kind": "arg",
+                "path": "request_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "request_permission",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "permission_program",
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        }
+      ],
+      "args": [
+        {
+          "name": "request_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "task",
+          "type": "u8"
+        },
+        {
+          "name": "payload_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "revision",
+          "type": "u32"
+        },
+        {
+          "name": "ttl_seconds",
+          "type": "i64"
+        }
+      ]
     },
     {
       "name": "create_custody",
@@ -2510,6 +2773,103 @@
       ]
     },
     {
+      "name": "open_join_queue",
+      "docs": [
+        "Ephemeral rollup. Owner creates the join queue only they can read."
+      ],
+      "discriminator": [
+        113,
+        203,
+        229,
+        180,
+        153,
+        36,
+        39,
+        95
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "anchor",
+          "writable": true
+        },
+        {
+          "name": "room_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  111,
+                  111,
+                  109,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "queue",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  106,
+                  111,
+                  105,
+                  110,
+                  45,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "queue_permission",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "permission_program",
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "open_room",
       "docs": [
         "Base layer. Creates the room anchor and funds it to sponsor private records."
@@ -2875,6 +3235,79 @@
       ]
     },
     {
+      "name": "publish_card",
+      "docs": [
+        "Base layer. Room owner publishes an opt-in public card with chosen fields."
+      ],
+      "discriminator": [
+        38,
+        199,
+        17,
+        100,
+        247,
+        81,
+        142,
+        146
+      ],
+      "accounts": [
+        {
+          "name": "publisher",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "room",
+          "docs": [
+            "The room anchor on Solana. Delegated, so read through its stored creator only."
+          ]
+        },
+        {
+          "name": "card",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "card_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "card_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "fields",
+          "type": {
+            "defined": {
+              "name": "CardArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "repay_loan",
       "docs": [
         "Ephemeral rollup. Borrower repays the exact debt before the deadline."
@@ -2895,7 +3328,11 @@
           "signer": true
         },
         {
-          "name": "anchor"
+          "name": "anchor",
+          "docs": [
+            "Writable: on first acceptance it pays rent for the room deal record."
+          ],
+          "writable": true
         },
         {
           "name": "terms",
@@ -2950,6 +3387,139 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "deal",
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  111,
+                  111,
+                  109,
+                  45,
+                  100,
+                  101,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor.room",
+                "account": "LoanAnchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "deal_permission",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "optional": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "optional": true,
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "permission_program",
+          "optional": true,
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "request_join",
+      "docs": [
+        "Ephemeral rollup. Anyone asks to join a room from its public card."
+      ],
+      "discriminator": [
+        70,
+        164,
+        111,
+        135,
+        228,
+        172,
+        97,
+        186
+      ],
+      "accounts": [
+        {
+          "name": "requester",
+          "signer": true
+        },
+        {
+          "name": "anchor"
+        },
+        {
+          "name": "queue",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  106,
+                  111,
+                  105,
+                  110,
+                  45,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "retract_card",
+      "docs": [
+        "Base layer. Publisher removes the card and reclaims rent."
+      ],
+      "discriminator": [
+        73,
+        64,
+        245,
+        200,
+        170,
+        98,
+        187,
+        60
+      ],
+      "accounts": [
+        {
+          "name": "publisher",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "card"
+          ]
+        },
+        {
+          "name": "card",
+          "writable": true
         }
       ],
       "args": []
@@ -3151,6 +3721,66 @@
         {
           "name": "remaining",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "set_ai_worker",
+      "docs": [
+        "Base layer. Admin sets the AI worker key and turns the copilot on or off."
+      ],
+      "discriminator": [
+        83,
+        135,
+        27,
+        118,
+        100,
+        92,
+        168,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "address": "3dh3Bxu1hJzH3aHfwNAibRqTxyrPsUFyteiuGxycoohh"
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "worker",
+          "type": "pubkey"
+        },
+        {
+          "name": "enabled",
+          "type": "bool"
         }
       ]
     },
@@ -3600,6 +4230,19 @@
   ],
   "accounts": [
     {
+      "name": "AiConfig",
+      "discriminator": [
+        125,
+        206,
+        192,
+        73,
+        98,
+        76,
+        239,
+        145
+      ]
+    },
+    {
       "name": "Custody",
       "discriminator": [
         1,
@@ -3610,6 +4253,19 @@
         131,
         63,
         145
+      ]
+    },
+    {
+      "name": "DiscoveryCard",
+      "discriminator": [
+        65,
+        161,
+        236,
+        165,
+        171,
+        239,
+        125,
+        54
       ]
     },
     {
@@ -3807,9 +4463,94 @@
       "code": 6030,
       "name": "LoanNotExpired",
       "msg": "Loan is not expired yet"
+    },
+    {
+      "code": 6031,
+      "name": "CompetingOfferAccepted",
+      "msg": "The borrower already accepted another offer in this room"
+    },
+    {
+      "code": 6032,
+      "name": "AiDisabled",
+      "msg": "The AI copilot is turned off"
+    },
+    {
+      "code": 6033,
+      "name": "NotAiWorker",
+      "msg": "Only the configured AI worker may answer"
+    },
+    {
+      "code": 6034,
+      "name": "AlreadyAnswered",
+      "msg": "This request was already answered"
+    },
+    {
+      "code": 6035,
+      "name": "RequestExpired",
+      "msg": "This request expired before an answer arrived"
     }
   ],
   "types": [
+    {
+      "name": "AiConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "worker",
+            "type": "pubkey"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CardArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "show",
+            "type": "u8"
+          },
+          {
+            "name": "amount_min",
+            "type": "u64"
+          },
+          {
+            "name": "amount_max",
+            "type": "u64"
+          },
+          {
+            "name": "max_interest_bps",
+            "type": "u16"
+          },
+          {
+            "name": "duration_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "collateral_note",
+            "docs": [
+              "Human-readable collateral note, e.g. \"wSOL at up to 60% LTV\"."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                48
+              ]
+            }
+          }
+        ]
+      }
+    },
     {
       "name": "Custody",
       "type": {
@@ -3831,6 +4572,47 @@
           {
             "name": "mint",
             "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DiscoveryCard",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "card_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "room",
+            "type": "pubkey"
+          },
+          {
+            "name": "publisher",
+            "type": "pubkey"
+          },
+          {
+            "name": "fields",
+            "type": {
+              "defined": {
+                "name": "CardArgs"
+              }
+            }
+          },
+          {
+            "name": "active",
+            "type": "bool"
           },
           {
             "name": "bump",

@@ -7,7 +7,7 @@ import type { LoanSigner } from "@/lib/keypair-wallet";
 import { DELEGATION_PROGRAM_ID, ESPL_PROGRAM_ID, MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID, ata, eataPda, permissionPda } from "./espl";
 import { decodeLoanTerms, loanAnchorPda, loanTermsPda, type LoanTerms } from "./loan-codec";
 import { advance, newReceipt, saveReceipt } from "./receipts";
-import { roomStatePda } from "./room-codec";
+import { PRIVATE_PROGRAM_ID, roomStatePda } from "./room-codec";
 import { validateTransaction } from "./tx-validator";
 
 const EPHEMERAL_VAULT_ID = new PublicKey("MagicVau1t999999999999999999999999999999999");
@@ -57,6 +57,7 @@ export function explainLoanError(message: string): string {
     [/LoanExpired|6029/, "The deadline has passed. The loan can only be claimed now."],
     [/LoanNotExpired|6030/, "The deadline has not passed yet."],
     [/WrongStatus|6025/, "This loan is no longer in that state. Refresh to see where it stands."],
+    [/CompetingOfferAccepted|6031/, "You already accepted another offer in this room. The other lenders can cancel theirs."],
     [/insufficient funds|0x1\b/i, "Your private balance does not hold enough for this."],
   ];
   return table.find(([re]) => re.test(message))?.[1] ?? message;
@@ -164,6 +165,8 @@ const lenderAccounts = (lender: PublicKey, anchor: PublicKey) => ({
   loanUsdc: ata(anchor, USDC),
 });
 
+const roomDealPda = (room: PublicKey) => PublicKey.findProgramAddressSync([enc.encode("room-deal"), room.toBytes()], PRIVATE_PROGRAM_ID)[0];
+
 const borrowerAccounts = (t: LoanTerms, anchor: PublicKey) => ({
   borrower: t.borrower,
   anchor,
@@ -174,6 +177,12 @@ const borrowerAccounts = (t: LoanTerms, anchor: PublicKey) => ({
   loanWsol: ata(anchor, WSOL),
   lenderUsdc: ata(t.lender, USDC),
   priceUpdate: PYTH_PRICE_UPDATE_ACCOUNT,
+  // Only acceptance uses the room deal lock; Anchor treats null as "not provided".
+  deal: null as unknown as PublicKey,
+  dealPermission: null as unknown as PublicKey,
+  vault: null as unknown as PublicKey,
+  magicProgram: null as unknown as PublicKey,
+  permissionProgram: null as unknown as PublicKey,
 });
 
 export async function editLoan(base: Connection, er: Connection, signer: LoanSigner, anchor: PublicKey, terms: TermsInput, nextRevision: number) {
@@ -191,9 +200,23 @@ export async function cancelLoan(base: Connection, er: Connection, signer: LoanS
   return sendEr(er, signer, p.methods.cancelLoan().accountsPartial(lenderAccounts(signer.publicKey, anchor)), "Cancel offer");
 }
 
-export async function acceptLoan(base: Connection, er: Connection, signer: LoanSigner, anchor: PublicKey, t: LoanTerms) {
+export async function acceptLoan(base: Connection, er: Connection, signer: LoanSigner, anchor: PublicKey, t: LoanTerms, room: PublicKey) {
   const p = programFor(base, signer);
-  return sendEr(er, signer, p.methods.acceptLoan(t.revision).accountsPartial(borrowerAccounts(t, anchor)), `Lock wSOL and borrow (revision ${t.revision})`, t.revision);
+  const deal = roomDealPda(room);
+  return sendEr(
+    er,
+    signer,
+    p.methods.acceptLoan(t.revision).accountsPartial({
+      ...borrowerAccounts(t, anchor),
+      deal,
+      dealPermission: permissionPda(deal),
+      vault: EPHEMERAL_VAULT_ID,
+      magicProgram: MAGIC_PROGRAM_ID,
+      permissionProgram: PERMISSION_PROGRAM_ID,
+    }),
+    `Lock wSOL and borrow (revision ${t.revision})`,
+    t.revision,
+  );
 }
 
 export async function repayLoan(base: Connection, er: Connection, signer: LoanSigner, anchor: PublicKey, t: LoanTerms) {

@@ -29,7 +29,7 @@ export function PrivateHome() {
     },
     {
       title: "Invite the other side",
-      body: "Add a lender or borrower by wallet. A link alone opens nothing.",
+      body: "Invite by wallet, or publish a card on Discover and choose from lenders who ask. A link alone opens nothing.",
       state: ready ? "next" : "later",
     },
     {
@@ -39,7 +39,7 @@ export function PrivateHome() {
     },
     {
       title: "Agree on exact terms",
-      body: "The lender locks USDC on one revision; the borrower accepts that same revision. Any change resets approval.",
+      body: "Each lender's offer is visible only to them and the borrower. The copilot can explain and compare. Both sides approve the same revision.",
       state: "later",
     },
     {
@@ -59,9 +59,14 @@ export function PrivateHome() {
           Terms, conversations, and balances stay inside a hardware-protected rollup that only the people in the deal can
           read. Prices, interest, and settlement follow the same rules as every Lendspan loan.
         </p>
-        <Link href="/devnet/private/proof" className={styles.proofLink}>
-          See what has been proven on Devnet <span aria-hidden>→</span>
-        </Link>
+        <div className={styles.heroLinks}>
+          <Link href="/devnet/private/discover" className={styles.proofLink}>
+            Browse borrowers looking for lenders <span aria-hidden>→</span>
+          </Link>
+          <Link href="/devnet/private/proof" className={styles.secondaryLink}>
+            What has been proven on Devnet
+          </Link>
+        </div>
       </header>
 
       <div className={styles.layout}>

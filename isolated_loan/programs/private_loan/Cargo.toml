@@ -20,7 +20,7 @@ custom-heap = []
 custom-panic = []
 
 [dependencies]
-anchor-lang = "1.0.2"
+anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }
 anchor-spl = "1.0.2"
 ephemeral-rollups-sdk = { version = "=0.17.3", features = ["anchor", "access-control"] }
 loan-core = { path = "../../crates/loan-core" }

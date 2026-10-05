@@ -664,6 +664,196 @@
           "detail": "LoanTerms absent on base"
         }
       }
+    },
+    "11.1": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "room": "5pAEUcAveFAFoFxMuEjw1zmah5JsGPeMJvx2GWLwirnt",
+      "failed": [],
+      "checks": {
+        "card-shows-only-chosen-fields": {
+          "ok": true,
+          "detail": {
+            "amountMax": 150000,
+            "rate": 0
+          }
+        },
+        "owner-reads-join-queue-without-duplicates": {
+          "ok": true,
+          "detail": {
+            "count": 2
+          }
+        },
+        "requester-cannot-read-queue": {
+          "ok": true,
+          "detail": "queue hidden"
+        },
+        "competing-lender-cannot-see-other-offer": {
+          "ok": true,
+          "detail": "hidden"
+        },
+        "borrower-sees-both-offers": {
+          "ok": true,
+          "detail": "both visible"
+        },
+        "second-offer-locked-out": {
+          "ok": true,
+          "detail": "Error: 2SeJ4AtfaH3omG8DcCqkGhdbrWiDtKuHVjezrqdKxwFFNd3xEEgcoVHBruCZdX4yvMUezJEXMNsWZyYzzgibChHC failed: {\"InstructionError\":[0,{\"Custom\":6031}]}"
+        },
+        "unused-offer-cancellable": {
+          "ok": true,
+          "detail": {
+            "refunded": "100000"
+          }
+        },
+        "ai-answers-approved-excerpt": {
+          "ok": true,
+          "detail": {
+            "status": 200,
+            "kind": "explanation",
+            "text": "Lender gives 0.1 USDC and gets back 0.105 USDC (0.005 interest, charged for the full 1-hour term even if repaid early). "
+          }
+        },
+        "outsider-cannot-read-ai-request": {
+          "ok": true,
+          "detail": "hidden"
+        },
+        "duplicate-answer-rejected": {
+          "ok": true,
+          "detail": {
+            "error": "This request was already answered."
+          }
+        },
+        "forged-callback-rejected": {
+          "ok": true,
+          "detail": "Error: 4DDXAUGfSvuwsX7ZHMCT6Q9gGX9nMos2dj8k6gRVVk5DEx76jXvEmTcBCkgpZJdTqQFfQ9ZLZMqKcZxuaAruMhtN failed: {\"InstructionError\":[0,{\"Custom\":6033}]}"
+        },
+        "altered-excerpt-rejected": {
+          "ok": true,
+          "detail": {
+            "error": "The text does not match what was approved for this model."
+          }
+        },
+        "injection-changes-nothing": {
+          "ok": true,
+          "detail": {
+            "answered": 200,
+            "loanStatus": "active"
+          }
+        },
+        "expired-request-rejected": {
+          "ok": true,
+          "detail": {
+            "error": "This request expired."
+          }
+        },
+        "late-answer-marked-stale": {
+          "ok": true,
+          "detail": {
+            "stale": true,
+            "kind": "proposal"
+          }
+        },
+        "request-on-old-revision-rejected": {
+          "ok": true,
+          "detail": "Error: 359rixLvBuMMYk43sg2mWjMAu17SJB7ETruY64BR3kjJhnWjptkV3R35d13i9C7GcRmxEq3VVm2k1ia2wF3dAFH4 failed: {\"InstructionError\":[0,{\"Custom\":6026}]}"
+        }
+      }
+    },
+    "11.2": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "room": "5pAEUcAveFAFoFxMuEjw1zmah5JsGPeMJvx2GWLwirnt",
+      "failed": [],
+      "checks": {
+        "card-shows-only-chosen-fields": {
+          "ok": true,
+          "detail": {
+            "amountMax": 150000,
+            "rate": 0
+          }
+        },
+        "owner-reads-join-queue-without-duplicates": {
+          "ok": true,
+          "detail": {
+            "count": 2
+          }
+        },
+        "requester-cannot-read-queue": {
+          "ok": true,
+          "detail": "queue hidden"
+        },
+        "competing-lender-cannot-see-other-offer": {
+          "ok": true,
+          "detail": "hidden"
+        },
+        "borrower-sees-both-offers": {
+          "ok": true,
+          "detail": "both visible"
+        },
+        "second-offer-locked-out": {
+          "ok": true,
+          "detail": "Error: 2SeJ4AtfaH3omG8DcCqkGhdbrWiDtKuHVjezrqdKxwFFNd3xEEgcoVHBruCZdX4yvMUezJEXMNsWZyYzzgibChHC failed: {\"InstructionError\":[0,{\"Custom\":6031}]}"
+        },
+        "unused-offer-cancellable": {
+          "ok": true,
+          "detail": {
+            "refunded": "100000"
+          }
+        },
+        "ai-answers-approved-excerpt": {
+          "ok": true,
+          "detail": {
+            "status": 200,
+            "kind": "explanation",
+            "text": "Lender gives 0.1 USDC and gets back 0.105 USDC (0.005 interest, charged for the full 1-hour term even if repaid early). "
+          }
+        },
+        "outsider-cannot-read-ai-request": {
+          "ok": true,
+          "detail": "hidden"
+        },
+        "duplicate-answer-rejected": {
+          "ok": true,
+          "detail": {
+            "error": "This request was already answered."
+          }
+        },
+        "forged-callback-rejected": {
+          "ok": true,
+          "detail": "Error: 4DDXAUGfSvuwsX7ZHMCT6Q9gGX9nMos2dj8k6gRVVk5DEx76jXvEmTcBCkgpZJdTqQFfQ9ZLZMqKcZxuaAruMhtN failed: {\"InstructionError\":[0,{\"Custom\":6033}]}"
+        },
+        "altered-excerpt-rejected": {
+          "ok": true,
+          "detail": {
+            "error": "The text does not match what was approved for this model."
+          }
+        },
+        "injection-changes-nothing": {
+          "ok": true,
+          "detail": {
+            "answered": 200,
+            "loanStatus": "active"
+          }
+        },
+        "expired-request-rejected": {
+          "ok": true,
+          "detail": {
+            "error": "This request expired."
+          }
+        },
+        "late-answer-marked-stale": {
+          "ok": true,
+          "detail": {
+            "stale": true,
+            "kind": "proposal"
+          }
+        },
+        "request-on-old-revision-rejected": {
+          "ok": true,
+          "detail": "Error: 359rixLvBuMMYk43sg2mWjMAu17SJB7ETruY64BR3kjJhnWjptkV3R35d13i9C7GcRmxEq3VVm2k1ia2wF3dAFH4 failed: {\"InstructionError\":[0,{\"Custom\":6026}]}"
+        }
+      }
     }
   }
 }

@@ -36,3 +36,13 @@ Source methods restored from the pinned upstream repositories; actual verificati
 | Program errors are translated (stale price, revision changed, LTV, deadline) | Fovea / Plumb | Members see error names, but beginners need the next step. |
 | Room side column widened to 24rem for the loan form | Indigo | 20rem squeezed amount inputs and the summary grid. |
 | Signed-in loan states not screenshot-verified | Plumb | Headless runs cannot sign a TEE login. Recorded as missing coverage, not inferred. |
+
+## Phase 3: discovery and copilot (2026-10-05)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Unshared card fields read "Not shared" in a muted style | Sol / Indigo | They looked like values; the card should show what was withheld, not imply it. |
+| Each card starts with "Borrower request · room abcd" | Ravi | Cards without a header read as unexplained data. |
+| The copilot shows the exact excerpt, model, and identifiability warning before the wallet signs | Fovea / Plumb | Disclosure must be informed. Redacting addresses does not make exact amounts anonymous. |
+| A stale AI answer stays visible, tinted, with no "Use as a draft" | Plumb | A late answer can inform but must not change the current draft. |
+| Comparison highlights the cheapest repayment only | Sol | One clear figure, not a ranking that implies advice. |

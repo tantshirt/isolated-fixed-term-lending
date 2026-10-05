@@ -71,7 +71,7 @@ impl RoomState {
         self.members.iter().any(|m| m.active && m.pubkey == *who)
     }
 
-    fn permission_members(&self) -> Vec<Member> {
+    pub(crate) fn permission_members(&self) -> Vec<Member> {
         let seen = TX_LOGS_FLAG | TX_BALANCES_FLAG | TX_MESSAGE_FLAG;
         self.members
             .iter()
@@ -122,11 +122,12 @@ pub(crate) fn store<T: AnchorSerialize>(info: &AccountInfo, value: &T) -> Result
         .map_err(|_| error!(PrivateLoanError::InvalidRecord))
 }
 
-struct Sponsor<'a, 'info> {
-    anchor: &'a Account<'info, RoomAnchor>,
-    vault: &'a UncheckedAccount<'info>,
-    magic_program: &'a Program<'info, MagicProgram>,
-    permission_program: &'a Program<'info, PermissionProgram>,
+/// The room anchor paying rent for, and signing the permissions of, its ER-only records.
+pub(crate) struct Sponsor<'a, 'info> {
+    pub(crate) anchor: &'a Account<'info, RoomAnchor>,
+    pub(crate) vault: &'a UncheckedAccount<'info>,
+    pub(crate) magic_program: &'a Program<'info, MagicProgram>,
+    pub(crate) permission_program: &'a Program<'info, PermissionProgram>,
 }
 
 impl<'a, 'info> Sponsor<'a, 'info> {
@@ -135,7 +136,7 @@ impl<'a, 'info> Sponsor<'a, 'info> {
     }
 
     /// Creates an ER-only record and its private permission in one step.
-    fn create_private_record(
+    pub(crate) fn create_private_record(
         &self,
         record: &AccountInfo<'info>,
         permission: &AccountInfo<'info>,
@@ -162,7 +163,7 @@ impl<'a, 'info> Sponsor<'a, 'info> {
         Ok(())
     }
 
-    fn set_members(
+    pub(crate) fn set_members(
         &self,
         record: &AccountInfo<'info>,
         permission: &AccountInfo<'info>,

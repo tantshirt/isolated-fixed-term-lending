@@ -35,10 +35,92 @@ const DURATIONS = [
   { label: "2 minutes (try expiry)", seconds: 120 },
 ];
 
-type Ctx = { signer: LoanSigner; base: Connection; er: Connection; room: PublicKey; members: RoomMember[]; loanIds: string[]; onChange: () => void };
+export type Prefill = { principalUsdc: number; interestPercent: number; durationDays: number; collateralWsol: number };
+
+type Ctx = {
+  signer: LoanSigner;
+  base: Connection;
+  er: Connection;
+  room: PublicKey;
+  members: RoomMember[];
+  loanIds: string[];
+  loans: { anchor: PublicKey; terms: LoanTerms }[];
+  prefill?: Prefill | null;
+  onChange: () => void;
+};
+
+/** Borrower's side-by-side view of offers they can read. Competing lenders never see this. */
+function Compare({ loans, me }: { loans: Ctx["loans"]; me: PublicKey }) {
+  const { price } = usePrice();
+  const open = loans.filter((l) => l.terms.borrower.equals(me) && (l.terms.status === "funded" || l.terms.status === "draft"));
+  if (open.length < 2) return null;
+  const rows = open.map((l, i) => {
+    const owed = debt(l.terms.principal, l.terms.interestBps);
+    const ltv = price ? currentLtvBps(owed, collateralValueUsdc(l.terms.collateralAmount, price.price, price.conf, price.exponent)) : null;
+    return { i, l, owed, ltv };
+  });
+  const cheapest = Math.min(...rows.map((r) => Number(r.owed - r.l.terms.principal)));
+  return (
+    <div>
+      <p className="visually-hidden" id="compare-h">
+        Compare offers
+      </p>
+      <table className={styles.compare} aria-labelledby="compare-h">
+        <thead>
+          <tr>
+            <th scope="col">Offer</th>
+            {rows.map((r) => (
+              <th scope="col" key={r.i}>
+                {r.i + 1} · {r.l.terms.status === "funded" ? "funded" : "draft"}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">You receive</th>
+            {rows.map((r) => (
+              <td key={r.i} className="num">{usdc(r.l.terms.principal)}</td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row">You repay</th>
+            {rows.map((r) => (
+              <td key={r.i} className={`num ${Number(r.owed - r.l.terms.principal) === cheapest ? styles.compareBest : ""}`}>{usdc(r.owed)}</td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row">You lock</th>
+            {rows.map((r) => (
+              <td key={r.i} className="num">{wsol(r.l.terms.collateralAmount)} wSOL</td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row">Term</th>
+            {rows.map((r) => (
+              <td key={r.i} className="num">{(r.l.terms.durationSeconds / 86_400).toFixed(r.l.terms.durationSeconds < 86_400 ? 2 : 0)} days</td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row">LTV now / line</th>
+            {rows.map((r) => (
+              <td key={r.i} className="num">
+                {r.ltv === null ? "—" : `${(r.ltv / 100).toFixed(0)}%`} / {r.l.terms.liquidationLtvBps / 100}%
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+      <p className={styles.hint}>Accepting one offer locks the others out; their lenders can cancel and get their USDC back.</p>
+    </div>
+  );
+}
 
 export function LoanPanel(ctx: Ctx) {
   const [proposing, setProposing] = useState(false);
+  useEffect(() => {
+    if (ctx.prefill) setProposing(true);
+  }, [ctx.prefill]);
   const me = ctx.signer.publicKey;
   const counterparties = ctx.members.filter((m) => !m.pubkey.equals(me) && (m.role === "borrower" || m.owner));
   return (
@@ -51,6 +133,7 @@ export function LoanPanel(ctx: Ctx) {
         {ctx.loanIds.length === 0 && !proposing && (
           <p className={styles.muted}>No loan yet. A lender proposes exact terms; only the lender and that borrower can read them.</p>
         )}
+        <Compare loans={ctx.loans} me={me} />
         {ctx.loanIds.map((id) => (
           <LoanCard key={id} id={id} {...ctx} />
         ))}
@@ -68,13 +151,13 @@ export function LoanPanel(ctx: Ctx) {
   );
 }
 
-function ProposeForm({ signer, base, er, room, counterparties, onDone }: Ctx & { counterparties: RoomMember[]; onDone: () => void }) {
+function ProposeForm({ signer, base, er, room, counterparties, prefill, onDone }: Ctx & { counterparties: RoomMember[]; onDone: () => void }) {
   const { price } = usePrice();
   const [borrower, setBorrower] = useState(counterparties[0]?.pubkey.toBase58() ?? "");
-  const [principal, setPrincipal] = useState("0.10");
-  const [rate, setRate] = useState("5");
-  const [duration, setDuration] = useState(DURATIONS[1].seconds);
-  const [collateral, setCollateral] = useState("");
+  const [principal, setPrincipal] = useState(prefill ? String(prefill.principalUsdc) : "0.10");
+  const [rate, setRate] = useState(prefill ? String(prefill.interestPercent) : "5");
+  const [duration, setDuration] = useState(prefill ? Math.max(60, Math.round(prefill.durationDays * 86_400)) : DURATIONS[1].seconds);
+  const [collateral, setCollateral] = useState(prefill ? String(prefill.collateralWsol) : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -169,7 +252,7 @@ function ProposeForm({ signer, base, er, room, counterparties, onDone }: Ctx & {
   );
 }
 
-function LoanCard({ id, signer, base, er, onChange }: Ctx & { id: string }) {
+function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }) {
   const anchor = useMemo(() => loanFromId(id), [id]);
   const [t, setT] = useState<LoanTerms | null | "hidden">(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -248,7 +331,7 @@ function LoanCard({ id, signer, base, er, onChange }: Ctx & { id: string }) {
           </Button>
         )}
         {isBorrower && t.status === "funded" && (
-          <Button onClick={() => act("accept", () => acceptLoan(base, er, signer, anchor, t))} loading={busy === "accept"}>
+          <Button onClick={() => act("accept", () => acceptLoan(base, er, signer, anchor, t, room))} loading={busy === "accept"}>
             Lock wSOL and borrow
           </Button>
         )}
