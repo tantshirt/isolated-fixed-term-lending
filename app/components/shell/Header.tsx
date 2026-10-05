@@ -11,6 +11,7 @@ import styles from "./Header.module.css";
 const NAV = [
   { href: "/devnet", label: "Offers" },
   { href: "/devnet/create", label: "Create offer" },
+  { href: "/devnet/private", label: "Private" },
 ];
 
 export function Header() {
