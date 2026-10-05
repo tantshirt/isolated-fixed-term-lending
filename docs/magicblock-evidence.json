@@ -978,6 +978,31 @@
           }
         }
       }
+    },
+    "13.1-transfer": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "signature": "5kRfE3jAdS5RhYFwAB5GxexxX6Au2491Xid8GDag4FvcgZqznczG4THCCNr41QXWYR5aCw7gaBs5EA5i781zkgVn",
+      "failed": [],
+      "checks": {
+        "transfer-executed-in-er": {
+          "ok": true,
+          "detail": "5kRfE3jAdS5RhYFwAB5GxexxX6Au2491Xid8GDag4FvcgZqznczG4THCCNr41QXWYR5aCw7gaBs5EA5i781zkgVn"
+        },
+        "exact-private-balances": {
+          "ok": true,
+          "detail": {
+            "sender": "37655",
+            "recipient": "12345"
+          }
+        },
+        "outsider-sees-masked-balance": {
+          "ok": true,
+          "detail": {
+            "outsider": "0"
+          }
+        }
+      }
     }
   }
 }

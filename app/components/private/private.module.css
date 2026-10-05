@@ -838,7 +838,7 @@ span.receiptLink {
   transition: border-color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
 }
 
-.roleChoice button[aria-checked="true"] {
+.roleChoice button[aria-pressed="true"] {
   border-color: var(--color-accent);
   background: var(--color-accent-muted);
   color: var(--color-text-accent);
@@ -1166,4 +1166,71 @@ span.receiptLink {
 .notShared {
   color: var(--color-text-disabled);
   font-weight: 500;
+}
+
+.sendBox {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.sendBox summary {
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sendBox .panelBody {
+  padding-top: 0;
+}
+
+.checks {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.25rem 0.875rem;
+  align-items: center;
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.check:first-child {
+  border-top: 0;
+}
+
+.checkDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-text-disabled);
+}
+
+.check[data-state="ok"] .checkDot {
+  background: var(--color-text-green);
+}
+
+.check[data-state="warn"] .checkDot {
+  background: var(--color-brass);
+}
+
+.check[data-state="fail"] .checkDot {
+  background: var(--color-text-red);
+}
+
+.checkName {
+  font-weight: 600;
+}
+
+.checkDetail {
+  grid-column: 2 / -1;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
 }

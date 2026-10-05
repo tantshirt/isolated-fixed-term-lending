@@ -57,3 +57,14 @@ test("a reviewed transfer that is missing is refused", () => {
     ReviewMismatch,
   );
 });
+
+test("a private send must match the reviewed recipient and amount", async () => {
+  const { createTransferCheckedInstruction, createTransferInstruction } = await import("@solana/spl-token");
+  const to = Keypair.generate().publicKey;
+  const send = (dest: PublicKey, amt: bigint) => tx(createTransferCheckedInstruction(ata(owner, usdc), usdc, ata(dest, usdc), owner, amt, 6));
+  const review = { feePayer: owner, transfers: [{ kind: "send" as const, owner, mint: usdc, amount: 5n, destination: ata(to, usdc) }] };
+  validateTransaction(send(to, 5n), review);
+  assert.throws(() => validateTransaction(send(Keypair.generate().publicKey, 5n), review), ReviewMismatch);
+  assert.throws(() => validateTransaction(send(to, 6n), review), ReviewMismatch);
+  assert.throws(() => validateTransaction(tx(createTransferInstruction(ata(owner, usdc), ata(to, usdc), owner, 5n)), review), ReviewMismatch);
+});

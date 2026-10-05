@@ -20,7 +20,7 @@ export const ALLOWED_PROGRAMS = [
 ];
 
 export type ReviewedTransfer = {
-  kind: "deposit" | "withdraw";
+  kind: "deposit" | "withdraw" | "send";
   owner: PublicKey;
   mint: PublicKey;
   amount: bigint;
@@ -46,6 +46,18 @@ export function validateTransaction(tx: Transaction, review: Review): void {
   for (const [i, ix] of tx.instructions.entries()) {
     if (!allowed.some((p) => p.equals(ix.programId))) {
       throw new ReviewMismatch(`Instruction ${i + 1} calls ${ix.programId.toBase58()}, which is not an allowed program.`);
+    }
+    // SPL Token TransferChecked (12): [source, mint, destination, owner]; amount u64, decimals u8.
+    if (ix.programId.equals(TOKEN_PROGRAM) && (ix.data[0] === 3 || ix.data[0] === 12)) {
+      if (ix.data[0] === 3) throw new ReviewMismatch(`Instruction ${i + 1} is an unchecked token transfer; only checked transfers are signed.`);
+      const amount = amountOf(ix.data);
+      const [mint, destination, owner] = [ix.keys[1].pubkey, ix.keys[2].pubkey, ix.keys[3].pubkey];
+      const match = pending.findIndex(
+        (t) => t.kind === "send" && t.amount === amount && t.mint.equals(mint) && t.owner.equals(owner) && !!t.destination?.equals(destination),
+      );
+      if (match < 0) throw new ReviewMismatch(`Instruction ${i + 1} would send ${amount} of ${mint.toBase58()} somewhere you did not review.`);
+      pending.splice(match, 1);
+      continue;
     }
     if (!ix.programId.equals(ESPL_PROGRAM_ID)) continue;
     const disc = ix.data[0];
