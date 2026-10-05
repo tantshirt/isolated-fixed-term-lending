@@ -92,3 +92,14 @@ Evidence: final 390/820/1440 captures plus live checks on the dev server (comput
 | Earlier rulings verified as honored: no colour literals in component CSS, lab figures derive from `scenarioFrom`, the `zz-lab-preview` source is gone (only a stale `.next` artifact remains), status pills carry words | Plumb | Checked in source. |
 
 Coverage note: signed-in states remain unverified (unchanged). The "1 issue" dev overlay on the landing capture did not reproduce; the console is clean on `/`, `/use-cases`, and `/devnet/lab`. Desktop private-chapter images were blank only because full-page capture skipped lazy loading; the 820px capture shows them.
+
+## Private refactor A: section tabs (2026-10-05)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Private sub-pages get a tab strip (Overview, Discover, Liquidations, Loan lab) on every private route | Sally / Fovea | The five hero links read as footnotes; the user said the sections were hidden. |
+| Diagnostics and Proof sit in a smaller trailing group after a divider | Ravi / Sol | They are reference pages, not steps in a loan; equal weight would crowd the four working tabs. |
+| The strip sits inside the 1040px page column with a hairline, not a full-bleed bar | Indigo | A full-width bar under the boxed wallet card broke the column edge. |
+| The active tab scrolls into view on phones; the "Private" label hides under 720px | Fovea / Indigo | At 375px "Loan lab" was off-screen with no cue that it was selected. |
+| Loan lab moves to `/devnet/private/lab`; `/devnet/lab` redirects | Hollis | One layout owns the tabs; old links keep working. |
+| Breadcrumbs are removed from tab pages; the room keeps "Overview / Room abcd" | Sol | Tabs already say where you are; a room is not a tab, so it keeps its way back. |

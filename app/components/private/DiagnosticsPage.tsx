@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { PYTH_PRICE_UPDATE_ACCOUNT } from "@/lib/constants";
@@ -88,11 +87,6 @@ export function DiagnosticsPage() {
 
   return (
     <div className="page page-narrow">
-      <nav className={styles.crumbs} aria-label="Breadcrumb">
-        <Link href="/devnet/private">Private</Link>
-        <span aria-hidden>/</span>
-        <span>Diagnostics</span>
-      </nav>
       <header className={styles.hero}>
         <h1 className={styles.title}>Is everything working?</h1>
         <p className={styles.lede}>Live checks of the rollup, the program, prices, automation, and the copilot. Nothing here signs or spends.</p>

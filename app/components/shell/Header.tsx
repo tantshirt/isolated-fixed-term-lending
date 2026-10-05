@@ -29,7 +29,7 @@ export function Header() {
                 ? pathname === "/devnet" ||
                   pathname.startsWith("/devnet/offers")
                 : n.href === "/devnet/private"
-                  ? pathname.startsWith("/devnet/private") || pathname.startsWith("/devnet/lab")
+                  ? pathname.startsWith("/devnet/private")
                   : pathname.startsWith(n.href);
             return (
               <Link

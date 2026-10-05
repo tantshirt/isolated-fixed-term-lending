@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { usePrivate } from "@/lib/private/use-private";
 import { BalancePanel } from "./BalancePanel";
@@ -58,23 +57,6 @@ export function PrivateHome() {
           Terms, conversations, and balances stay inside a hardware-protected rollup that only the people in the deal can
           read. Prices, interest, and settlement follow the same rules as every Lendspan loan.
         </p>
-        <div className={styles.heroLinks}>
-          <Link href="/devnet/private/discover" className={styles.proofLink}>
-            Browse borrowers looking for lenders <span aria-hidden>→</span>
-          </Link>
-          <Link href="/devnet/private/liquidate" className={styles.secondaryLink}>
-            Liquidation quotes
-          </Link>
-          <Link href="/devnet/lab" className={styles.secondaryLink}>
-            Loan lab
-          </Link>
-          <Link href="/devnet/private/diagnostics" className={styles.secondaryLink}>
-            Diagnostics
-          </Link>
-          <Link href="/devnet/private/proof" className={styles.secondaryLink}>
-            What has been proven on Devnet
-          </Link>
-        </div>
       </header>
 
       <div className={styles.layout}>

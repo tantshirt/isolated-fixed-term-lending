@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { LabPage } from "@/components/private/LabPage";
-
-export const metadata: Metadata = { title: "Loan lab · Lendspan" };
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <LabPage />;
+  redirect("/devnet/private/lab");
 }

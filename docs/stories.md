@@ -323,5 +323,5 @@ Acceptance:
 Acceptance:
 
 - Private transfers and gas sponsorship are bounded and never change approved financial contents.
-- `/devnet/lab` VRF scenarios and SOAR achievements are opt-in and confer no loan advantage.
+- `/devnet/private/lab` VRF scenarios and SOAR achievements are opt-in and confer no loan advantage.
 - Keyboard, mobile, wallet switching, and rejected signatures all work on `/devnet/private`.

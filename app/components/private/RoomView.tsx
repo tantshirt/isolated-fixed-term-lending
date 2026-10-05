@@ -114,7 +114,7 @@ export function RoomView({ roomId }: { roomId: string }) {
   return (
     <div className="page">
       <nav className={styles.crumbs} aria-label="Breadcrumb">
-        <Link href="/devnet/private">Private</Link>
+        <Link href="/devnet/private">Overview</Link>
         <span aria-hidden>/</span>
         <span>Room {roomId.slice(0, 4)}</span>
       </nav>
