@@ -21,6 +21,8 @@ import {
   repayLoan,
 } from "@/lib/private/loans";
 import type { RoomMember } from "@/lib/private/room-codec";
+import { publishReceipt, readReceipt, scheduleWatch, watchStatus } from "@/lib/private/liquidation";
+import { utils } from "@coral-xyz/anchor";
 import { postMessage } from "@/lib/private/rooms";
 import styles from "./private.module.css";
 
@@ -259,7 +261,15 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now() / 1000);
 
-  const load = useCallback(async () => setT((await readLoan(er, anchor)) ?? "hidden"), [er, anchor]);
+  const loanIdBytes = useMemo(() => utils.bytes.bs58.decode(id), [id]);
+  const [watch, setWatch] = useState<Awaited<ReturnType<typeof watchStatus>> | null>(null);
+  const [receipt, setReceipt] = useState<Awaited<ReturnType<typeof readReceipt>>>(null);
+  const load = useCallback(async () => {
+    const terms = await readLoan(er, anchor);
+    setT(terms ?? "hidden");
+    if (terms?.status === "active" || terms?.status === "repaid" || terms?.status === "expired") setWatch(await watchStatus(er, anchor, loanIdBytes));
+    if (terms && !["draft", "funded", "active"].includes(terms.status)) setReceipt(await readReceipt(base, anchor));
+  }, [er, base, anchor, loanIdBytes]);
   useEffect(() => {
     void load();
     const i = setInterval(() => (setNow(Date.now() / 1000), void load()), 5000);
@@ -319,6 +329,32 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
         {isLender ? "You are the lender." : isBorrower ? "You are the borrower." : "You can see this loan."}{" "}
         {t.status === "active" && !expired && "If you do not repay by then, the lender receives your wSOL."}
       </p>
+      {t.status === "active" && watch && (
+        <p className={watch.quote?.state === "open" ? styles.error : styles.hint}>
+          {watch.quote?.state === "open"
+            ? `Past the liquidation line. A public quote asks liquidators for ${usdc(watch.quote.debt)} USDC; repay now to keep your wSOL.`
+            : watch.watching
+              ? "Automatic checks are on: expiry and liquidation settle without anyone pressing a button."
+              : "Automatic checks are off for this loan."}
+        </p>
+      )}
+      {t.status === "active" && watch && !watch.watching && (
+        <Button variant="ghost" onClick={() => act("watch", () => scheduleWatch(base, er, signer, anchor, loanIdBytes))} loading={busy === "watch"}>
+          Turn on automatic checks
+        </Button>
+      )}
+      {receipt && (
+        <p className={styles.hint}>
+          {receipt.published
+            ? `Settlement receipt on Solana: outcome recorded with commitment ${receipt.commitment.slice(0, 12)}…, no terms.`
+            : "Settled privately. You can publish a minimal receipt to Solana: the outcome and an opaque commitment, never the terms."}
+        </p>
+      )}
+      {receipt && !receipt.published && (
+        <Button variant="ghost" onClick={() => act("receipt", () => publishReceipt(base, er, signer, anchor))} loading={busy === "receipt"}>
+          Publish settlement receipt
+        </Button>
+      )}
       <div className={styles.actions}>
         {isLender && t.status === "draft" && (
           <Button onClick={() => act("fund", () => fundLoan(base, er, signer, anchor, t.revision))} loading={busy === "fund"}>
@@ -331,7 +367,15 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
           </Button>
         )}
         {isBorrower && t.status === "funded" && (
-          <Button onClick={() => act("accept", () => acceptLoan(base, er, signer, anchor, t, room))} loading={busy === "accept"}>
+          <Button
+            onClick={() =>
+              act("accept", async () => {
+                await acceptLoan(base, er, signer, anchor, t, room);
+                await scheduleWatch(base, er, signer, anchor, loanIdBytes).catch(() => null);
+              })
+            }
+            loading={busy === "accept"}
+          >
             Lock wSOL and borrow
           </Button>
         )}

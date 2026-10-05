@@ -74,6 +74,8 @@ pub enum PrivateLoanError {
     AlreadyAnswered,
     #[msg("This request expired before an answer arrived")]
     RequestExpired,
+    #[msg("This ticket can still execute; wait until the quote expires or moves on")]
+    TicketInPlay,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

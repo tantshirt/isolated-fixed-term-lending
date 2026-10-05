@@ -2,19 +2,49 @@
   {
     "name": "lendspan-bridge",
     "taskId": "ba74495db14a1d06710c11d85338860f",
-    "creditsConsumed": 10.0,
+    "creditsConsumed": 10,
     "model": "gpt-image-2-5-sunburst-text-to-image"
   },
   {
     "name": "lendspan-collateral",
     "taskId": "5fefa2f85593bf2a55ea9b57475663d9",
-    "creditsConsumed": 10.0,
+    "creditsConsumed": 10,
     "model": "gpt-image-2-5-sunburst-text-to-image"
   },
   {
     "name": "lendspan-return",
     "taskId": "cd0662eb40633487c803cd6860f2b7d4",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "lendspan-private-room",
+    "taskId": "not recorded (script failed after generation; original kept)",
     "creditsConsumed": 10.0,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "lendspan-negotiate",
+    "taskId": "99d872df18f3da9c3c6ab7f25eba4970",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "lendspan-settle-quietly",
+    "taskId": "ddc289c34dcc090ddc98543cadbd1941",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "lendspan-competing-offers",
+    "taskId": "1140e7226edaa06b9b8a998e9daae29d",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "lendspan-open-liquidation",
+    "taskId": "d7ec014c597f7289ef30d24be2b838b6",
+    "creditsConsumed": 10,
     "model": "gpt-image-2-5-sunburst-text-to-image"
   }
 ]

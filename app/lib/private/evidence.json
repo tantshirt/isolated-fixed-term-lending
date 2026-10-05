@@ -854,6 +854,130 @@
           "detail": "Error: 359rixLvBuMMYk43sg2mWjMAu17SJB7ETruY64BR3kjJhnWjptkV3R35d13i9C7GcRmxEq3VVm2k1ia2wF3dAFH4 failed: {\"InstructionError\":[0,{\"Custom\":6026}]}"
         }
       }
+    },
+    "12.1": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "loan": "7RmF5N7AzwqZ3Hgn4M2h2otBV3FCPy72ejAX8D5z6uUn",
+      "crank": "45xdWq6radXYJrmxvefrP3yfkxtsjX8A9ftkHBtShdyK",
+      "failed": [],
+      "checks": {
+        "watch-scheduled": {
+          "ok": true,
+          "detail": {
+            "crank": "45xdWq6radXYJrmxvefrP3yfkxtsjX8A9ftkHBtShdyK",
+            "scheduled": "5jdDBGM5mzCDJwpiJRBLvDv85HfaJnyBVKA1vK8H89BmC47KezwDMJoSvTMbSwRkMwZPJhZy5Wy22Up215VVxNZ2"
+          }
+        },
+        "cranker-cannot-read-loan": {
+          "ok": true,
+          "detail": "terms hidden from cranker"
+        },
+        "cranker-runs": [
+          {
+            "t": -29,
+            "due": 4,
+            "results": [
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "ok",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}"
+            ]
+          },
+          {
+            "t": -20,
+            "due": 4,
+            "results": [
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "ok",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}"
+            ]
+          },
+          {
+            "t": -11,
+            "due": 4,
+            "results": [
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "ok",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}"
+            ]
+          },
+          {
+            "t": -2,
+            "due": 4,
+            "results": [
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "ok",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}"
+            ]
+          },
+          {
+            "t": 7,
+            "due": 4,
+            "results": [
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}",
+              "ok",
+              "{\"InstructionError\":[2,{\"Custom\":3008}]}"
+            ]
+          }
+        ],
+        "expiry-settled-by-cranker": {
+          "ok": true,
+          "detail": {
+            "status": "expired",
+            "lenderWsol": "1743917"
+          }
+        },
+        "retry-after-settlement-harmless": {
+          "ok": true,
+          "detail": {
+            "due": 4
+          }
+        }
+      }
+    },
+    "12.2": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "loan": "7RmF5N7AzwqZ3Hgn4M2h2otBV3FCPy72ejAX8D5z6uUn",
+      "receipt": "B9Cp2gyNHsFcqQQBFCZnJ4Gy1SnuH9BLpWJLingUsNv4",
+      "signatures": {
+        "publish": "uZj24xy4oaTbLhiounPMna9uYCaXKWZ8MggepotC8na87FwZsnCBJFfC5bK6hgSKKDBNH1RPpPsaYmjBNHhLTS6"
+      },
+      "failed": [],
+      "checks": {
+        "publish-in-er": {
+          "ok": true,
+          "detail": {
+            "sig": "uZj24xy4oaTbLhiounPMna9uYCaXKWZ8MggepotC8na87FwZsnCBJFfC5bK6hgSKKDBNH1RPpPsaYmjBNHhLTS6",
+            "err": null
+          }
+        },
+        "receipt-written-on-solana": {
+          "ok": true,
+          "detail": {
+            "status": 4,
+            "settledAt": 1791209237,
+            "commitment": "47d70e4e56fd8187"
+          }
+        },
+        "receipt-holds-no-terms": {
+          "ok": true,
+          "detail": {
+            "bytes": 82
+          }
+        },
+        "second-receipt-does-not-overwrite": {
+          "ok": true,
+          "detail": {
+            "secondPublish": "accepted in ER; action rejected on Solana"
+          }
+        }
+      }
     }
   }
 }

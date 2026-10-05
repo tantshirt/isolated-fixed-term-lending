@@ -2488,7 +2488,16 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "ephemeral-rollups-sdk",
+ "litesvm",
  "loan-core",
+ "pyth-solana-receiver-sdk",
+ "solana-account 3.4.0",
+ "solana-clock 3.2.1",
+ "solana-keypair",
+ "solana-message 3.1.0",
+ "solana-sha256-hasher 3.1.0",
+ "solana-signer",
+ "solana-transaction",
 ]
 
 [[package]]

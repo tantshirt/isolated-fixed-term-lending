@@ -44,9 +44,8 @@ export function PrivateHome() {
     },
     {
       title: "Settle",
-      body: "Repay before the deadline, or the lender receives the wSOL. Same rules as public loans; terms never reach Solana.",
+      body: "Repay before the deadline. Automatic checks settle expiry and liquidation with the same rules as public loans; terms never reach Solana.",
       state: "later",
-      note: "Automatic expiry and liquidation arrive in Phase 4",
     },
   ];
 
@@ -62,6 +61,9 @@ export function PrivateHome() {
         <div className={styles.heroLinks}>
           <Link href="/devnet/private/discover" className={styles.proofLink}>
             Browse borrowers looking for lenders <span aria-hidden>→</span>
+          </Link>
+          <Link href="/devnet/private/liquidate" className={styles.secondaryLink}>
+            Liquidation quotes
           </Link>
           <Link href="/devnet/private/proof" className={styles.secondaryLink}>
             What has been proven on Devnet

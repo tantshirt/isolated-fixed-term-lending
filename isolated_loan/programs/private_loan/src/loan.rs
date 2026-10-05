@@ -169,6 +169,9 @@ pub fn create_loan(ctx: Context<CreateLoan>, loan_id: [u8; 32]) -> Result<()> {
     anchor.usdc_mint = ctx.accounts.usdc_mint.key();
     anchor.wsol_mint = ctx.accounts.wsol_mint.key();
     anchor.bump = ctx.bumps.anchor;
+    let receipt = &mut ctx.accounts.receipt;
+    receipt.loan = ctx.accounts.anchor.key();
+    receipt.bump = ctx.bumps.receipt;
 
     let a = &ctx.accounts;
     system_program::transfer(
@@ -398,6 +401,9 @@ pub struct CreateLoan<'info> {
     pub lender: Signer<'info>,
     #[account(init, payer = lender, space = 8 + LoanAnchor::INIT_SPACE, seeds = [LOAN_SEED, loan_id.as_ref()], bump)]
     pub anchor: Account<'info, LoanAnchor>,
+    /// Created empty now, so the settlement action later writes it without paying rent.
+    #[account(init, payer = lender, space = 8 + crate::receipt::SettlementReceipt::INIT_SPACE, seeds = [crate::constants::RECEIPT_SEED, anchor.key().as_ref()], bump)]
+    pub receipt: Account<'info, crate::receipt::SettlementReceipt>,
     /// CHECK: The room anchor this loan belongs to; only its key is stored.
     pub room: UncheckedAccount<'info>,
     pub usdc_mint: Account<'info, Mint>,

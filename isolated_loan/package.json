@@ -3,7 +3,7 @@
   "scripts": {
     "test:rust": "cargo test -p loan-core --lib && cargo test --manifest-path programs/isolated_loan/Cargo.toml --lib",
     "test:ts": "tsx tests/loan-math.test.ts",
-    "test:litesvm": "anchor build && cargo test --manifest-path programs/isolated_loan/Cargo.toml --test litesvm",
+    "test:litesvm": "anchor build && cargo test --manifest-path programs/isolated_loan/Cargo.toml --test litesvm && cargo test --manifest-path programs/private_loan/Cargo.toml --test settle",
     "script:repay": "tsx scripts/outcome-repay.ts",
     "script:liquidate": "tsx scripts/outcome-liquidate.ts",
     "script:expire": "tsx scripts/outcome-expire.ts",
