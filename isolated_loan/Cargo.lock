@@ -1610,6 +1610,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "litesvm",
+ "loan-core",
  "pyth-solana-receiver-sdk",
  "solana-account",
  "solana-clock 3.2.1",
@@ -1844,6 +1845,15 @@ dependencies = [
  "solana-transaction-context",
  "solana-transaction-error",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "loan-core"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "pyth-solana-receiver-sdk",
+ "serde_json",
 ]
 
 [[package]]

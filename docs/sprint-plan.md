@@ -49,7 +49,7 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 | Order | Story | Status |
 | --- | --- | --- |
 | 1 | [8.1 Pin the toolchain](stories.md) | Open |
-| 2 | [9.1 Shared loan core](stories.md) | Open |
+| 2 | [9.1 Shared loan core](stories.md) | Done |
 | 3 | [8.2 TEE auth and permissions](stories.md) | Open |
 | 4 | [8.3 ER-only accounts](stories.md) | Open |
 | 5 | [8.4 Program-controlled eSPL custody](stories.md) | Open |
@@ -71,3 +71,4 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 - Program and UI live under `isolated_loan/` and `app/`. Outcome scripts: `npm run script:repay|liquidate|expire` in `isolated_loan/`.
 - Story 5.1 is covered by the LiteSVM suite in `isolated_loan/programs/isolated_loan/tests/litesvm.rs` (`npm run test:litesvm`).
 - 2026-10-05: Devnet deployment and live repayment/cancellation/expiry/close checks completed; see [evidence](devnet-evidence.json). Story 7.2 remains Open because indexer and fuzz work are excluded from the approved Lendspan redesign.
+- 2026-10-05: Story 9.1 done. Loan math and the Pyth check live in `isolated_loan/crates/loan-core`; the public program maps `CoreError` onto its own `LoanError` codes. Vectors in `crates/loan-core/vectors.json` are read by both the Rust and TS tests.

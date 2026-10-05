@@ -1,7 +1,7 @@
 {
   "license": "ISC",
   "scripts": {
-    "test:rust": "cargo test --manifest-path programs/isolated_loan/Cargo.toml --lib",
+    "test:rust": "cargo test -p loan-core --lib && cargo test --manifest-path programs/isolated_loan/Cargo.toml --lib",
     "test:ts": "tsx tests/loan-math.test.ts",
     "test:litesvm": "anchor build && cargo test --manifest-path programs/isolated_loan/Cargo.toml --test litesvm",
     "script:repay": "tsx scripts/outcome-repay.ts",
