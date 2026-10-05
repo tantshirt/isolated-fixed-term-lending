@@ -57,6 +57,30 @@ li:nth-child(2) > .row {
   }
 }
 
+/* Phones keep the figures needed to decide, labelled, under the amount. */
+@media (max-width: 859px) {
+  .cell {
+    display: flex;
+    flex-direction: row;
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: var(--text-sm);
+  }
+  .cell::before {
+    content: attr(data-label);
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+  }
+  .cell .sub {
+    display: none;
+  }
+  .status {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
 .sub {
   font-size: var(--text-xs);
   color: var(--color-text-tertiary);

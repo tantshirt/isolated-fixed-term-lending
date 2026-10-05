@@ -58,3 +58,14 @@ The live script verified creation, acceptance, repayment, cancellation, real-tim
 The first run crashed under public RPC rate limiting. Its temporary borrower's memory-only key was lost, leaving 0.045383514 test SOL, 0.003113046 wSOL, and account rent unrecovered. No principal remains in an open loan. The recovery run completed expiry and closed its token accounts, returning its remaining funds and verifying zero SOL balance. The updated smoke script paces requests, uses HTTP confirmation, and attempts cleanup in `finally`; an abrupt process termination can still lose an ephemeral key.
 
 Public RPC availability varies. A pending submission is not evidence of failure; reconcile the recorded signature before repeating an action.
+
+## Borrower requests upgrade — 6 October 2026
+
+The same program was upgraded in place with `create_request`, `cancel_request`, `fund_request` and `close_request` ([upgrade transaction](https://explorer.solana.com/tx/3K5WSc7vQ6mPGEbohBxWxqsRmHcSkv5HZhtGVZCLBtxbtAFa1dqoz711ZUguWhtfE2jof2PkpohcuGppWrewsVJo?cluster=devnet)). The new binary is 476,952 bytes against 368,160 deployed, so program data was first extended by 110,000 bytes:
+
+```sh
+solana program extend CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef 110000 -u devnet
+solana program deploy -u devnet --program-id target/deploy/isolated_loan-keypair.json target/deploy/isolated_loan.so
+```
+
+The `Offer` layout did not change, so existing offers still read. `scripts/request-smoke.ts` (run with `npx tsx --env-file=.env.local scripts/request-smoke.ts --run`) proved create, cancel and close on Devnet; receipts are in [devnet-request-evidence.json](devnet-request-evidence.json). Funding was not exercised on Devnet: public Hermes now returns 401 without `PYTH_HERMES_API_KEY`, and the sponsored SOL/USD account was minutes old. Funding is covered by the LiteSVM suite. The same key is needed for `/api/pyth-update`, so in-app funding and acceptance on Devnet depend on it too.
