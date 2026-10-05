@@ -55,13 +55,18 @@ async function sendAs(er: Connection, ix: TransactionInstruction, signers: Keypa
   }
 }
 
+// Anchor custom error numbers from programs/private_loan/src/error.rs. A wallet
+// outside the room cannot read the failing transaction's logs (that is the
+// privacy model), so its rejection shows only the number.
+const CODES: Record<string, number> = { NotRoomOwner: 6010, NotMember: 6012, SessionRevoked: 6019, SessionExpired: 6020 };
+
 async function expectFail(label: string, f: () => Promise<unknown>, code: string) {
   try {
     await f();
     return { ok: false, detail: `${label} unexpectedly succeeded` };
   } catch (e) {
     const msg = String(e);
-    return { ok: msg.includes(code), detail: msg.slice(0, 220) };
+    return { ok: msg.includes(code) || msg.includes(`"Custom":${CODES[code]}`), detail: msg.slice(0, 220) };
   }
 }
 

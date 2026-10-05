@@ -84,29 +84,15 @@ impl RoomState {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
-pub struct MessageSlot {
-    pub author: Pubkey,
-    pub ts: i64,
-    pub len: u16,
-    pub body: [u8; MAX_BODY],
-}
-
-impl Default for MessageSlot {
-    fn default() -> Self {
-        Self { author: Pubkey::default(), ts: 0, len: 0, body: [0; MAX_BODY] }
-    }
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct RoomThread {
-    /// Total messages ever posted; slot is `count % MAX_MESSAGES`.
-    pub count: u32,
-    pub messages: [MessageSlot; MAX_MESSAGES],
-}
+/// Thread layout, written in place: `count: u32`, then `MAX_MESSAGES` slots of
+/// `author (32) | ts i64 (8) | len u16 (2) | body (MAX_BODY)`. A freshly created
+/// ER-only record is zeroed, which is a valid empty thread. The thread is never
+/// deserialized whole: at 2.9 KB it would overflow the 4 KB SBF stack frame.
+pub struct RoomThread;
 
 impl RoomThread {
-    pub const LEN: usize = 4 + MAX_MESSAGES * (32 + 8 + 2 + MAX_BODY);
+    pub const SLOT: usize = 32 + 8 + 2 + MAX_BODY;
+    pub const LEN: usize = 4 + MAX_MESSAGES * Self::SLOT;
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -241,7 +227,6 @@ pub fn init_room(ctx: Context<InitRoom>) -> Result<()> {
     let mut members = [MemberSlot::default(); MAX_MEMBERS];
     members[0] = MemberSlot { pubkey: a.owner.key(), role: ROLE_VIEWER, active: true };
     let state = RoomState { version: 1, owner: a.owner.key(), revision: 0, members };
-    let thread = RoomThread { count: 0, messages: [MessageSlot::default(); MAX_MESSAGES] };
 
     let sponsor = Sponsor {
         anchor: &a.anchor,
@@ -265,9 +250,7 @@ pub fn init_room(ctx: Context<InitRoom>) -> Result<()> {
         RoomThread::LEN as u32,
         state.permission_members(),
     )?;
-    store(&a.state.to_account_info(), &state)?;
-    store(&a.thread.to_account_info(), &thread)?;
-    Ok(())
+    store(&a.state.to_account_info(), &state)
 }
 
 fn update_members(ctx: &Context<ManageMembers>, state: &RoomState) -> Result<()> {
@@ -399,18 +382,18 @@ pub fn post_message(ctx: Context<PostMessage>, body: Vec<u8>) -> Result<()> {
     let author = acting_member(&a.signer.key(), &a.anchor.key(), session.as_ref(), &state, SCOPE_POST_MESSAGE)?;
 
     let info = a.thread.to_account_info();
-    let mut thread: RoomThread = load(&info)?;
-    let mut text = [0u8; MAX_BODY];
-    text[..body.len()].copy_from_slice(&body);
-    let slot = (thread.count as usize) % MAX_MESSAGES;
-    thread.messages[slot] = MessageSlot {
-        author,
-        ts: Clock::get()?.unix_timestamp,
-        len: body.len() as u16,
-        body: text,
-    };
-    thread.count = thread.count.saturating_add(1);
-    store(&info, &thread)
+    require_keys_eq!(*info.owner, crate::ID, PrivateLoanError::InvalidRecord);
+    let mut data = info.try_borrow_mut_data()?;
+    require!(data.len() >= RoomThread::LEN, PrivateLoanError::InvalidRecord);
+    let count = u32::from_le_bytes(data[0..4].try_into().unwrap());
+    let o = 4 + (count as usize % MAX_MESSAGES) * RoomThread::SLOT;
+    data[o..o + 32].copy_from_slice(author.as_ref());
+    data[o + 32..o + 40].copy_from_slice(&Clock::get()?.unix_timestamp.to_le_bytes());
+    data[o + 40..o + 42].copy_from_slice(&(body.len() as u16).to_le_bytes());
+    data[o + 42..o + 42 + MAX_BODY].fill(0);
+    data[o + 42..o + 42 + body.len()].copy_from_slice(&body);
+    data[0..4].copy_from_slice(&count.saturating_add(1).to_le_bytes());
+    Ok(())
 }
 
 // ------------------------------------------------------------------ accounts
