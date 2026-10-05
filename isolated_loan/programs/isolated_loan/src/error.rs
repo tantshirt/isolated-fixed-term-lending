@@ -44,6 +44,8 @@ pub enum LoanError {
     SameMint,
     #[msg("Offer must be settled before it can be closed")]
     OfferNotSettled,
+    #[msg("Request must be funded or cancelled before it can be closed")]
+    RequestNotSettled,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

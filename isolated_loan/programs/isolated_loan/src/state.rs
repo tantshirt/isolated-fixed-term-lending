@@ -30,6 +30,37 @@ pub enum OfferStatus {
     Cancelled,
 }
 
+/// A borrower's public ask. Collateral is locked at create; funding turns it into
+/// an ordinary filled `Offer`, so every settlement path is shared.
+#[account]
+#[derive(InitSpace)]
+pub struct LoanRequest {
+    pub borrower: Pubkey,
+    pub request_id: u64,
+    pub usdc_mint: Pubkey,
+    pub wsol_mint: Pubkey,
+    pub principal: u64,
+    pub interest_bps: u16,
+    pub duration_seconds: i64,
+    pub collateral_amount: u64,
+    pub max_ltv_bps: u16,
+    pub liquidation_ltv_bps: u16,
+    pub created_ts: i64,
+    pub status: RequestStatus,
+    /// Default until funded.
+    pub lender: Pubkey,
+    /// The `Offer` created at funding. Default until funded.
+    pub offer: Pubkey,
+    pub bump: u8,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum RequestStatus {
+    Open,
+    Funded,
+    Cancelled,
+}
+
 impl Offer {
     pub fn debt(&self) -> Result<u64> {
         math::debt(self.principal, self.interest_bps)

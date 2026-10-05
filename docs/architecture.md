@@ -95,6 +95,48 @@ Signer: lender. Status must be `Repaid`, `Expired`, `Liquidated`, or `Cancelled`
 
 Every vault and account rent goes back to whoever paid it. No caller is paid rent for calling an open instruction.
 
+## Borrower requests
+
+A borrower can also post terms first. A request locks the borrower's collateral; a lender funds it in one step, which creates an ordinary filled offer. From then on repay, claim, liquidate, and close are the instructions above, unchanged. The `Offer` layout does not change, so existing offers need no migration.
+
+Request PDA seeds: `["request", borrower_pubkey, request_id_le_bytes]`. `request_id` is a `u64` the borrower chooses.
+
+Request vault seeds: `["request-wsol", request_pubkey]`. An SPL token account whose authority is the request PDA. It holds the collateral while the request is `Open`.
+
+### LoanRequest fields
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| borrower | pubkey | Signer on create, cancel, and close. Receives the principal at funding. |
+| request_id | u64 | Part of the request seed. |
+| usdc_mint, wsol_mint | pubkey | Same decimal and distinct-mint checks as `create_offer`. |
+| principal, interest_bps, duration_seconds, collateral_amount, max_ltv_bps, liquidation_ltv_bps | | Same meaning and caps as on `Offer`. |
+| created_ts | i64 | Clock at create. |
+| status | enum | `Open`, `Funded`, `Cancelled`. |
+| lender | pubkey | Set at funding. Default before that. |
+| offer | pubkey | The offer created at funding. Default before that. |
+| bump | u8 | Request PDA bump. |
+
+### create_request
+
+Signer: borrower. Reject terms outside the caps, a zero principal, or zero collateral. The borrower's USDC token account must already exist, so funding never has to create it. Move `collateral_amount` wSOL into the request vault. No price is read, as in `create_offer`. Emit `RequestCreated`.
+
+### cancel_request
+
+Signer: borrower. Status must be `Open`. Return the vault balance to the borrower, close the vault, set `Cancelled`. Emit `RequestCancelled`.
+
+### fund_request(offer_id)
+
+Signer: lender. Status must be `Open`. The lender must not be the borrower.
+
+Read Pyth with the same checks as accept and require `current_ltv_bps <= max_ltv_bps`, else `InsufficientCollateral`. Create the offer at `["offer", lender, offer_id]` and its wSOL vault. Move the collateral from the request vault to the offer vault, close the request vault to the lender, and move `principal` USDC from the lender straight to the borrower. The offer copies the terms with `start_ts` now and status `Filled`. The request becomes `Funded` and records the lender and the offer. Emit `RequestFunded`.
+
+Rent: the borrower paid for the request vault and the lender pays for the offer vault. Both are token accounts of the same size, so closing the request vault to the lender, and later the offer vault to the borrower, leaves each side even.
+
+### close_request
+
+Signer: borrower. Status must be `Funded` or `Cancelled`, else `RequestNotSettled`. Closes the request and returns its rent to the borrower. Emit `RequestClosed`.
+
 ## What fails closed
 
 - Wrong feed id, wrong owner, stale price, confidence wider than 2%, exponent outside -12..-3, or non-positive price. Liquidation and accept both fail. Repay and expiry do not read the price.
@@ -102,6 +144,7 @@ Every vault and account rent goes back to whoever paid it. No caller is paid ren
 - A borrower calling liquidate on their own loan. They repay instead.
 - A token account whose mint does not match the offer.
 - An offer that is expired and still `Filled` cannot be repaid and cannot be liquidated. It can only be claimed.
+- Funding a request with a bad price, at an LTV over the cap, a second time, after cancel, or by the borrower.
 
 ## Tests the program must pass
 
@@ -118,6 +161,11 @@ Instruction tests on LiteSVM:
 - Vault rent returns to the party that paid it. A loan whose LTV is past `65_535` bps can still be liquidated.
 - A mint with the wrong decimals, or the same mint twice, cannot create an offer.
 - Only the lender can close an offer, and only after it has ended.
+- A borrower can create and cancel a request; a stranger cannot cancel; cancel returns the wSOL.
+- Funding moves principal to the borrower and collateral into the offer vault, copies the terms, and leaves the lender's lamports changed only by the offer rent and the fee.
+- Funding fails on the LTV cap, a bad price, the borrower as lender, a wrong USDC mint, a second funding, or after cancel.
+- A funded request repays, claims at `expiry_ts`, and liquidates through the existing instructions.
+- Only the borrower can close a request, and only once it is funded or cancelled.
 
 These live in `isolated_loan/programs/isolated_loan/tests/litesvm.rs`. Run `npm run test:litesvm`.
 

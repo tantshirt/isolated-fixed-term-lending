@@ -7,9 +7,12 @@
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::instruction::Instruction;
 use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas};
-use isolated_loan::constants::{OFFER_SEED, PYTH_RECEIVER_PROGRAM_ID, SOL_USD_FEED_ID, USDC_VAULT_SEED, WSOL_VAULT_SEED};
+use isolated_loan::constants::{
+    OFFER_SEED, PYTH_RECEIVER_PROGRAM_ID, REQUEST_SEED, REQUEST_WSOL_VAULT_SEED, SOL_USD_FEED_ID, USDC_VAULT_SEED,
+    WSOL_VAULT_SEED,
+};
 use isolated_loan::error::LoanError;
-use isolated_loan::state::{Offer, OfferStatus};
+use isolated_loan::state::{LoanRequest, Offer, OfferStatus, RequestStatus};
 use litesvm::LiteSVM;
 use pyth_solana_receiver_sdk::price_update::{PriceFeedMessage, PriceUpdateV2, VerificationLevel};
 use solana_account::Account;
@@ -158,6 +161,11 @@ impl Env {
     fn offer(&self, key: Pubkey) -> Offer {
         let a = self.svm.get_account(&key).expect("offer exists");
         Offer::try_deserialize(&mut &a.data[..]).unwrap()
+    }
+
+    fn request(&self, key: Pubkey) -> LoanRequest {
+        let a = self.svm.get_account(&key).expect("request exists");
+        LoanRequest::try_deserialize(&mut &a.data[..]).unwrap()
     }
 
     fn send(&mut self, ix: Instruction, signer: &Keypair) -> Result<(), String> {
@@ -319,6 +327,109 @@ impl Env {
         self.send(ix, signer)
     }
 
+    fn create_request(&mut self, request_id: u64) -> Result<Pubkey, String> {
+        let b = self.borrower.insecure_clone();
+        self.create_request_with(&b, request_id, self.usdc_mint, self.wsol_mint, MAX_LTV)
+    }
+
+    fn create_request_with(
+        &mut self,
+        borrower: &Keypair,
+        request_id: u64,
+        usdc: Pubkey,
+        wsol: Pubkey,
+        max_ltv: u16,
+    ) -> Result<Pubkey, String> {
+        let request = request_pda(borrower.pubkey(), request_id);
+        let ix = Instruction {
+            program_id: isolated_loan::ID,
+            accounts: isolated_loan::accounts::CreateRequest {
+                borrower: borrower.pubkey(),
+                request,
+                usdc_mint: usdc,
+                wsol_mint: wsol,
+                request_vault: pda(&[REQUEST_WSOL_VAULT_SEED, request.as_ref()]),
+                borrower_wsol: ata(borrower.pubkey(), wsol),
+                borrower_usdc: ata(borrower.pubkey(), usdc),
+                token_program: TOKEN_PROGRAM,
+                associated_token_program: ATA_PROGRAM,
+                system_program: SYSTEM_PROGRAM,
+            }
+            .to_account_metas(None),
+            data: isolated_loan::instruction::CreateRequest {
+                request_id,
+                principal: PRINCIPAL,
+                interest_bps: INTEREST_BPS,
+                duration_seconds: DURATION,
+                collateral_amount: COLLATERAL,
+                max_ltv_bps: max_ltv,
+                liquidation_ltv_bps: LIQ_LTV,
+            }
+            .data(),
+        };
+        self.send(ix, borrower).map(|_| request)
+    }
+
+    fn cancel_request(&mut self, request: Pubkey, signer: &Keypair) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: isolated_loan::ID,
+            accounts: isolated_loan::accounts::CancelRequest {
+                borrower: signer.pubkey(),
+                request,
+                request_vault: pda(&[REQUEST_WSOL_VAULT_SEED, request.as_ref()]),
+                borrower_wsol: ata(signer.pubkey(), self.wsol_mint),
+                token_program: TOKEN_PROGRAM,
+            }
+            .to_account_metas(None),
+            data: isolated_loan::instruction::CancelRequest {}.data(),
+        };
+        self.send(ix, signer)
+    }
+
+    /// Funds `request` as `lender`, creating offer `offer_id`. Returns the offer.
+    fn fund_request(&mut self, request: Pubkey, lender: &Keypair, offer_id: u64) -> Result<Pubkey, String> {
+        let offer = offer_pda(lender.pubkey(), offer_id);
+        let borrower = self.borrower.pubkey();
+        let ix = Instruction {
+            program_id: isolated_loan::ID,
+            accounts: isolated_loan::accounts::FundRequest {
+                lender: lender.pubkey(),
+                request,
+                borrower,
+                price_update: self.price,
+                offer,
+                wsol_mint: self.wsol_mint,
+                request_vault: pda(&[REQUEST_WSOL_VAULT_SEED, request.as_ref()]),
+                wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
+                lender_usdc: ata(lender.pubkey(), self.usdc_mint),
+                borrower_usdc: ata(borrower, self.usdc_mint),
+                token_program: TOKEN_PROGRAM,
+                associated_token_program: ATA_PROGRAM,
+                system_program: SYSTEM_PROGRAM,
+            }
+            .to_account_metas(None),
+            data: isolated_loan::instruction::FundRequest { offer_id }.data(),
+        };
+        self.send(ix, lender).map(|_| offer)
+    }
+
+    fn close_request(&mut self, request: Pubkey, signer: &Keypair) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: isolated_loan::ID,
+            accounts: isolated_loan::accounts::CloseRequest { borrower: signer.pubkey(), request }
+                .to_account_metas(None),
+            data: isolated_loan::instruction::CloseRequest {}.data(),
+        };
+        self.send(ix, signer)
+    }
+
+    /// A request funded by the default lender: an ordinary filled offer.
+    fn funded_request(&mut self, id: u64) -> Pubkey {
+        let request = self.create_request(id).unwrap();
+        let lender = self.lender.insecure_clone();
+        self.fund_request(request, &lender, id).unwrap()
+    }
+
     fn filled_offer(&mut self, offer_id: u64) -> Pubkey {
         let offer = self.create(offer_id).unwrap();
         self.accept(offer).unwrap();
@@ -332,6 +443,10 @@ fn pda(seeds: &[&[u8]]) -> Pubkey {
 
 fn offer_pda(lender: Pubkey, id: u64) -> Pubkey {
     pda(&[OFFER_SEED, lender.as_ref(), &id.to_le_bytes()])
+}
+
+fn request_pda(borrower: Pubkey, id: u64) -> Pubkey {
+    pda(&[REQUEST_SEED, borrower.as_ref(), &id.to_le_bytes()])
 }
 
 fn ata(owner: Pubkey, mint: Pubkey) -> Pubkey {
@@ -576,4 +691,241 @@ fn no_second_settlement_and_close() {
         assert!(!env.exists(offer), "{ending}: offer closed");
         assert_eq!(env.lamports(lender.pubkey()), before + offer_rent - 5_000, "{ending}: rent minus fee");
     }
+}
+
+// ---- borrower requests --------------------------------------------------------
+
+#[test]
+fn request_create_and_cancel() {
+    let mut env = Env::new();
+    let b_wsol = ata(env.borrower.pubkey(), env.wsol_mint);
+    let request = env.create_request(1).unwrap();
+    let vault = pda(&[REQUEST_WSOL_VAULT_SEED, request.as_ref()]);
+    assert_eq!(env.balance(vault), COLLATERAL);
+    assert_eq!(env.balance(b_wsol), 10_000_000_000 - COLLATERAL);
+    let r = env.request(request);
+    assert!(r.status == RequestStatus::Open);
+    assert_eq!(r.created_ts, START);
+    assert_eq!(r.lender, Pubkey::default());
+
+    let s = env.stranger.insecure_clone();
+    assert!(env.cancel_request(request, &s).is_err(), "a stranger cannot cancel");
+
+    let b = env.borrower.insecure_clone();
+    let vault_rent = env.lamports(vault);
+    let before = env.lamports(b.pubkey());
+    env.cancel_request(request, &b).unwrap();
+    assert_eq!(env.balance(b_wsol), 10_000_000_000);
+    assert!(!env.exists(vault), "vault is closed");
+    assert_eq!(env.lamports(b.pubkey()), before + vault_rent - 5_000, "vault rent back minus fee");
+    assert!(env.request(request).status == RequestStatus::Cancelled);
+    // The vault is gone, so Anchor rejects the missing account before the status check.
+    assert!(env.cancel_request(request, &b).is_err(), "second cancel fails");
+}
+
+#[test]
+fn request_terms_and_mint_guards() {
+    let mut env = Env::new();
+    let b = env.borrower.insecure_clone();
+    // Max LTV above the liquidation LTV is outside the caps.
+    assert_err(
+        env.create_request_with(&b, 1, env.usdc_mint, env.wsol_mint, LIQ_LTV + 1).map(|_| ()),
+        LoanError::InvalidTerms,
+    );
+
+    let bad_usdc = Pubkey::new_unique();
+    env.put_mint(bad_usdc, 9);
+    env.put_ata(bad_usdc, b.pubkey(), 0);
+    assert_err(
+        env.create_request_with(&b, 2, bad_usdc, env.wsol_mint, MAX_LTV).map(|_| ()),
+        LoanError::InvalidUsdcMint,
+    );
+
+    let bad_wsol = Pubkey::new_unique();
+    env.put_mint(bad_wsol, 6);
+    env.put_ata(bad_wsol, b.pubkey(), COLLATERAL);
+    assert_err(
+        env.create_request_with(&b, 3, env.usdc_mint, bad_wsol, MAX_LTV).map(|_| ()),
+        LoanError::InvalidWsolMint,
+    );
+
+    // Without a USDC account the request is refused, so funding never has to create one.
+    let fresh = Keypair::new();
+    env.svm.airdrop(&fresh.pubkey(), 1_000_000_000).unwrap();
+    env.put_ata(env.wsol_mint, fresh.pubkey(), COLLATERAL);
+    assert!(env.create_request_with(&fresh, 4, env.usdc_mint, env.wsol_mint, MAX_LTV).is_err());
+}
+
+#[test]
+fn fund_request_moves_funds_and_is_rent_neutral() {
+    let mut env = Env::new();
+    let request = env.create_request(1).unwrap();
+    let request_vault = pda(&[REQUEST_WSOL_VAULT_SEED, request.as_ref()]);
+    let request_vault_rent = env.lamports(request_vault);
+    let lender = env.lender.insecure_clone();
+    let l_usdc = ata(lender.pubkey(), env.usdc_mint);
+    let b_usdc = ata(env.borrower.pubkey(), env.usdc_mint);
+    let lender_before = env.lamports(lender.pubkey());
+
+    let offer = env.fund_request(request, &lender, 7).unwrap();
+    let wsol_vault = pda(&[WSOL_VAULT_SEED, offer.as_ref()]);
+
+    assert_eq!(env.balance(b_usdc), 1_000_000_000 + PRINCIPAL);
+    assert_eq!(env.balance(l_usdc), 1_000_000_000 - PRINCIPAL);
+    assert_eq!(env.balance(wsol_vault), COLLATERAL);
+    assert!(!env.exists(request_vault), "request vault is closed");
+    // Same-size vaults: the lender pays the offer and its vault, gets the request vault back.
+    assert_eq!(env.lamports(wsol_vault), request_vault_rent);
+    assert_eq!(
+        env.lamports(lender.pubkey()),
+        lender_before - env.lamports(offer) - 5_000,
+        "lender's only lasting cost is the offer rent, refunded by close_offer"
+    );
+
+    let o = env.offer(offer);
+    assert!(o.status == OfferStatus::Filled);
+    assert_eq!(o.lender, lender.pubkey());
+    assert_eq!(o.borrower, env.borrower.pubkey());
+    assert_eq!(o.offer_id, 7);
+    assert_eq!(o.principal, PRINCIPAL);
+    assert_eq!(o.interest_bps, INTEREST_BPS);
+    assert_eq!(o.collateral_amount, COLLATERAL);
+    assert_eq!(o.max_ltv_bps, MAX_LTV);
+    assert_eq!(o.liquidation_ltv_bps, LIQ_LTV);
+    assert_eq!(o.start_ts, START);
+    assert_eq!(o.expiry_ts, START + DURATION);
+
+    let r = env.request(request);
+    assert!(r.status == RequestStatus::Funded);
+    assert_eq!(r.lender, lender.pubkey());
+    assert_eq!(r.offer, offer);
+}
+
+#[test]
+fn fund_request_rejections() {
+    let mut env = Env::new();
+    let request = env.create_request(1).unwrap();
+    let lender = env.lender.insecure_clone();
+
+    // $140 fails the 70% cap, as in accept.
+    env.post_price(14_000_000_000, 14_000_000, START, SOL_USD_FEED_ID, PYTH_RECEIVER_PROGRAM_ID);
+    assert_err(env.fund_request(request, &lender, 1).map(|_| ()), LoanError::InsufficientCollateral);
+
+    env.post_price(PRICE_OK, CONF_OK, START, SOL_USD_FEED_ID, Pubkey::new_unique());
+    assert_err(env.fund_request(request, &lender, 1).map(|_| ()), LoanError::InvalidPriceOwner);
+
+    env.post_price(PRICE_OK, CONF_OK, START, [7u8; 32], PYTH_RECEIVER_PROGRAM_ID);
+    assert_err(env.fund_request(request, &lender, 1).map(|_| ()), LoanError::InvalidFeedId);
+
+    env.post_price(PRICE_OK, CONF_OK, START - 61, SOL_USD_FEED_ID, PYTH_RECEIVER_PROGRAM_ID);
+    assert_err(env.fund_request(request, &lender, 1).map(|_| ()), LoanError::StalePrice);
+
+    env.post_price(PRICE_OK, CONF_OK, START, SOL_USD_FEED_ID, PYTH_RECEIVER_PROGRAM_ID);
+    let b = env.borrower.insecure_clone();
+    // With the borrower's own USDC account on both sides Anchor rejects the duplicate
+    // first; either way the borrower cannot fund their own request.
+    let msg = env.fund_request(request, &b, 1).expect_err("borrower cannot fund");
+    assert!(msg.contains(&code(LoanError::SameBorrowerAndLender)) || msg.contains("Custom(2040)"), "{msg}");
+
+    // A lender paying from an account of another mint is refused.
+    let other = Pubkey::new_unique();
+    env.put_mint(other, 6);
+    let s = env.stranger.insecure_clone();
+    let fake = env.put_ata(other, s.pubkey(), 1_000_000_000);
+    let offer = offer_pda(s.pubkey(), 1);
+    let ix = Instruction {
+        program_id: isolated_loan::ID,
+        accounts: isolated_loan::accounts::FundRequest {
+            lender: s.pubkey(),
+            request,
+            borrower: b.pubkey(),
+            price_update: env.price,
+            offer,
+            wsol_mint: env.wsol_mint,
+            request_vault: pda(&[REQUEST_WSOL_VAULT_SEED, request.as_ref()]),
+            wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
+            lender_usdc: fake,
+            borrower_usdc: ata(b.pubkey(), env.usdc_mint),
+            token_program: TOKEN_PROGRAM,
+            associated_token_program: ATA_PROGRAM,
+            system_program: SYSTEM_PROGRAM,
+        }
+        .to_account_metas(None),
+        data: isolated_loan::instruction::FundRequest { offer_id: 1 }.data(),
+    };
+    assert!(env.send(ix, &s).is_err(), "wrong USDC mint");
+
+    env.fund_request(request, &lender, 1).unwrap();
+    // The request vault closed at funding, so Anchor may reject the missing account
+    // before the status check: any failure is correct.
+    assert!(env.fund_request(request, &s, 2).is_err(), "funding twice");
+    assert!(env.cancel_request(request, &b).is_err(), "cancel after funding");
+    assert!(env.request(request).status == RequestStatus::Funded);
+
+    let cancelled = env.create_request(2).unwrap();
+    env.cancel_request(cancelled, &b).unwrap();
+    // The vault is gone, so Anchor may fail on the missing account first: any failure is correct.
+    assert!(env.fund_request(cancelled, &lender, 3).is_err(), "funding after cancel");
+}
+
+#[test]
+fn funded_request_settles_through_existing_paths() {
+    // Repay.
+    let mut env = Env::new();
+    let offer = env.funded_request(1);
+    let lender_usdc = ata(env.lender.pubkey(), env.usdc_mint);
+    let before = env.balance(lender_usdc);
+    env.repay(offer).unwrap();
+    assert_eq!(env.balance(lender_usdc), before + DEBT);
+    assert_eq!(env.balance(ata(env.borrower.pubkey(), env.wsol_mint)), 10_000_000_000);
+    assert!(env.offer(offer).status == OfferStatus::Repaid);
+    let lender = env.lender.insecure_clone();
+    env.close(offer, &lender).unwrap();
+
+    // Claim at the expiry boundary, with the vault rent going to the borrower.
+    let mut env = Env::new();
+    let offer = env.funded_request(1);
+    let wsol_vault = pda(&[WSOL_VAULT_SEED, offer.as_ref()]);
+    let vault_rent = env.lamports(wsol_vault);
+    let borrower_before = env.lamports(env.borrower.pubkey());
+    env.set_time(START + DURATION - 1);
+    assert_err(env.claim(offer), LoanError::LoanNotExpired);
+    env.set_time(START + DURATION);
+    env.claim(offer).unwrap();
+    assert_eq!(env.balance(ata(env.lender.pubkey(), env.wsol_mint)), COLLATERAL);
+    assert_eq!(env.lamports(env.borrower.pubkey()), borrower_before + vault_rent);
+    assert!(env.offer(offer).status == OfferStatus::Expired);
+
+    // Liquidate at $120.
+    let mut env = Env::new();
+    let offer = env.funded_request(1);
+    env.post_price(12_000_000_000, 12_000_000, START, SOL_USD_FEED_ID, PYTH_RECEIVER_PROGRAM_ID);
+    let s = env.stranger.insecure_clone();
+    env.liquidate(offer, &s).unwrap();
+    assert_eq!(env.balance(ata(s.pubkey(), env.wsol_mint)), 919_669_671);
+    assert!(env.offer(offer).status == OfferStatus::Liquidated);
+}
+
+#[test]
+fn close_request_rules() {
+    let mut env = Env::new();
+    let b = env.borrower.insecure_clone();
+    let s = env.stranger.insecure_clone();
+    let lender = env.lender.insecure_clone();
+
+    let open = env.create_request(1).unwrap();
+    assert_err(env.close_request(open, &b), LoanError::RequestNotSettled);
+
+    env.fund_request(open, &lender, 1).unwrap();
+    assert!(env.close_request(open, &s).is_err(), "stranger cannot close");
+    let before = env.lamports(b.pubkey());
+    let rent = env.lamports(open);
+    env.close_request(open, &b).unwrap();
+    assert!(!env.exists(open));
+    assert_eq!(env.lamports(b.pubkey()), before + rent - 5_000);
+
+    let cancelled = env.create_request(2).unwrap();
+    env.cancel_request(cancelled, &b).unwrap();
+    env.close_request(cancelled, &b).unwrap();
+    assert!(!env.exists(cancelled));
 }

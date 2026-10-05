@@ -110,7 +110,7 @@ These are capstone choices. They are tighter than a production SOL market on pur
 | Confidence width | 2% of price | Rejects a feed that is too unsure to lend against. |
 | Liquidation bonus | 5% of debt | See above. |
 
-The lender still chooses the rate, the term, the principal, the collateral amount, the max LTV, and the liquidation LTV, inside those caps.
+Whoever posts the terms (the lender on an offer, the borrower on a request) chooses the rate, the term, the principal, the collateral amount, the max LTV, and the liquidation LTV, inside those caps. The max LTV is checked at the price when the loan starts: at accept for an offer, at funding for a request.
 
 ## Worked example
 
