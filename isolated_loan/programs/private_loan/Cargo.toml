@@ -18,6 +18,9 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 anchor-debug = []
 custom-heap = []
 custom-panic = []
+# Epic 8 gate-only instructions (probe, custody, record, tick). Off in the deployed
+# program to keep it small; build with `anchor build -- --features gates` to rerun gates.
+gates = []
 
 [dependencies]
 anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }

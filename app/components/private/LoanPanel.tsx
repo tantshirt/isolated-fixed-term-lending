@@ -21,7 +21,7 @@ import {
   repayLoan,
 } from "@/lib/private/loans";
 import type { RoomMember } from "@/lib/private/room-codec";
-import { scheduleWatch, watchStatus } from "@/lib/private/liquidation";
+import { publishReceipt, readReceipt, scheduleWatch, watchStatus } from "@/lib/private/liquidation";
 import { utils } from "@coral-xyz/anchor";
 import { postMessage } from "@/lib/private/rooms";
 import styles from "./private.module.css";
@@ -263,11 +263,13 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
 
   const loanIdBytes = useMemo(() => utils.bytes.bs58.decode(id), [id]);
   const [watch, setWatch] = useState<Awaited<ReturnType<typeof watchStatus>> | null>(null);
+  const [receipt, setReceipt] = useState<Awaited<ReturnType<typeof readReceipt>>>(null);
   const load = useCallback(async () => {
     const terms = await readLoan(er, anchor);
     setT(terms ?? "hidden");
     if (terms?.status === "active" || terms?.status === "repaid" || terms?.status === "expired") setWatch(await watchStatus(er, anchor, loanIdBytes));
-  }, [er, anchor, loanIdBytes]);
+    if (terms && !["draft", "funded", "active"].includes(terms.status)) setReceipt(await readReceipt(base, anchor));
+  }, [er, base, anchor, loanIdBytes]);
   useEffect(() => {
     void load();
     const i = setInterval(() => (setNow(Date.now() / 1000), void load()), 5000);
@@ -339,6 +341,18 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
       {t.status === "active" && watch && !watch.watching && (
         <Button variant="ghost" onClick={() => act("watch", () => scheduleWatch(base, er, signer, anchor, loanIdBytes))} loading={busy === "watch"}>
           Turn on automatic checks
+        </Button>
+      )}
+      {receipt && (
+        <p className={styles.hint}>
+          {receipt.published
+            ? `Settlement receipt on Solana: outcome recorded with commitment ${receipt.commitment.slice(0, 12)}…, no terms.`
+            : "Settled privately. You can publish a minimal receipt to Solana: the outcome and an opaque commitment, never the terms."}
+        </p>
+      )}
+      {receipt && !receipt.published && (
+        <Button variant="ghost" onClick={() => act("receipt", () => publishReceipt(base, er, signer, anchor))} loading={busy === "receipt"}>
+          Publish settlement receipt
         </Button>
       )}
       <div className={styles.actions}>

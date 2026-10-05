@@ -1,19 +1,24 @@
 //! Gate 8.6: Hydra crank created inside the ER, sponsored by a delegated probe.
 //! The wire format mirrors hydra-api 0.2.1 `CreateArgs::write_to`.
 
+#[cfg(feature = "gates")]
 use crate::constants::PROBE_SEED;
+#[cfg(feature = "gates")]
 use crate::error::PrivateLoanError;
+#[cfg(feature = "gates")]
 use crate::probe::Probe;
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
 use anchor_lang::solana_program::program::invoke_signed;
 use ephemeral_rollups_sdk::anchor::MagicProgram;
+#[cfg(feature = "gates")]
 use ephemeral_rollups_sdk::consts::EPHEMERAL_VAULT_ID;
 
 pub const HYDRA_EPHEMERAL_ID: Pubkey = pubkey!("eHyd5BU8QffvHi4GnXwxrK4WpS7pM2x9UGKHBWii7mf");
 const HYDRA_CREATE: u8 = 0;
 const META_WRITABLE: u8 = 0b10;
 
+#[cfg(feature = "gates")]
 /// Schedules `crank_tick` on this probe every `interval_slots`, `remaining` times.
 /// The scheduled instruction names only the probe address and a discriminator.
 pub fn schedule_tick(ctx: Context<ScheduleTick>, seed: [u8; 32], interval_slots: u64, remaining: u64) -> Result<()> {
@@ -61,6 +66,7 @@ pub fn schedule_tick(ctx: Context<ScheduleTick>, seed: [u8; 32], interval_slots:
     Ok(())
 }
 
+#[cfg(feature = "gates")]
 #[derive(Accounts)]
 pub struct ScheduleTick<'info> {
     pub authority: Signer<'info>,

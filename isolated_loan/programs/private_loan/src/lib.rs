@@ -9,26 +9,33 @@ use ephemeral_rollups_sdk::anchor::ephemeral;
 
 pub mod constants;
 pub mod ai;
+#[cfg(feature = "gates")]
 pub mod custody;
 pub mod discovery;
 pub mod error;
 pub mod espl;
 pub mod loan;
+#[cfg(feature = "gates")]
 pub mod probe;
 pub mod receipt;
+#[cfg(feature = "gates")]
 pub mod record;
 pub mod room;
 pub mod schedule;
 pub mod settle;
 
 use ai::*;
+#[cfg(feature = "gates")]
 use custody::*;
 use discovery::*;
 use loan::*;
+#[cfg(feature = "gates")]
 use probe::*;
 use receipt::*;
+#[cfg(feature = "gates")]
 use record::*;
 use room::*;
+#[cfg(feature = "gates")]
 use schedule::*;
 use settle::*;
 
@@ -39,41 +46,49 @@ declare_id!("HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK");
 pub mod private_loan {
     use super::*;
 
+    #[cfg(feature = "gates")]
     /// Base layer. Creates the probe and its permission in one instruction.
     pub fn create_probe(ctx: Context<CreateProbe>, id: [u8; 32], reader: Pubkey) -> Result<()> {
         probe::create_probe(ctx, id, reader)
     }
 
+    #[cfg(feature = "gates")]
     /// Base layer. Delegates the permission and the probe to the TEE validator.
     pub fn delegate_probe(ctx: Context<DelegateProbe>, id: [u8; 32]) -> Result<()> {
         probe::delegate_probe(ctx, id)
     }
 
+    #[cfg(feature = "gates")]
     /// Ephemeral rollup. Writes a value only the permitted members can read.
     pub fn write_probe(ctx: Context<WriteProbe>, value: u64) -> Result<()> {
         probe::write_probe(ctx, value)
     }
 
+    #[cfg(feature = "gates")]
     /// Ephemeral rollup. Runs the shared Pyth check against the cloned receiver account.
     pub fn check_price(ctx: Context<CheckPrice>) -> Result<()> {
         probe::check_price(ctx)
     }
 
+    #[cfg(feature = "gates")]
     /// Ephemeral rollup. Commits and undelegates the probe back to the base layer.
     pub fn undelegate_probe(ctx: Context<UndelegateProbe>) -> Result<()> {
         probe::undelegate_probe(ctx)
     }
 
+    #[cfg(feature = "gates")]
     /// Ephemeral rollup. Permissionless scheduled tick; a no-op once settled.
     pub fn crank_tick(ctx: Context<CrankTick>) -> Result<()> {
         probe::crank_tick(ctx)
     }
 
+    #[cfg(feature = "gates")]
     /// Ephemeral rollup. Creates a Hydra crank for `crank_tick`, sponsored by the probe.
     pub fn schedule_tick(ctx: Context<ScheduleTick>, seed: [u8; 32], interval_slots: u64, remaining: u64) -> Result<()> {
         schedule::schedule_tick(ctx, seed, interval_slots, remaining)
     }
 
+    #[cfg(feature = "gates")]
     /// Ephemeral rollup. Creates a private ER-only record sponsored by the probe.
     pub fn create_record(ctx: Context<CreateRecord>, payload: [u8; 32]) -> Result<()> {
         record::create_record(ctx, payload)
@@ -242,26 +257,31 @@ pub mod private_loan {
         receipt::record_receipt(ctx, status, commitment, settled_at)
     }
 
+    #[cfg(feature = "gates")]
     /// Base layer. Creates a custody PDA, its ATA, and its eATA.
     pub fn create_custody(ctx: Context<CreateCustody>, id: [u8; 32]) -> Result<()> {
         custody::create_custody(ctx, id)
     }
 
+    #[cfg(feature = "gates")]
     /// Base layer. Moves tokens into the custody eATA and delegates it to the TEE.
     pub fn fund_and_delegate(ctx: Context<FundAndDelegate>, amount: u64) -> Result<()> {
         custody::fund_and_delegate(ctx, amount)
     }
 
+    #[cfg(feature = "gates")]
     /// Ephemeral rollup. Custody PDA signs an SPL transfer out of its own ATA.
     pub fn custody_transfer(ctx: Context<CustodyTransfer>, amount: u64) -> Result<()> {
         custody::custody_transfer(ctx, amount)
     }
 
+    #[cfg(feature = "gates")]
     /// Ephemeral rollup. Returns the custody eATA to the base layer.
     pub fn undelegate_custody(ctx: Context<UndelegateCustody>) -> Result<()> {
         custody::undelegate_custody(ctx)
     }
 
+    #[cfg(feature = "gates")]
     /// Base layer. Withdraws from the global vault to the authority.
     pub fn withdraw_custody(ctx: Context<WithdrawCustody>, amount: u64) -> Result<()> {
         custody::withdraw_custody(ctx, amount)

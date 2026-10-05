@@ -143,3 +143,36 @@ export async function watchStatus(er: Connection, loan: PublicKey, loanId: Uint8
   const [crank, quote] = await Promise.all([er.getAccountInfo(watchCrankPda(loan, loanId)), er.getAccountInfo(quotePda(loan))]);
   return { watching: !!crank, quote: quote ? decodeQuote(quotePda(loan), quote.data) : null };
 }
+
+export const receiptPda = (loan: PublicKey) => PublicKey.findProgramAddressSync([enc.encode("receipt"), loan.toBytes()], PRIVATE_PROGRAM_ID)[0];
+
+/** Base-layer receipt: 0 until published, then the final status and an opaque commitment. */
+export async function readReceipt(base: Connection, loan: PublicKey) {
+  const info = await base.getAccountInfo(receiptPda(loan));
+  if (!info) return null;
+  const status = info.data[8 + 32];
+  return status === 0 ? { published: false as const } : { published: true as const, status, commitment: Buffer.from(info.data.subarray(41, 73)).toString("hex") };
+}
+
+/** Anyone, after settlement: commits the loan anchor with a Magic Action that writes the receipt on Solana. */
+export async function publishReceipt(base: Connection, er: Connection, signer: LoanSigner, loan: PublicKey) {
+  const p = programFor(base, signer);
+  return sendEr(
+    er,
+    signer,
+    new Transaction().add(
+      await p.methods
+        .publishReceipt()
+        .accountsPartial({
+          publisher: signer.publicKey,
+          anchor: loan,
+          terms: loanTermsPda(loan),
+          receipt: receiptPda(loan),
+          magicContext: new PublicKey("MagicContext1111111111111111111111111111111"),
+          magicProgram: MAGIC_PROGRAM_ID,
+        })
+        .instruction(),
+    ),
+    "Publish a settlement receipt to Solana",
+  );
+}

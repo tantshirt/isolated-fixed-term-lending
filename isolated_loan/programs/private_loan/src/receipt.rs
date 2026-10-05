@@ -47,6 +47,10 @@ pub fn publish_receipt(ctx: Context<PublishReceipt>) -> Result<()> {
         commitment,
         settled_at: Clock::get()?.unix_timestamp,
     });
+    // The intent builder copies each AccountInfo's `is_signer` into the CPI metas, so
+    // the PDA must be marked as a signer here for `invoke_signed` to sign for it.
+    let mut anchor_signer = a.anchor.to_account_info();
+    anchor_signer.is_signer = true;
     let action = CallHandler {
         destination_program: crate::ID,
         accounts: vec![
@@ -54,7 +58,7 @@ pub fn publish_receipt(ctx: Context<PublishReceipt>) -> Result<()> {
             ShortAccountMeta { pubkey: a.anchor.key(), is_writable: false },
         ],
         args: ActionArgs::new(data),
-        escrow_authority: a.anchor.to_account_info(),
+        escrow_authority: anchor_signer.clone(),
         compute_units: 60_000,
     };
     let anchor = &a.anchor;
@@ -64,7 +68,7 @@ pub fn publish_receipt(ctx: Context<PublishReceipt>) -> Result<()> {
         a.magic_context.to_account_info(),
         a.magic_program.to_account_info(),
     )
-    .commit(&[anchor.to_account_info()])
+    .commit(&[anchor_signer])
     .add_post_commit_actions([action])
     .build_and_invoke_signed(&[seeds])?;
     Ok(())
@@ -102,7 +106,12 @@ pub struct RecordReceipt<'info> {
     pub receipt: Account<'info, SettlementReceipt>,
     /// CHECK: The loan anchor (owned by the delegation program while delegated).
     pub anchor: UncheckedAccount<'info>,
-    /// CHECK: The payer identity the action was scheduled with; must be this loan's anchor.
+    /// CHECK: The delegation program passes the destination program next (observed
+    /// on Devnet: [action accounts…, program id, escrow_auth, escrow]).
+    #[account(address = crate::ID @ PrivateLoanError::Unauthorized)]
+    pub destination_program: UncheckedAccount<'info>,
+    /// CHECK: The identity the action was scheduled with; must be this loan's anchor,
+    /// so only an action `publish_receipt` scheduled for this loan can write it.
     #[account(address = anchor.key() @ PrivateLoanError::Unauthorized)]
     pub escrow_auth: UncheckedAccount<'info>,
     /// CHECK: Only the delegation program can sign for this PDA, so the signature

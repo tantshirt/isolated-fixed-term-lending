@@ -219,8 +219,6 @@ impl Env {
                 pool_usdc: ata(&self.pool, &self.usdc),
                 pool_wsol: ata(&self.pool, &self.wsol),
                 price_update: self.price,
-                vault: VAULT,
-                magic_program: MAGIC,
                 token_program: TOKEN,
             }
             .to_account_metas(None),
@@ -394,7 +392,7 @@ fn direct_receipt_calls_are_rejected() {
     env.svm.airdrop(&attacker.pubkey(), 1_000_000_000).unwrap();
 
     // Without the delegation program's escrow signature.
-    let mut metas = private_loan::accounts::RecordReceipt { receipt, anchor: env.anchor, escrow_auth: env.anchor, escrow }.to_account_metas(None);
+    let mut metas = private_loan::accounts::RecordReceipt { receipt, anchor: env.anchor, destination_program: private_loan::ID, escrow_auth: env.anchor, escrow }.to_account_metas(None);
     metas.last_mut().unwrap().is_signer = false;
     let ix = Instruction {
         program_id: private_loan::ID,
@@ -404,7 +402,7 @@ fn direct_receipt_calls_are_rejected() {
     assert!(env.send(ix, &attacker).is_err(), "unsigned escrow must fail");
 
     // With the attacker's own key standing in for the escrow.
-    let mut metas = private_loan::accounts::RecordReceipt { receipt, anchor: env.anchor, escrow_auth: env.anchor, escrow: attacker.pubkey() }.to_account_metas(None);
+    let mut metas = private_loan::accounts::RecordReceipt { receipt, anchor: env.anchor, destination_program: private_loan::ID, escrow_auth: env.anchor, escrow: attacker.pubkey() }.to_account_metas(None);
     metas.last_mut().unwrap().is_signer = true;
     let ix = Instruction { program_id: private_loan::ID, accounts: metas, data: private_loan::instruction::RecordReceipt { status: 3, commitment: [9; 32], settled_at: 1 }.data() };
     assert!(env.send(ix, &attacker).is_err(), "a foreign signer is not the escrow");

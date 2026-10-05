@@ -2,7 +2,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { PRIVATE_PROGRAM_ID } from "./room-codec";
 
-export const LOAN_STATUS = ["draft", "funded", "active", "repaid", "expired", "cancelled"] as const;
+export const LOAN_STATUS = ["draft", "funded", "active", "repaid", "expired", "cancelled", "liquidated"] as const;
 export type LoanStatus = (typeof LOAN_STATUS)[number];
 
 export const LOAN_STATUS_LABEL: Record<LoanStatus, string> = {
@@ -12,6 +12,7 @@ export const LOAN_STATUS_LABEL: Record<LoanStatus, string> = {
   repaid: "Repaid",
   expired: "Expired",
   cancelled: "Cancelled",
+  liquidated: "Liquidated",
 };
 
 export type LoanTerms = {

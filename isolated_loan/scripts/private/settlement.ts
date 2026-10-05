@@ -234,6 +234,24 @@ async function main() {
     status,
     lenderWsol: (await privateBalance(lender, WSOL))?.toString(),
   });
+  if (status !== "expired") {
+    // Diagnose as a member, who can read the program logs, and keep the parties for inspection.
+    const { parseCrank } = await import("../../../app/lib/server/cranker");
+    const c = parseCrank(crank, (await crankerEr.getAccountInfo(crank))!.data as Buffer)!;
+    const tx = new Transaction().add(c.ix);
+    tx.feePayer = lender.kp.publicKey;
+    tx.recentBlockhash = (await lender.er.getLatestBlockhash()).blockhash;
+    tx.sign(lender.kp);
+    const sig = await lender.er.sendRawTransaction(tx.serialize(), { skipPreflight: true });
+    await lender.er.confirmTransaction(sig, "confirmed");
+    const t = await lender.er.getTransaction(sig, { maxSupportedTransactionVersion: 0 });
+    console.log("direct watch as lender:", JSON.stringify(t?.meta?.err), "\n" + (t?.meta?.logMessages ?? []).join("\n"));
+    for (const k of c.ix.keys) {
+      const i = await lender.er.getAccountInfo(k.pubkey).catch(() => null);
+      console.log(" ", k.pubkey.toBase58().slice(0, 8), k.isWritable ? "w" : "r", i ? `${i.owner.toBase58().slice(0, 6)} len=${i.data.length}` : "missing for lender");
+    }
+    process.exit(1);
+  }
   const again = await runCranker(crankerEr, cranker);
   expect("retry-after-settlement-harmless", (await privateBalance(lender, WSOL)) === collateral, { due: again.due });
 

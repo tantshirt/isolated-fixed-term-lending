@@ -62,8 +62,8 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 | 12 | [10.1 Fund, accept, repay, cancel, expire, withdraw](stories.md) | Done |
 | 13 | [11.1 Discovery cards and competing proposals](stories.md) | Done |
 | 14 | [11.2 AI request and callback](stories.md) | Done |
-| 15 | [12.1 Expiry tasks and liquidation tickets](stories.md) | Open |
-| 16 | [12.2 Magic Actions receipts](stories.md) | Open |
+| 15 | [12.1 Expiry tasks and liquidation tickets](stories.md) | Done |
+| 16 | [12.2 Magic Actions receipts](stories.md) | Done |
 | 17 | [13.1 Transfers, sponsorship, lab, and accessibility](stories.md) | Open |
 
 ## Notes
@@ -80,3 +80,4 @@ MagicBlock private protocol on Devnet. Epic 8 is a gate: a later story starts on
 - 2026-10-05: Phase 1 done (9.2–9.4). `/devnet/private` is a guided workflow with TEE sign-in, rooms, private balance, and receipts; gate proof moved to `/devnet/private/proof`. Room threads are written in place because a 2.9 KB struct overflows the SBF stack.
 - 2026-10-05: Phase 2 done (10.1). Private loans run inside the TEE between private balances; see evidence for the eATA-permission and base-ATA findings. The 10.1 acceptance line asking for the public LiteSVM vectors against `private_loan` is replaced by the shared `loan-core` vectors plus the Devnet run, because the ER instructions cannot run in LiteSVM.
 - 2026-10-05: Phase 3 done (11.1, 11.2). The copilot runs as a Vercel Function through AI Gateway (budgeted key); no Docker or separate worker. The oracle pattern lives in `private_loan/src/ai.rs`, not a separate program, which saves a deployment.
+- 2026-10-05: Phase 4 done (12.1 live expiry plus LiteSVM liquidation; 12.2 live receipt). Vercel Cron triggers the cranker every minute; its key and `CRON_SECRET` are Vercel env vars.

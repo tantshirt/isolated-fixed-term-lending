@@ -132,12 +132,22 @@ pub fn schedule_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
         (get_associated_token_address(&a.pool.key(), &usdc), true),
         (get_associated_token_address(&a.pool.key(), &wsol), true),
         (a.price_update.key(), false),
-        (EPHEMERAL_VAULT_ID, true),
-        (ephemeral_rollups_sdk::consts::MAGIC_PROGRAM_ID, false),
         (anchor_spl::token::ID, false),
     ];
     let remaining = (t.duration_seconds as u64 / 24).saturating_add(20);
     let seeds = [LOAN_SEED, &anchor.loan_id[..], core::slice::from_ref(&anchor.bump)];
+
+    // Create the (empty, public) quote now. `watch_loan` then needs neither the rent
+    // vault nor the magic program: the ER caps writable accounts per transaction,
+    // and the scheduled instruction sat one over it.
+    let quote_info = a.quote.to_account_info();
+    if quote_info.data_is_empty() {
+        let anchor_key = anchor.key();
+        let qseeds: &[&[u8]] = &[QUOTE_SEED, anchor_key.as_ref(), &[ctx.bumps.quote]];
+        EphemeralAccount::new(&anchor.to_account_info(), &quote_info, &a.vault.to_account_info())
+            .with_signer_seeds(&[&seeds, qseeds])
+            .create(q::LEN as u32)?;
+    }
     hydra_create(
         &anchor.to_account_info(),
         &seeds,
@@ -206,16 +216,7 @@ pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
     let seize = math::seize_usdc(debt).map_err(core_error)?;
     let to_caller = math::wsol_to_caller(lamports, seize, value).map_err(core_error)?;
 
-    if quote_info.data_is_empty() {
-        let (_, bump) = Pubkey::find_program_address(&[QUOTE_SEED, anchor.key().as_ref()], &crate::ID);
-        let anchor_key = anchor.key();
-        let qseeds: &[&[u8]] = &[QUOTE_SEED, anchor_key.as_ref(), &[bump]];
-        let anchor_info = anchor.to_account_info();
-        EphemeralAccount::new(&anchor_info, &quote_info, &a.vault.to_account_info())
-            .with_signer_seeds(&[&loan_seeds, qseeds])
-            .create(q::LEN as u32)?;
-    }
-
+    require_keys_eq!(*quote_info.owner, crate::ID, PrivateLoanError::InvalidRecord);
     let mut d = quote_info.try_borrow_mut_data()?;
     let expired = rd_i64(&d, q::EXPIRES) < clock.unix_timestamp;
     if d[q::VERSION] == 0 || d[q::STATE] != QUOTE_OPEN || expired {
@@ -391,8 +392,8 @@ pub struct ScheduleWatch<'info> {
     /// CHECK: ER-only `LoanTerms`.
     #[account(seeds = [LOAN_TERMS_SEED, anchor.key().as_ref()], bump)]
     pub terms: UncheckedAccount<'info>,
-    /// CHECK: Quote PDA for this loan (may not exist yet).
-    #[account(seeds = [QUOTE_SEED, anchor.key().as_ref()], bump)]
+    /// CHECK: Quote PDA for this loan, created here (empty) if missing.
+    #[account(mut, seeds = [QUOTE_SEED, anchor.key().as_ref()], bump)]
     pub quote: UncheckedAccount<'info>,
     #[account(seeds = [LIQ_POOL_SEED], bump = pool.bump)]
     pub pool: Account<'info, LiquidationPool>,
@@ -417,7 +418,7 @@ pub struct WatchLoan<'info> {
     /// CHECK: ER-only `LoanTerms`.
     #[account(mut, seeds = [LOAN_TERMS_SEED, anchor.key().as_ref()], bump)]
     pub terms: UncheckedAccount<'info>,
-    /// CHECK: ER-only quote, created here when the loan crosses its line.
+    /// CHECK: Public quote record, created empty by `schedule_watch`.
     #[account(mut, seeds = [QUOTE_SEED, anchor.key().as_ref()], bump)]
     pub quote: UncheckedAccount<'info>,
     /// CHECK: Loan's wSOL ATA; checked in the handler.
@@ -442,10 +443,6 @@ pub struct WatchLoan<'info> {
     pub pool_wsol: UncheckedAccount<'info>,
     /// CHECK: Canonical Pyth receiver; checked by loan-core.
     pub price_update: UncheckedAccount<'info>,
-    /// CHECK: Fixed ephemeral rent vault (quote creation).
-    #[account(mut, address = EPHEMERAL_VAULT_ID)]
-    pub vault: UncheckedAccount<'info>,
-    pub magic_program: Program<'info, MagicProgram>,
     pub token_program: Program<'info, Token>,
 }
 
