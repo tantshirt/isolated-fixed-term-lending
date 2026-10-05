@@ -116,3 +116,16 @@ Coverage note: signed-in states remain unverified (unchanged). The "1 issue" dev
 | Recent activity is collapsed below the flow | Ravi | Receipts are history, not the next action. |
 
 Coverage note: signed-in steps 2–4 were not screenshot-verified (headless browsers cannot sign a TEE login). Signed-out steps 1 and 4 were checked at 375 and 1280px with no horizontal overflow.
+
+## Private refactor C: loan terms wizard in a room (2026-10-05)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| "Propose a loan" opens a four-step wizard (Borrower & amount, Rate & term, Collateral, Review) over the room, with "Back to room" | Sally / Indigo | The one-shot form squeezed into the 24rem side column and never explained the terms. |
+| The collateral step reuses the public `HealthMeter` (70% max, 80% liquidation, SOL price at the line) plus three plain rules: LTV, liquidation, expiry | Sol / Fovea | Same picture as the public offer page; beginners see what each number means before committing. |
+| Interest copy says "a flat amount, not yearly" and states the exact USDC interest | Plumb | A bare percentage reads as APR. |
+| Review mirrors Create's sentence + editable term list, and says proposing moves no money and needs two signatures | Sol / Plumb | One vocabulary with the public wizard; no surprise wallet prompts. |
+| Sticky "Borrower's view" aside shows receives, repays and locks live | Ravi | Mirrors Create's live summary so the lender sees the deal from the other side. |
+| Each step's Continue is disabled with its reason (borrower, amount, 0–20%, LTV ≤ 70%) | Fovea | Same rules as the old form, surfaced per step instead of a silent disabled submit. |
+
+Coverage note: verified through a temporary preview harness (deleted before commit) at 375 and 1280px, all four steps, no horizontal overflow. The live propose round-trip was not re-run (headless cannot sign a TEE login); `proposeLoan` and its arguments are unchanged.

@@ -21,7 +21,8 @@ import {
 import { usePrivate } from "@/lib/private/use-private";
 import { AiPanel } from "./AiPanel";
 import { CardPublisher } from "./CardPublisher";
-import { LoanPanel, type Prefill } from "./LoanPanel";
+import { LoanPanel, proposalCounterparties } from "./LoanPanel";
+import { ProposeWizard, type Prefill } from "./ProposeWizard";
 import { loanFromId, readLoan } from "@/lib/private/loans";
 import type { LoanTerms } from "@/lib/private/loan-codec";
 import { TeeCard } from "./TeeCard";
@@ -50,6 +51,10 @@ export function RoomView({ roomId }: { roomId: string }) {
   const [, force] = useState(0);
   const [loans, setLoans] = useState<{ anchor: PublicKey; terms: LoanTerms }[]>([]);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
+  const [proposing, setProposing] = useState(false);
+  useEffect(() => {
+    if (prefill) setProposing(true);
+  }, [prefill]);
   const threadEnd = useRef<HTMLLIElement>(null);
 
   const load = useCallback(async () => {
@@ -140,6 +145,17 @@ export function RoomView({ roomId }: { roomId: string }) {
         <p className={styles.muted} aria-busy>
           Opening the room…
         </p>
+      ) : proposing && signer && er ? (
+        <ProposeWizard
+          signer={signer}
+          base={base}
+          er={er}
+          room={ref.anchor}
+          counterparties={proposalCounterparties(member.state.members, signer.publicKey)}
+          prefill={prefill}
+          onCancel={() => (setProposing(false), setPrefill(null))}
+          onDone={() => (setProposing(false), setPrefill(null), void load())}
+        />
       ) : (
         <div className={styles.roomLayout}>
           <section className={styles.thread} aria-labelledby="thread-h">
@@ -229,7 +245,7 @@ export function RoomView({ roomId }: { roomId: string }) {
                 members={member.state.members}
                 loanIds={loansInThread(member.messages.map((m) => m.body))}
                 loans={loans}
-                prefill={prefill}
+                onPropose={() => setProposing(true)}
                 onChange={() => void load()}
               />
             )}
