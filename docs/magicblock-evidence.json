@@ -1,0 +1,9 @@
+{
+  "programs": {
+    "private_loan": "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK"
+  },
+  "sdk": { "ephemeral-rollups-sdk": "0.17.3", "session-keys": "3.1.1", "anchor-cli": "1.0.2", "anchor-lang": "1.2.0", "rust": "1.89.0" },
+  "gates": {
+    "8.1": { "status": "PASS", "date": "2026-10-05", "evidence": "local anchor build of both programs, zero warnings" }
+  }
+}

@@ -1,0 +1,28 @@
+[package]
+name = "private_loan"
+version = "0.1.0"
+description = "Lendspan private loan protocol on MagicBlock Private Ephemeral Rollups"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "private_loan"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "1.0.2"
+ephemeral-rollups-sdk = { version = "=0.17.3", features = ["anchor", "access-control"] }
+loan-core = { path = "../../crates/loan-core" }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
