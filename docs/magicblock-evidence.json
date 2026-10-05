@@ -459,6 +459,54 @@
         },
         "cancel": "Error: ER tx 55rSYy8dsGdTCX85uvKKztuxQZRtrVnRUR9qVLhiGjQqdLQiE9P31UrYG3MC5iGmVvF8mTsR6N8Rf5GvgYkeDZYt failed: \"InvalidAccountForFee\""
       }
+    },
+    "9.3": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "eata": "G9hCzdy7bHox9QGR9HnBWTQdSbZycRWGvrbeyuJHryv5",
+      "signatures": {
+        "setup": "5WEkMXWhugeh5EznZgju4cik3BR18tQvJyck1CKV12JBNXUARowZYrcQn3skhnh46dJHZ1Jw9263hYt1Jp1siWYm",
+        "deposit": "3suc9c7FWB8UVtdroAwYjcjCzj4Vy5ez4zWwNGQLEXJN7dz1gf4EpRHVL593KgVnpuzvn7Cv2yQ8wRaJrapNHNU8",
+        "undelegate": "2DG9tEUzNaF3ZKyez694c3B7FMVg8pg72LnVeCAtPhPxbiuuBs3aYAMycvFpi5Jou5cLrzXZw4yx3yjNkLmQhyb4",
+        "withdraw": "5fgoCaFNo9XcQeD6Lg8s3hXm33fQvYwuRcdL1UvhW8qxo69zqZGMJQYfefouG79quHPYmz56N2QfC3BRkrCMQmVA"
+      },
+      "failed": [],
+      "checks": {
+        "wallet-debited-exactly": {
+          "ok": true,
+          "detail": {
+            "start": "100000"
+          }
+        },
+        "owner-reads-private-balance": {
+          "ok": true,
+          "detail": {
+            "owner": "100000"
+          }
+        },
+        "outsider-cannot-read-balance": {
+          "ok": true,
+          "detail": {
+            "outsider": "0"
+          }
+        },
+        "undelegate-in-er": {
+          "ok": true,
+          "detail": null
+        },
+        "exact-round-trip": {
+          "ok": true,
+          "detail": {
+            "start": "100000",
+            "end": "100000",
+            "committed": "100000"
+          }
+        },
+        "validator-refuses-unreviewed-destination": {
+          "ok": true,
+          "detail": "checked before signing"
+        }
+      }
     }
   }
 }
