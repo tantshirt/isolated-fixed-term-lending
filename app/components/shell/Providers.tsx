@@ -6,6 +6,7 @@ import {
 } from "@solana/wallet-adapter-react";
 import { LazyMotion, MotionConfig, domMax } from "motion/react";
 import type { ReactNode } from "react";
+import { rpcFetch } from "@/lib/rpc-fetch";
 import { RPC_URL, WS_URL } from "@/lib/constants";
 import { SignerProvider } from "@/lib/client/signer-context";
 import { ToastProvider } from "@/lib/client/toast";
@@ -16,7 +17,14 @@ import { ToastProvider } from "@/lib/client/toast";
  */
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <ConnectionProvider endpoint={RPC_URL} config={{ wsEndpoint: WS_URL }}>
+    <ConnectionProvider
+      endpoint={RPC_URL}
+      config={{
+        wsEndpoint: WS_URL,
+        disableRetryOnRateLimit: true,
+        fetch: rpcFetch,
+      }}
+    >
       <WalletProvider wallets={[]} autoConnect>
         <SignerProvider>
           <LazyMotion features={domMax} strict>

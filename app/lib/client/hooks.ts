@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchAllOffers, fetchOfferByKey, type Offer } from "@/lib/offers";
 import { getConnection } from "@/lib/program";
 import type { PriceSnapshot } from "@/lib/offer-status";
+import { sharedRead } from "../shared-read";
 import { readChainClock } from "./chain-clock";
 import { useSigner } from "./signer-context";
 
@@ -20,9 +21,16 @@ function usePoll(fn: () => Promise<void>, ms: number, deps: unknown[]) {
   const saved = useRef(fn);
   saved.current = fn;
   useEffect(() => {
-    let alive = true;
-    const tick = () => {
-      if (alive && document.visibilityState === "visible") void saved.current();
+    let alive = true,
+      running = false;
+    const tick = async () => {
+      if (!alive || running || document.visibilityState !== "visible") return;
+      running = true;
+      try {
+        await saved.current();
+      } finally {
+        running = false;
+      }
     };
     tick();
     const id = setInterval(tick, ms);
@@ -52,11 +60,15 @@ export function useDevConfig() {
     setConfig(null);
     setReadiness(null);
     setLocalControls(false);
-    fetch("/api/config")
-      .then((r) => {
-        if (!r.ok) throw new Error("Configuration unavailable");
-        return r.json();
-      })
+    sharedRead(
+      `config:${refreshKey}`,
+      () =>
+        fetch("/api/config").then((r) => {
+          if (!r.ok) throw new Error("Configuration unavailable");
+          return r.json();
+        }),
+      10_000
+    )
       .then(
         (j: {
           config: DevConfig | null;
@@ -105,16 +117,26 @@ export type LivePrice = PriceSnapshot & {
  * SOL/USD from the price account, judged fresh on the chain clock.
  * Locally the mock is re-stamped so a demo never sits on a stale price.
  */
-export function usePrice(ms = 5_000) {
+export function usePrice(ms = 10_000) {
   const { refreshKey } = useSigner();
   const [price, setPrice] = useState<LivePrice | null>(null);
   const [error, setError] = useState<string | null>(null);
   usePoll(
     async () => {
       try {
-        const r = await fetch("/api/price?keepFresh=1", { cache: "no-store" });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error ?? "No price");
+        const j = await sharedRead(`price:${refreshKey}`, async () => {
+          const r = await fetch("/api/price?keepFresh=1", {
+            cache: "no-store",
+          });
+          const data = await r.json();
+          if (!r.ok)
+            throw new Error(
+              r.status === 503
+                ? "Devnet rate limit: live price checks will resume shortly."
+                : data.error ?? "No price"
+            );
+          return data;
+        });
         setPrice({
           price: BigInt(j.price),
           conf: BigInt(j.conf),
@@ -154,7 +176,9 @@ export function useChainNow(): number | null {
         return;
       }
       try {
-        const time = await readChainClock(getConnection());
+        const time = await sharedRead(`clock:${refreshKey}`, () =>
+          readChainClock(getConnection())
+        );
         if (alive && ownRequest === request)
           setSnapshot({ key: refreshKey, time });
       } catch {
@@ -163,7 +187,7 @@ export function useChainNow(): number | null {
       }
     };
     void tick();
-    const id = setInterval(tick, 5_000);
+    const id = setInterval(tick, 10_000);
     document.addEventListener("visibilitychange", tick);
     return () => {
       alive = false;
@@ -174,14 +198,18 @@ export function useChainNow(): number | null {
   return snapshot?.key === refreshKey ? snapshot.time : null;
 }
 
-export function useOffers(ms = 6_000) {
+export function useOffers(ms = 15_000) {
   const { refreshKey } = useSigner();
   const [offers, setOffers] = useState<Offer[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   usePoll(
     async () => {
       try {
-        setOffers(await fetchAllOffers(getConnection()));
+        setOffers(
+          await sharedRead(`offers:${refreshKey}`, () =>
+            fetchAllOffers(getConnection())
+          )
+        );
         setError(null);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not read offers");
@@ -193,7 +221,7 @@ export function useOffers(ms = 6_000) {
   return { offers, error };
 }
 
-export function useOffer(key: string, ms = 3_000) {
+export function useOffer(key: string, ms = 10_000) {
   const { refreshKey } = useSigner();
   const [retry, setRetry] = useState(0);
   const identity = key;
@@ -210,9 +238,9 @@ export function useOffer(key: string, ms = 3_000) {
       if (document.visibilityState !== "visible") return;
       const ownRequest = ++request;
       try {
-        const offer = await fetchOfferByKey(
-          getConnection(),
-          new PublicKey(key)
+        const offer = await sharedRead(
+          `offer:${key}:${refreshKey}:${retry}`,
+          () => fetchOfferByKey(getConnection(), new PublicKey(key))
         );
         if (alive && ownRequest === request)
           setSnapshot({ identity, offer, error: null });
@@ -246,7 +274,7 @@ export type Balances = { sol: number; usdc: bigint; wsol: bigint };
 export function useBalances(
   publicKey: PublicKey | null,
   config: DevConfig | null,
-  ms = 6_000
+  ms = 15_000
 ) {
   const { refreshKey } = useSigner();
   const key = publicKey?.toBase58() ?? null;
@@ -273,11 +301,11 @@ export function useBalances(
           if (!(await c.getAccountInfo(ata))) return 0n;
           return BigInt((await c.getTokenAccountBalance(ata)).value.amount);
         };
-        const [lamports, usdc, wsol] = await Promise.all([
-          c.getBalance(owner),
-          token(usdcMint),
-          token(wsolMint),
-        ]);
+        const [lamports, usdc, wsol] = await sharedRead(
+          `balances:${identity}`,
+          () =>
+            Promise.all([c.getBalance(owner), token(usdcMint), token(wsolMint)])
+        );
         if (alive && ownRequest === request)
           setSnapshot({
             identity,

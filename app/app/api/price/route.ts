@@ -1,8 +1,8 @@
 import { rejectLocalRequest } from "@/lib/server/local-guard";
 import { validatePriceAccount } from "@/lib/server/validate-price";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
-import { MAX_PRICE_AGE_SECONDS, RPC_URL, IS_LOCAL } from "@/lib/constants";
+import { MAX_PRICE_AGE_SECONDS, IS_LOCAL } from "@/lib/constants";
 import { readDevConfig } from "@/lib/server/dev-config";
 import { readDevSecrets } from "@/lib/server/dev-secrets";
 import {
@@ -11,6 +11,9 @@ import {
   trySurfnetSetAccount,
 } from "@/lib/server/pyth-mock";
 import { decodePriceUpdateV2 } from "@/lib/server/price-update-codec";
+
+import { sharedRead } from "@/lib/shared-read";
+import { getConnection } from "@/lib/program";
 
 export const runtime = "nodejs";
 
@@ -22,6 +25,13 @@ const KEEP_FRESH_AFTER_SECONDS = 30;
  * `?keepFresh=1` re-posts the same price with a new timestamp (local mock only).
  */
 export async function GET(request: Request) {
+  if (IS_LOCAL) return readPrice(request);
+  return (
+    await sharedRead("api-price", () => readPrice(request), 2_000)
+  ).clone();
+}
+
+async function readPrice(request: Request) {
   const keepFresh =
     IS_LOCAL && new URL(request.url).searchParams.get("keepFresh") === "1";
   if (keepFresh) {
@@ -36,7 +46,7 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
-    const connection = new Connection(RPC_URL, "confirmed");
+    const connection = getConnection();
     const account = new PublicKey(config.priceUpdateAccount);
 
     const info = await connection.getAccountInfo(account);
@@ -83,6 +93,17 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "price read failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const limited = /429|rate.limit/i.test(message);
+    return NextResponse.json(
+      {
+        error: limited
+          ? "Devnet is busy. Live price checks will resume shortly."
+          : message,
+      },
+      {
+        status: limited ? 503 : 500,
+        headers: limited ? { "Retry-After": "30" } : {},
+      }
+    );
   }
 }

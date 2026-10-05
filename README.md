@@ -1,96 +1,153 @@
-# Lendspan
+<p align="center">
+  <img src="app/app/icon.svg" alt="Lendspan logo" width="64" height="64">
+</p>
 
-Clear terms. One loan at a time.
+<h1 align="center">Lendspan</h1>
 
-A local Solana program for a single loan: a lender locks USDC, a borrower locks wSOL and receives the USDC, and the program repays, expires, or liquidates without a server.
+<p align="center"><strong>Clear terms. One loan at a time.</strong></p>
 
-This repo includes the Anchor program ([`isolated_loan/`](isolated_loan/)), three outcome scripts, tests, and **Lendspan**, the Next.js interface ([`app/`](app/)).
+Lendspan makes fixed-term lending on Solana easier to understand. A lender offers USDC, a borrower locks wrapped SOL as collateral, and an on-chain program enforces the agreed repayment amount, deadline, and settlement rules.
+
+Start with a guided, wallet-free demo. Then explore the same loan lifecycle on Devnet with a connected wallet and test tokens.
+
+**[Run the demo](#quick-start)** · [How it works](#how-it-works) · [Devnet guide](docs/devnet.md) · [Architecture](docs/architecture.md) · [Verification](docs/lendspan-verification.md)
+
+**Project status:** working browser simulation and deployed Solana Devnet program. Devnet uses test tokens; this repository is not a mainnet lending service.
+
+## How it works
+
+**Set the terms → Lock collateral → Receive USDC → Repay and release collateral**
+
+For example, a lender can offer **100 USDC** for **seven days**, with **5% full-term interest** and **1.1 wSOL** in collateral. Once a borrower accepts, the clock starts. Repaying **105 USDC** before the deadline returns the collateral to the borrower. Early repayment carries the same full-term interest.
+
+Each offer has its own accounts and vaults. The lender can cancel before acceptance. After acceptance, the loan ends through one of three outcomes:
+
+| Outcome | What happens |
+| --- | --- |
+| Repayment | The borrower pays principal plus fixed interest; the lender receives USDC and the borrower recovers the wSOL. |
+| Liquidation | If the loan reaches its liquidation threshold before expiry, a liquidator pays the debt and receives collateral plus a capped incentive. Remaining collateral returns to the borrower. |
+| Expiry | After the deadline, repayment stops and the lender can receive all collateral. Its value may be less than the debt. |
+
+The protocol assumes USDC is worth one dollar and uses Pyth SOL/USD prices for collateral checks. Interest is a cost for the full term, not an annual percentage rate. See [formulas, limits, and rounding](docs/research.md) for the exact rules.
 
 ## Quick start
 
-### 1. Program
+The browser demo needs Node.js, npm, and no wallet or local validator. Node.js 24 or later satisfies the current dependency requirements.
+
+```bash
+git clone https://github.com/tantshirt/isolated-fixed-term-lending.git
+cd isolated-fixed-term-lending/app
+npm ci
+cp .env.example .env.local
+npm run dev
+```
+
+Open the URL printed by Next.js.
+
+| Route | Experience |
+| --- | --- |
+| `/` | An illustrated loan story with scroll progress and reduced-motion support. |
+| `/demo` | A browser-only simulation with practice balances, editable terms, role switching, and replayable outcomes. |
+| `/devnet` | Wallet-connected offers, funding guidance, and transactions on Solana Devnet. |
+
+### Try your first simulated loan
+
+1. **Set the terms.** Follow the four-step wizard and review the repayment amount and collateral.
+2. **Become the borrower.** Switch roles, lock simulated wSOL, and receive simulated USDC.
+3. **Explore an outcome.** Repay, change the simulated SOL price to explore liquidation, or advance time to expiry.
+4. **Inspect the result.** Review balances and receipts, then reset to try another scenario.
+
+The simulation runs in your browser. It does not request wallet signatures, call chain APIs, or move real funds.
+
+### Continue on Devnet
+
+Open `/devnet`, connect a compatible Solana wallet, and follow the funding instructions for test SOL and test USDC. SOL wrapping and loan transactions require explicit wallet approval.
+
+The picker includes Phantom, Backpack, Jupiter, and MetaMask branding. Connection availability depends on the detected wallet's Solana network and signing capabilities. MetaMask's Devnet integration uses its desktop browser extension.
+
+The app shares duplicate reads and backs off when its RPC endpoint is rate limited. Public Devnet RPC availability can still vary. The [Devnet guide](docs/devnet.md) covers configuration, Pyth updates, deployment receipts, and recovery.
+
+## Under the hood
+
+| Component | Responsibility |
+| --- | --- |
+| [`app/`](app/) | Next.js, React, and TypeScript interface; simulation, wallet integration, and transaction recovery. |
+| [`isolated_loan/programs/isolated_loan/`](isolated_loan/programs/isolated_loan/) | Rust/Anchor program; offer accounts, isolated vaults, validation, and settlement. |
+| [`isolated_loan/scripts/`](isolated_loan/scripts/) | Repeatable repayment, liquidation, and expiry walkthroughs. |
+| [`docs/`](docs/) | Protocol rules, architecture, design decisions, and verification evidence. |
+
+**Program ID:** [`CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef`](https://explorer.solana.com/address/CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef?cluster=devnet)
+
+The program exposes `create_offer`, `cancel_offer`, `accept_offer`, `repay_loan`, `claim_expired_loan`, `liquidate_loan`, and `close_offer`. Vault rent returns to the party that paid it; the lender can close a settled offer to recover its account rent.
+
+The client checks the configured network, simulates transactions before signing, retains transaction receipts, and reconciles uncertain submissions before retrying. Pyth owner, feed, verification level, confidence, and freshness checks remain enforced.
+
+## Local program development
+
+Program work also requires Rust, the Solana CLI, Anchor, and Surfpool. The local walkthroughs use mock mints and Pyth data; Devnet uses canonical test USDC and native wSOL.
 
 ```bash
 cd isolated_loan
+npm ci
 anchor build
 ```
 
-Start Surfpool (`brew install txtx/taps/surfpool`), then deploy to it. Surfpool provides the mock Pyth account and clock warp:
+Start Surfpool in a separate terminal:
 
 ```bash
-surfpool start --no-tui          # in one terminal
+surfpool start --no-tui
+```
+
+Then fund the local deployer and deploy from `isolated_loan/`:
+
+```bash
 solana -u localhost airdrop 100
 solana -u localhost program deploy target/deploy/isolated_loan.so \
   --program-id target/deploy/isolated_loan-keypair.json
 ```
 
-### 2. Three outcome scripts
-
-Each script runs from a **fresh** local setup (mints, three wallets, mock Pyth account):
+Run the outcome scripts against the local RPC:
 
 ```bash
-cd isolated_loan
-npm install
-npm run script:repay       # → status Repaid
-npm run script:liquidate   # → status Liquidated
-npm run script:expire      # → status Expired
+npm run script:repay
+npm run script:liquidate
+npm run script:expire
 ```
 
-Requires RPC at `http://127.0.0.1:8899` with `surfnet_setAccount` and `surfnet_timeTravel` (Surfpool 1.x). Plain `solana-test-validator` needs real Pyth updates instead.
+Each script creates a fresh local setup. The scripts require Surfpool's `surfnet_setAccount` and `surfnet_timeTravel` methods; a plain Solana test validator does not provide these mock-account and clock controls.
 
-### 3. Lendspan
+## Validation
+
+From `app/`:
 
 ```bash
-cd app
-npm install
-cp .env.example .env.local
-npm run dev
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
 ```
 
-Open the URL printed by Next.js. `/` explains the journey; `/demo` is a wallet-free simulation with editable terms, role balances, receipts, and replayable repayment, liquidation, and expiry. No validator or account is needed for the simulation.
-
-`/devnet` connects a browser wallet to the deployed loan program using canonical test USDC, native wSOL, real Pyth updates, and real chain time. It guides funding and explicit SOL wrapping. See [Devnet configuration and evidence](docs/devnet.md). Devnet transactions use test tokens but still require wallet signatures and SOL for fees.
-
-### 4. Tests
+From `isolated_loan/`:
 
 ```bash
-cd isolated_loan
-npm run test:rust     # integer math worked example
-npm run test:litesvm  # every instruction on LiteSVM (story 5.1)
-npm run test:ts       # display math + PDA seeds
-
-cd ../app
-npm test              # wizard validation, collateral math, u64 seeds
+npm run test:rust
+npm run test:litesvm
+npm run test:ts
 ```
 
-## Program surface
+The latest interface verification includes **42 passing unit tests**, a production build, and browser checks covering the demo lifecycle, wallet fixtures, responsive layouts, reduced motion, and RPC backoff. Live Devnet evidence covers create, accept, repay, cancel, expiry, and close. Real browser-extension signing is not automated; forced Devnet liquidation is not part of that evidence.
 
-| Item | Value |
+See [verification commands and limitations](docs/lendspan-verification.md) for reproducible browser checks and [Devnet evidence](docs/devnet.md) for transaction details.
+
+## Find your next step
+
+| I want to… | Start here |
 | --- | --- |
-| Program id (local and Devnet) | `CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef` |
-| Offer PDA | `["offer", lender, offer_id_le]` |
-| USDC vault | `["usdc-vault", offer]` (closed after accept) |
-| wSOL vault | `["wsol-vault", offer]` |
+| Understand the product and scope | [Product requirements](docs/prd.md) |
+| Check a formula or protocol limit | [Research and worked examples](docs/research.md) |
+| Integrate with the program | [Accounts and instruction rules](docs/architecture.md) |
+| Work on the interface | [Design and experience](docs/design-and-experience.md) |
+| Review generated brand assets | [Artwork, prompts, and provenance](docs/brand/README.md) |
+| Contribute an implementation | [Agent guide](AGENTS.md) · [Sprint plan](docs/sprint-plan.md) · [Stories](docs/stories.md) |
 
-**Instructions:** `create_offer`, `cancel_offer`, `accept_offer`, `repay_loan`, `claim_expired_loan`, `liquidate_loan`, `close_offer`. Vault rent always returns to the party that paid it.
-
-**Statuses:** Open, Filled, Repaid, Expired, Liquidated, Cancelled.
-
-## Assumptions (week 1)
-
-- USDC is one dollar (no USDC price feed).
-- Missing the deadline gives the lender all wSOL.
-- Local scripts use mock mints; Devnet uses canonical test USDC and native wSOL.
-
-Formulas, caps, Pyth feed id, and the worked example are in [docs/research.md](docs/research.md). Accounts and instruction rules are in [docs/architecture.md](docs/architecture.md). UI copy and layout are in [docs/design-and-experience.md](docs/design-and-experience.md).
-
-## Docs
-
-- [Research](docs/research.md)
-- [Product requirements](docs/prd.md)
-- [Architecture](docs/architecture.md)
-- [Design and experience](docs/design-and-experience.md)
-- [Stories](docs/stories.md)
-- [Sprint plan](docs/sprint-plan.md)
-
-If you are implementing against the spec, start at [AGENTS.md](AGENTS.md).
+For a reproducible issue, include the route, network, expected behavior, and failing step. Include a public transaction signature when relevant; leave out credentials, seed phrases, and wallet secret keys.

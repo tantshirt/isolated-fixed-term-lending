@@ -13,7 +13,7 @@
 
 # next.js
 /.next/
-/.next-review/
+/.next-*/
 /out/
 
 # production

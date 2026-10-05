@@ -1,5 +1,8 @@
 "use client";
 
+import { useWallet } from "@solana/wallet-adapter-react";
+import { AssetLabel } from "@/components/brand/AssetLabel";
+import { walletBrand } from "@/lib/wallet-catalog";
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +20,7 @@ const ROLE_NAMES = {
 } as const;
 
 export function AccountButton() {
+  const { wallet } = useWallet();
   const {
     publicKey,
     source,
@@ -60,6 +64,10 @@ export function AccountButton() {
   }
 
   const key = publicKey.toBase58();
+  const icon =
+    source === "wallet"
+      ? walletBrand(walletName ?? "")?.icon ?? wallet?.adapter.icon
+      : undefined;
   const name = localRole ? ROLE_NAMES[localRole] : walletName ?? "Wallet";
 
   const fund = async () => {
@@ -98,7 +106,18 @@ export function AccountButton() {
         aria-haspopup="dialog"
         onClick={() => setOpen((o) => !o)}
       >
-        <Avatar seed={key} role={localRole} />
+        {icon ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={icon}
+            alt=""
+            width={32}
+            height={32}
+            className={styles.walletIcon}
+          />
+        ) : (
+          <Avatar seed={key} role={localRole} />
+        )}
         <span className={styles.who}>
           <span className={styles.name}>{name}</span>
           <span className={`${styles.key} address`}>{shortKey(key)}</span>
@@ -116,15 +135,34 @@ export function AccountButton() {
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className={styles.menuHead}>
-              <Avatar seed={key} role={localRole} size={40} />
+              {icon ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={icon}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className={styles.walletIcon}
+                />
+              ) : (
+                <Avatar seed={key} role={localRole} size={40} />
+              )}
               <div>
                 <p className={styles.name}>{name}</p>
                 <button
                   type="button"
                   className={`${styles.copy} address`}
-                  onClick={() => {
-                    void navigator.clipboard?.writeText(key);
-                    toast({ tone: "info", title: "Address copied" });
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(key);
+                      toast({ tone: "info", title: "Address copied" });
+                    } catch {
+                      toast({
+                        tone: "error",
+                        title: "Could not copy address",
+                        detail: "Copy the address from your wallet.",
+                      });
+                    }
                   }}
                 >
                   {shortKey(key)} · Copy
@@ -133,19 +171,25 @@ export function AccountButton() {
             </div>
             <dl className={styles.balances}>
               <div>
-                <dt>USDC</dt>
+                <dt>
+                  <AssetLabel symbol="USDC" />
+                </dt>
                 <dd className="num">
                   {balances ? formatUsdc(balances.usdc) : "—"}
                 </dd>
               </div>
               <div>
-                <dt>wSOL</dt>
+                <dt>
+                  <AssetLabel symbol="wSOL" />
+                </dt>
                 <dd className="num">
                   {balances ? formatWsol(balances.wsol) : "—"}
                 </dd>
               </div>
               <div>
-                <dt>SOL for fees</dt>
+                <dt>
+                  <AssetLabel symbol="SOL">SOL for fees</AssetLabel>
+                </dt>
                 <dd className="num">
                   {balances ? balances.sol.toFixed(3) : "—"}
                 </dd>
@@ -170,7 +214,7 @@ export function AccountButton() {
                   setConnectOpen(true);
                 }}
               >
-                Switch account
+                Switch wallet
               </Button>
               <Button
                 variant="ghost"

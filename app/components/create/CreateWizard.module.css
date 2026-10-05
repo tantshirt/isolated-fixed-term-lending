@@ -1,8 +1,11 @@
 .layout {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2rem;
   align-items: start;
 }
+
+.aside { min-width: 0; }
 
 @media (min-width: 960px) {
   .layout {
@@ -52,7 +55,7 @@
   border-radius: 6px;
   background: var(--color-background-surface);
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: 14px;
 }
 .dot[data-state="done"],
 .dot[data-state="current"] {
@@ -99,7 +102,7 @@
 }
 
 .quickChip {
-  height: 2rem;
+  min-height: 44px;
   padding: 0 0.75rem;
   border: 1px solid var(--color-border-emphasized);
   border-radius: var(--radius-full);
@@ -142,7 +145,7 @@
 
 .customInput,
 .customUnit {
-  height: 2.5rem;
+  min-height: 44px;
   padding: 0 0.75rem;
   border: 1px solid var(--color-border-emphasized);
   border-radius: var(--radius-element);
@@ -262,6 +265,7 @@
 }
 
 .edit {
+  min-height: 44px;
   padding: 0.25rem 0.5rem;
   border: 0;
   border-radius: 6px;
@@ -313,4 +317,22 @@
 
 .question:focus {
   outline: none;
+}
+
+@media (max-width: 600px) {
+  .termRowItem {
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+  }
+  .termRowItem dd {
+    grid-column: 1;
+    text-align: left;
+  }
+  .termRowItem .edit {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .doneActions {
+    flex-wrap: wrap;
+  }
 }

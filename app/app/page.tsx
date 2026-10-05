@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HeroArtwork, LoanStory } from "@/components/experience/LoanStory";
 import { PublicHeader } from "@/components/experience/PublicHeader";
 import s from "@/components/experience/Experience.module.css";
 export default function Home() {
@@ -30,110 +31,30 @@ export default function Home() {
               No wallet needed for the demo. No real funds at risk.
             </p>
           </div>
-          <div
-            className={s.diagram}
-            aria-label="Example loan: lender supplies 100 USDC, borrower locks 1.1 wSOL, repays 105 USDC in seven days"
-          >
-            <div className={s.diagramTop}>
-              <span>One loan. Every term visible.</span>
-              <span className={s.badge}>Example</span>
-            </div>
-            <div className={s.exchange}>
-              <div className={s.person}>
-                <i aria-hidden>L</i>
-                <strong>Lender</strong>
-                <small>Provides USDC</small>
-              </div>
-              <div className={s.arrows} aria-hidden>
-                ⇄
-              </div>
-              <div className={s.person}>
-                <i aria-hidden>B</i>
-                <strong>Borrower</strong>
-                <small>Locks wSOL</small>
-              </div>
-            </div>
-            <div className={s.flow}>
-              <div>
-                <small>Borrow</small>
-                <strong>
-                  100 <small>USDC</small>
-                </strong>
-              </div>
-              <div>
-                <small>Repay</small>
-                <strong>
-                  105 <small>USDC</small>
-                </strong>
-              </div>
-            </div>
-            <div className={s.diagramFoot}>
-              <span>7-day term · 5% fixed interest</span>
-              <span>1.1 wSOL collateral</span>
-            </div>
-          </div>
+          <HeroArtwork />
         </section>
-        <section id="how-it-works" className={s.section}>
-          <p className={s.eyebrow}>Follow the money</p>
-          <h2>
-            Two people. One set of terms.
-            <br />
-            Nothing left to guess.
-          </h2>
-          <p>
-            A lender sets the offer. A borrower chooses to take it. The program
-            holds the funds and follows the agreed rules.
-          </p>
-          <div className={s.three}>
-            <article>
-              <span>01 / SET THE TERMS</span>
-              <h3>Make an offer you understand.</h3>
-              <p>
-                Choose the USDC amount, full-term interest, deadline, and wSOL
-                collateral. Funds wait in a dedicated vault until the offer is
-                accepted or cancelled.
-              </p>
-            </article>
-            <article>
-              <span>02 / MAKE THE EXCHANGE</span>
-              <h3>Collateral in. USDC out.</h3>
-              <p>
-                The borrower locks wSOL and receives USDC. The term starts on
-                acceptance. The SOL price must support the agreed collateral
-                limit.
-              </p>
-            </article>
-            <article>
-              <span>03 / CLOSE THE LOOP</span>
-              <h3>Repay and get the wSOL back.</h3>
-              <p>
-                Pay the principal plus fixed interest before the deadline. Early
-                repayment is welcome; the full-term interest stays the same.
-              </p>
-            </article>
-          </div>
-        </section>
+        <LoanStory />
         <section className={s.section}>
           <div className={s.risk}>
             <div>
               <p className={s.eyebrow}>Clear terms include the risks</p>
               <h2>
-                See what happens
+                Every loan has
                 <br />
-                when things change.
+                more than one ending.
               </h2>
               <Link className={s.primary} href="/demo">
                 Explore all three outcomes →
               </Link>
             </div>
             <div>
-              <h3>If SOL falls</h3>
+              <h3>The price can change the outcome.</h3>
               <p className={s.lede}>
                 At the liquidation threshold, a liquidator can pay the debt and
                 receive collateral plus a 5% incentive, capped by the collateral
                 available. Any remainder goes back to the borrower.
               </p>
-              <h3>If the deadline passes</h3>
+              <h3>The clock matters, too.</h3>
               <p className={s.lede}>
                 Repayment stops. The lender can receive all the collateral. Its
                 value may be less than the debt. Neither side has a guaranteed

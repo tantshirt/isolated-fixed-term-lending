@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, m } from "motion/react";
+import { AssetLabel, type AssetSymbol } from "@/components/brand/AssetLabel";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import type { LivePrice } from "@/lib/client/hooks";
@@ -117,7 +118,7 @@ function Figure({
 }: {
   label: string;
   value: number;
-  unit: string;
+  unit: AssetSymbol;
   format: (n: number) => string;
   hero?: boolean;
   exact?: string;
@@ -132,7 +133,9 @@ function Figure({
           exact={exact}
           className="num"
         />
-        <span className={styles.unit}>{unit}</span>
+        <span className={styles.unit}>
+          <AssetLabel symbol={unit} />
+        </span>
       </span>
     </div>
   );

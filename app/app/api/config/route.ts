@@ -16,7 +16,13 @@ import { chainUnixTime } from "@/lib/server/pyth-mock";
 import { localControlsEnabled } from "@/lib/server/local-guard";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+import { sharedRead } from "@/lib/shared-read";
+
 export async function GET() {
+  return (await sharedRead("api-config", readConfig, 2_000)).clone();
+}
+
+async function readConfig() {
   let config: Awaited<ReturnType<typeof readDevConfig>> = null;
   const errors: string[] = [];
   try {

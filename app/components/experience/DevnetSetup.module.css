@@ -1,0 +1,293 @@
+.setup {
+  max-width: 976px;
+  margin: 24px auto 0;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-background-surface);
+}
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.125rem 1.5rem;
+  cursor: pointer;
+  list-style: none;
+  min-height: 64px;
+}
+.summary::-webkit-details-marker {
+  display: none;
+}
+.summaryTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+.chevron {
+  display: inline-block;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.setup:not([open]) .chevron {
+  transform: rotate(-90deg);
+}
+.network {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  background: var(--color-background-muted);
+  padding: 0.375rem 0.625rem;
+  border-radius: 6px;
+}
+.dot {
+  height: 6px;
+  width: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.network[data-state="ready"] {
+  color: var(--color-text-green);
+  background: var(--color-background-green);
+}
+.content {
+  padding: 0 1.5rem 1.5rem;
+}
+.intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+.intro h2 {
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.intro p {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin-top: 0.375rem;
+}
+.intro > button {
+  flex-shrink: 0;
+}
+.notice {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--color-background-muted);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+.notice p {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.address {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding-top: 0.75rem;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
+.address button,
+.balanceHeader button {
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+  min-height: 44px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.funding {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.25rem 0 0.75rem;
+}
+.faucet {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.125rem;
+  border-radius: 10px;
+  background: var(--color-background-muted);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.faucet:hover {
+  background: var(--color-accent-muted);
+}
+.asset {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+}
+.faucetText {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.faucetText strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.faucetText > span {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+.faucetText small {
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  margin-top: 0.375rem;
+  font-weight: 500;
+}
+.external {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  align-self: flex-start;
+}
+.faucetHint {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+}
+.balanceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+}
+.balanceHeader h3 {
+  font-size: 0.875rem;
+}
+.balances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 0.5rem 0 1rem;
+}
+.balances > div {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+.balances strong {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.tools {
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+.tools summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.tools p {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  max-width: 65ch;
+  line-height: 1.65;
+}
+.wrap {
+  margin: 0.875rem 0 0.5rem;
+}
+.wrap label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.wrap > div {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.wrap input {
+  padding: 0.75rem;
+  width: 160px;
+  min-height: 44px;
+  border: 1px solid var(--color-border-emphasized);
+  border-radius: 8px;
+  background: var(--color-background-surface);
+}
+.price {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.price h3 {
+  font-size: 0.875rem;
+  margin-bottom: 0.375rem;
+}
+.price button {
+  flex-shrink: 0;
+}
+.feedback {
+  padding: 0.875rem;
+  border-radius: 8px;
+  background: var(--color-background-muted);
+  font-size: 0.875rem;
+  margin-top: 1rem;
+}
+.receipt {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--color-accent);
+  padding: 0.75rem 0;
+}
+@media (max-width: 760px) {
+  .setup {
+    margin: 16px;
+  }
+  .summary {
+    padding: 1rem;
+  }
+  .content {
+    padding: 0 1rem 1rem;
+  }
+  .intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .funding {
+    grid-template-columns: 1fr;
+    gap: 0.625rem;
+  }
+  .notice,
+  .price {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .faucetText > span {
+    font-size: 0.875rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chevron,
+  .faucet {
+    transition: none;
+  }
+}

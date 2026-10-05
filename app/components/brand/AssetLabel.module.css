@@ -1,0 +1,16 @@
+.icon {
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+.label > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

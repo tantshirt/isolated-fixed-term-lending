@@ -13,7 +13,7 @@
 }
 
 .center {
-  width: min(440px, calc(100vw - 2rem));
+  width: min(480px, calc(100vw - 2rem));
   border-radius: 16px;
 }
 
@@ -84,8 +84,9 @@
 .close {
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
+  width: 44px;
+  flex-shrink: 0;
+  height: 44px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -95,4 +96,18 @@
 .close:hover {
   background: var(--color-background-muted);
   color: var(--color-text-primary);
+}
+
+@media (max-width: 440px) {
+  .body {
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open],
+  .right[open],
+  .sheet[open]::backdrop {
+    animation: none;
+  }
 }

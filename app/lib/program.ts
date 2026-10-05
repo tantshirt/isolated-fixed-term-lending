@@ -4,11 +4,15 @@ import idl from "@/idl/isolated_loan.json";
 import { RPC_URL, WS_URL, PROGRAM_ID } from "./constants";
 import { asSigner, type LoanSigner } from "./keypair-wallet";
 
+import { rpcFetch } from "./rpc-fetch";
+
 export type IsolatedLoan = Program<Idl>;
 
 export function getConnection(endpoint = RPC_URL): Connection {
   return new Connection(endpoint, {
     commitment: "confirmed",
+    disableRetryOnRateLimit: true,
+    fetch: rpcFetch,
     wsEndpoint: WS_URL,
   });
 }

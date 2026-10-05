@@ -42,7 +42,8 @@ export function StepAmount({
         hint={
           balance !== null ? (
             <>
-              Your balance <span className="num">{formatUsdc(balance)}</span> USDC
+              Your balance <span className="num">{formatUsdc(balance)}</span>{" "}
+              USDC
             </>
           ) : (
             "Connect a wallet to see your balance."
@@ -63,17 +64,26 @@ export function StepAmount({
         ))}
         {balance !== null && balance > 0n && (
           <>
-            <button type="button" className={styles.quickChip} onClick={() => update({ principal: atomsToInput(balance / 2n) })}>
+            <button
+              type="button"
+              className={styles.quickChip}
+              onClick={() => update({ principal: atomsToInput(balance / 2n) })}
+            >
               Half
             </button>
-            <button type="button" className={styles.quickChip} onClick={() => update({ principal: atomsToInput(balance) })}>
+            <button
+              type="button"
+              className={styles.quickChip}
+              onClick={() => update({ principal: atomsToInput(balance) })}
+            >
               Max
             </button>
           </>
         )}
       </div>
       <p className={styles.explain}>
-        The USDC leaves your wallet now and waits in the offer&apos;s own vault. You can cancel and take it back at any time
+        When you approve the final transaction, your USDC moves into the
+        offer&apos;s own vault. You can cancel and take it back at any time
         until a borrower accepts.
       </p>
     </div>

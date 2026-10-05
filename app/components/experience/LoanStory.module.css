@@ -1,0 +1,285 @@
+.heroArtwork {
+  min-width: 0;
+  overflow: hidden;
+}
+.heroArtwork img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: multiply;
+}
+.heroCaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+.heroCaption a {
+  color: var(--color-accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.story {
+  padding: clamp(4rem, 9vw, 8rem) 0;
+  scroll-margin-top: 5rem;
+}
+.intro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 3rem;
+  margin-bottom: 4rem;
+  align-items: end;
+}
+.caption {
+  grid-column: 1 / -1;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.intro h2 {
+  font-size: clamp(2.4rem, 5vw, 4.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.intro > p:last-child {
+  max-width: 40ch;
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+.journey {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(3rem, 8vw, 8rem);
+  align-items: start;
+}
+.tracker {
+  position: sticky;
+  top: 7rem;
+  padding: 1.75rem;
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+.trackerHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 600;
+}
+.example {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+.trackSteps {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+.trackSteps a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  color: var(--color-text-secondary);
+  border-radius: 6px;
+  transition: color 0.25s ease;
+}
+.trackSteps a[aria-current] {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.stepNumber,
+.chapterLabel span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  font-size: 0.875rem;
+}
+.trackSteps a[aria-current] .stepNumber {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.progress {
+  height: 3px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+.progress > div {
+  height: 100%;
+  background: var(--color-accent);
+  transform-origin: left;
+}
+.readout {
+  padding: 1.5rem 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.readout p {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+.readout strong {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-variant-numeric: tabular-nums;
+}
+.terms {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--color-border);
+}
+.terms > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+.terms dt {
+  color: var(--color-text-secondary);
+}
+.terms dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.storyLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-accent);
+}
+.chapter {
+  scroll-margin-top: 7rem;
+  padding-bottom: 6rem;
+}
+.chapter:last-child {
+  padding-bottom: 0;
+}
+.chapterLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-accent);
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+.chapter h3 {
+  font-size: clamp(1.9rem, 3.3vw, 3rem);
+  letter-spacing: -0.03em;
+  line-height: 1.14;
+  text-wrap: balance;
+}
+.body {
+  margin-top: 1.25rem;
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--color-text-secondary);
+  max-width: 50ch;
+}
+.art {
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+.art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: multiply;
+}
+.note {
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  line-height: 1.65;
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+}
+.agreement {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: var(--color-accent-muted);
+  border-radius: 12px;
+  display: grid;
+  gap: 0.75rem;
+}
+.agreement > div:not(.agreementArrow) {
+  display: grid;
+  gap: 0.5rem;
+}
+.agreement span,
+.agreement p {
+  font-size: 0.875rem;
+}
+.agreement strong {
+  font-size: 1.5rem;
+}
+.agreementArrow {
+  color: var(--color-accent);
+  font-size: 1.75rem;
+}
+.agreement p {
+  margin-top: 1rem;
+  color: var(--color-text-secondary);
+}
+@media (max-width: 800px) {
+  .intro,
+  .journey {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .intro {
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+  .tracker {
+    position: static;
+    padding: 1.25rem;
+  }
+  .trackSteps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  .trackSteps a {
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 0.875rem;
+  }
+  .readout,
+  .terms {
+    display: none;
+  }
+  .storyLink {
+    margin-top: 1rem;
+  }
+  .chapter {
+    padding-bottom: 4rem;
+  }
+  .heroCaption {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .art {
+    max-width: 460px;
+    margin-inline: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trackSteps a {
+    transition: none;
+  }
+}

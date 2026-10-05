@@ -1,4 +1,6 @@
 "use client";
+import { AssetLabel, type AssetSymbol } from "@/components/brand/AssetLabel";
+import { formatDuration } from "@/lib/format";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -264,6 +266,7 @@ export function Demo() {
                       <h2>How much will you lend?</h2>
                       <Field
                         label="USDC amount"
+                        asset="USDC"
                         value={draft.principal}
                         onChange={(v) => update({ principal: v })}
                         error={errors.principal}
@@ -312,6 +315,7 @@ export function Demo() {
                       <h2>Choose the collateral.</h2>
                       <Field
                         label="wSOL collateral"
+                        asset="wSOL"
                         value={draft.collateral}
                         onChange={(v) => update({ collateral: v })}
                         error={errors.collateral}
@@ -647,11 +651,11 @@ export function Demo() {
                 ],
                 [
                   "Term",
-                  `${
-                    (loan && !wizard
+                  formatDuration(
+                    loan && !wizard
                       ? loan.durationSeconds
-                      : draft.durationSeconds) / 86400
-                  } days`,
+                      : draft.durationSeconds
+                  ),
                 ],
                 ["Simulated SOL price", `$${exactAmount(state.price, 8)}`],
                 ...(loan && !wizard
@@ -663,7 +667,15 @@ export function Demo() {
               ].map(([k, v]) => (
                 <div key={k}>
                   <dt>{k}</dt>
-                  <dd>{v}</dd>
+                  <dd>
+                    {k === "Principal" || k === "Total repayment" ? (
+                      <AssetLabel symbol="USDC">{v}</AssetLabel>
+                    ) : k === "Collateral" ? (
+                      <AssetLabel symbol="wSOL">{v}</AssetLabel>
+                    ) : (
+                      v
+                    )}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -682,8 +694,12 @@ export function Demo() {
               {(["lender", "borrower", "liquidator"] as Role[]).map((r) => (
                 <div key={r}>
                   <b>{r}</b>
-                  <span>{exactAmount(state.balances[r].usdc, 6)} USDC</span>
-                  <span>{exactAmount(state.balances[r].wsol, 9)} wSOL</span>
+                  <AssetLabel symbol="USDC">
+                    {exactAmount(state.balances[r].usdc, 6)} USDC
+                  </AssetLabel>
+                  <AssetLabel symbol="wSOL">
+                    {exactAmount(state.balances[r].wsol, 9)} wSOL
+                  </AssetLabel>
                 </div>
               ))}
             </section>
@@ -713,35 +729,40 @@ function Field({
   value,
   onChange,
   error,
+  asset,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   error?: string;
+  asset?: AssetSymbol;
 }) {
   const [text, setText] = useState(value);
   useEffect(() => setText(value), [value]);
   const id = label.replace(/\W/g, "");
   return (
-    <label className={s.field} htmlFor={id}>
-      {label}
-      <input
-        id={id}
-        inputMode="decimal"
-        autoComplete="off"
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          onChange(e.target.value);
-        }}
-        aria-invalid={!!error}
-        aria-describedby={error ? `${id}-error` : undefined}
-      />
+    <div className={s.field}>
+      <label htmlFor={id}>{label}</label>
+      <div className={asset ? s.assetInput : undefined} data-invalid={!!error}>
+        <input
+          id={id}
+          inputMode="decimal"
+          autoComplete="off"
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            onChange(e.target.value);
+          }}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+        />
+        {asset && <AssetLabel symbol={asset} />}
+      </div>
       {error && (
         <span id={`${id}-error`} className={s.error}>
           {error}
         </span>
       )}
-    </label>
+    </div>
   );
 }
