@@ -120,6 +120,101 @@
         "logs": [],
         "note": "Outsider learns that the signature exists and succeeded, nothing else."
       }
+    },
+    "8.5": {
+      "status": "PASS",
+      "date": "2026-10-05",
+      "priceAccount": "7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE",
+      "staleAccount": "6bWEn5B8eJCRAek5acd3R7d4Sx3e7JWvt84srqqfYgt",
+      "failed": [],
+      "checks": {
+        "canonical-owner-on-base": {
+          "ok": true,
+          "detail": {
+            "account": "7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE",
+            "owner": "rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ",
+            "price": "12072915274",
+            "exponent": -8,
+            "publishTime": 1791195397,
+            "ageSeconds": 13
+          }
+        },
+        "er-clone-keeps-canonical-owner": {
+          "ok": true,
+          "detail": {
+            "owner": "rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ",
+            "price": "12072915274",
+            "exponent": -8,
+            "publishTime": 1791195397,
+            "ageSeconds": 13
+          }
+        },
+        "fresh-canonical-price-accepted": {
+          "ok": true,
+          "detail": {
+            "sig": "622ZadQevrQFgV21kQw5vK6H1XbaxvmFFWVUkFiEEjGJyFNGYmoajY4HFHpAJRsBTfKYWKVe1Rwf1Dvsk9hTxcBa",
+            "err": null,
+            "logs": [
+              "Program log: Instruction: CheckPrice"
+            ],
+            "storedPrice": "12072915274",
+            "storedExponent": -8
+          }
+        },
+        "stale-canonical-price-fails-closed": {
+          "ok": true,
+          "detail": {
+            "account": "6bWEn5B8eJCRAek5acd3R7d4Sx3e7JWvt84srqqfYgt",
+            "owner": "rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ",
+            "ageSeconds": 2654524,
+            "sig": "3FnpCr23cp3Rsii6dLwaYX4qNHhtHkG9J6pBfH1LSx4Ny6p5VKaDRtbnhzuXdmPNNW2MTwJResK5ziJRsExzw1VH",
+            "err": {
+              "InstructionError": [
+                0,
+                {
+                  "Custom": 6004
+                }
+              ]
+            },
+            "logs": [
+              "Program log: Instruction: CheckPrice",
+              "Program log: AnchorError thrown in programs/private_loan/src/error.rs:32. Error Code: StalePrice. Error Number: 6004. Error Message: Price is stale.",
+              "Program HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK failed: custom program error: 0x1774"
+            ]
+          }
+        },
+        "clone-lag-seconds": {
+          "samples": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "max": 0
+        },
+        "magicblock-feed-rejected-by-owner": {
+          "ok": true,
+          "detail": {
+            "owner": "PriCems5tHihc6UDXDjzjeawomAwBduWMGAi8ZUjppd",
+            "sig": "2R6yLyUfe3qBbrw2Mnt5iT62QCpsR4kgrwKBLyheRtVinYTr6KTTJQsUX8Evc22Cw1XMxoPRJeRRL5mZcF3qv7av",
+            "err": {
+              "InstructionError": [
+                0,
+                {
+                  "Custom": 6002
+                }
+              ]
+            },
+            "logs": [
+              "Program log: Instruction: CheckPrice",
+              "Program log: AnchorError thrown in programs/private_loan/src/error.rs:30. Error Code: InvalidPriceOwner. Error Number: 6002. Error Message: Price feed owner is invalid.",
+              "Program HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK failed: custom program error: 0x1772"
+            ]
+          }
+        }
+      }
     }
   }
 }
