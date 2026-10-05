@@ -48,6 +48,7 @@
 }
 
 .summary dd {
+  margin: 0;
   font-size: var(--text-lg);
   font-weight: 600;
 }

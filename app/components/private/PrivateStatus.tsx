@@ -1,5 +1,5 @@
 import type { Gate, GateStatus } from "@/lib/private/gates";
-import { PRIVATE_PROGRAM_ID } from "@/lib/private/gates";
+import { PRIVATE_PROGRAM_ID, storyProven } from "@/lib/private/gates";
 import styles from "./PrivateStatus.module.css";
 
 const STATUS_WORD: Record<GateStatus, string> = {
@@ -103,13 +103,16 @@ export function PrivateStatus({ gates, error }: { gates: Gate[]; error?: string 
 
       <section aria-labelledby="next-heading" className={styles.next}>
         <h2 id="next-heading" className={styles.h2}>
-          Next
+          Building now
         </h2>
         <ul className={styles.nextList}>
           {NEXT.map((n) => (
             <li key={n.id}>
               <span className={`${styles.id} num`}>{n.id}</span>
               {n.title}
+              <span className={`${styles.pill} ${storyProven(n.id) ? styles.pass : ""}`}>
+                {storyProven(n.id) ? "Proven on Devnet" : "In progress"}
+              </span>
             </li>
           ))}
         </ul>

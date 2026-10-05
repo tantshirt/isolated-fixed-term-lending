@@ -111,3 +111,9 @@ export function loadGates(): { gates: Gate[]; error?: string } {
   });
   return { gates, error };
 }
+
+/** Whether a later story has a passing Devnet run recorded in the evidence file. */
+export function storyProven(id: string): boolean {
+  const raw = evidence as { gates?: Record<string, RawGate> };
+  return raw.gates?.[id]?.status === "PASS";
+}
