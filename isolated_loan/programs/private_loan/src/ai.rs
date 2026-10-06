@@ -30,6 +30,7 @@ pub const TASK_EXPLAIN_ERROR: u8 = 5;
 
 pub const STATUS_PENDING: u8 = 0;
 pub const STATUS_ANSWERED: u8 = 1;
+pub const STATUS_PROCESSING: u8 = 2;
 
 #[account]
 #[derive(InitSpace)]
@@ -128,29 +129,51 @@ pub fn create_ai_request(
     Ok(())
 }
 
-/// Worker only. Stores a typed result once; a late answer is rejected, and an
+fn validate_worker_request(
+    info: &AccountInfo,
+    worker: &Pubkey,
+    config: &AiConfig,
+    now: i64,
+    expected_status: u8,
+) -> Result<()> {
+    require!(config.enabled, PrivateLoanError::AiDisabled);
+    require_keys_eq!(*worker, config.worker, PrivateLoanError::NotAiWorker);
+    require_keys_eq!(*info.owner, crate::ID, PrivateLoanError::InvalidRecord);
+    let d = info.try_borrow_data()?;
+    require!(d.len() == layout::LEN && d[0] == 1, PrivateLoanError::InvalidRecord);
+    require!(d[layout::STATUS] == expected_status, PrivateLoanError::AlreadyAnswered);
+    let deadline = i64::from_le_bytes(d[layout::DEADLINE..layout::DEADLINE + 8].try_into().unwrap());
+    require!(now <= deadline, PrivateLoanError::RequestExpired);
+    Ok(())
+}
+
+/// Consumes the single generation attempt before the worker incurs model costs.
+/// A unique claim_id makes each invocation's transaction distinct, preventing
+/// two callers from confirming the same successful transaction as their claim.
+pub fn claim_ai_request(ctx: Context<ClaimAiRequest>, _claim_id: [u8; 32]) -> Result<()> {
+    let a = &ctx.accounts;
+    let info = a.request.to_account_info();
+    validate_worker_request(&info, &a.worker.key(), &a.config, Clock::get()?.unix_timestamp, STATUS_PENDING)?;
+    info.try_borrow_mut_data()?[layout::STATUS] = STATUS_PROCESSING;
+    Ok(())
+}
+
+/// Worker only. Stores a claimed result once; a late answer is rejected, and an
 /// answer about a loan whose revision moved is stored but marked stale.
 pub fn ai_callback(ctx: Context<AiCallback>, result: Vec<u8>) -> Result<()> {
     let a = &ctx.accounts;
-    require!(a.config.enabled, PrivateLoanError::AiDisabled);
-    require_keys_eq!(a.worker.key(), a.config.worker, PrivateLoanError::NotAiWorker);
     require!(!result.is_empty() && result.len() <= RESULT_MAX, PrivateLoanError::InvalidRecord);
 
     let info = a.request.to_account_info();
-    require_keys_eq!(*info.owner, crate::ID, PrivateLoanError::InvalidRecord);
-    let (revision, loan, deadline, status) = {
+    let now = Clock::get()?.unix_timestamp;
+    validate_worker_request(&info, &a.worker.key(), &a.config, now, STATUS_PROCESSING)?;
+    let (revision, loan) = {
         let d = info.try_borrow_data()?;
-        require!(d.len() >= layout::LEN && d[0] == 1, PrivateLoanError::InvalidRecord);
         (
             u32::from_le_bytes(d[layout::REVISION..layout::REVISION + 4].try_into().unwrap()),
             Pubkey::new_from_array(d[layout::LOAN..layout::LOAN + 32].try_into().unwrap()),
-            i64::from_le_bytes(d[layout::DEADLINE..layout::DEADLINE + 8].try_into().unwrap()),
-            d[layout::STATUS],
         )
     };
-    require!(status == STATUS_PENDING, PrivateLoanError::AlreadyAnswered);
-    let now = Clock::get()?.unix_timestamp;
-    require!(now <= deadline, PrivateLoanError::RequestExpired);
 
     let stale = if loan == Pubkey::default() {
         false
@@ -206,6 +229,16 @@ pub struct CreateAiRequest<'info> {
     pub vault: UncheckedAccount<'info>,
     pub magic_program: Program<'info, MagicProgram>,
     pub permission_program: Program<'info, PermissionProgram>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimAiRequest<'info> {
+    pub worker: Signer<'info>,
+    #[account(seeds = [AI_CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, AiConfig>,
+    /// CHECK: Owner, exact layout, status and deadline checked in the handler.
+    #[account(mut)]
+    pub request: UncheckedAccount<'info>,
 }
 
 #[derive(Accounts)]

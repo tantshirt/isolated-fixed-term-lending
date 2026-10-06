@@ -4,7 +4,7 @@ import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import idl from "@/idl/private_loan.json";
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID, permissionPda } from "./espl";
-import { advance, newReceipt, saveReceipt } from "./receipts";
+import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
 import { PRIVATE_PROGRAM_ID, roomStatePda } from "./room-codec";
 import { validateTransaction } from "./tx-validator";
 
@@ -62,6 +62,7 @@ async function sendEr(er: Connection, signer: LoanSigner, tx: Transaction, inten
   tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
   const signed = await signer.signTransaction(tx);
   const receipt = newReceipt(intent, "er");
+  recordSignedReceipt(signer.publicKey.toBase58(), receipt, signed);
   const sig = await er.sendRawTransaction(signed.serialize(), { skipPreflight: true });
   const res = await er.confirmTransaction(sig, "confirmed");
   saveReceipt(signer.publicKey.toBase58(), advance(receipt, { erSignature: sig, stage: res.value.err ? "failed" : "executed" }));
@@ -116,9 +117,15 @@ export async function publishCard(base: Connection, er: Connection, signer: Loan
   const { blockhash, lastValidBlockHeight } = await base.getLatestBlockhash();
   tx.recentBlockhash = blockhash;
   const signed = await signer.signTransaction(tx);
+  const receipt = newReceipt("Publish a public request card", "base");
+  recordSignedReceipt(signer.publicKey.toBase58(), receipt, signed);
   const sig = await base.sendRawTransaction(signed.serialize());
-  await base.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
-  saveReceipt(signer.publicKey.toBase58(), advance(newReceipt("Publish a public request card", "base"), { baseSignature: sig, stage: "settled" }));
+  const confirmation = await base.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+  if (confirmation.value.err) {
+    saveReceipt(signer.publicKey.toBase58(), advance(receipt, { baseSignature: sig, stage: "failed" }));
+    throw new Error("Solana rejected this transaction. Its receipt is saved.");
+  }
+  saveReceipt(signer.publicKey.toBase58(), advance(receipt, { baseSignature: sig, stage: "settled" }));
   return sig;
 }
 

@@ -5,7 +5,7 @@ import s from "./Landing.module.css";
 const COLUMNS = [
   { title: "Try it", links: [{ label: "Demo, no wallet", href: "/demo" }, { label: "Discover loans", href: "/devnet/discover" }, { label: "Devnet offers", href: "/devnet" }, { label: "Create an offer", href: "/devnet/create" }] },
   { title: "Private", links: [{ label: "Private rooms", href: "/devnet/private" }, { label: "Private requests", href: "/devnet/discover?side=borrowers&venue=private" }, { label: "Liquidation quotes", href: "/devnet/private/liquidate" }] },
-  { title: "Learn", links: [{ label: "Use cases", href: "/use-cases" }, { label: "How it works", href: "/#how-it-works" }, { label: "What is proven", href: "/devnet/private/proof" }] },
+  { title: "Learn", links: [{ label: "Learning paths", href: "/learn" }, { label: "Loan Lab", href: "/devnet/learn" }, { label: "Use cases", href: "/use-cases" }, { label: "How it works", href: "/#how-it-works" }, { label: "What is proven", href: "/devnet/private/proof" }] },
 ];
 
 export function SiteFooter() {

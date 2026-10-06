@@ -6,7 +6,7 @@ Product for the app; brand for the explanatory landing page.
 
 ## Users and purpose
 
-Lendspan demonstrates an isolated, fixed-term USDC loan secured by wrapped SOL on Solana. Capstone judges, crypto beginners and experienced users should understand what each party supplies, receives and risks. One offer is one loan. Interest is fixed for the entire term; repaying early does not reduce it. Missing the repayment deadline makes all collateral claimable for the lender.
+ZenLo demonstrates an isolated, fixed-term USDC loan secured by wrapped SOL on Solana. Capstone judges, crypto beginners and experienced users should understand what each party supplies, receives and risks. One offer is one loan. Interest is fixed for the entire term; repaying early does not reduce it. Missing the repayment deadline makes all collateral claimable for the lender.
 
 Success: someone unfamiliar with crypto can complete the guided simulation and explain the exchange, while an experienced user can inspect exact terms and perform real transactions on Devnet.
 
@@ -21,7 +21,7 @@ The simulation is not proof of an on-chain transaction. Only confirmed Devnet si
 
 **ZenLo — Clear terms. Zero drama.**
 
-Calm, clear, precise. White and cool-blue surfaces, navy ink and blue primary actions; navy panels mark private features. The mark is a pebble crossed by a wave; art is abstract pebbles on calm water, never a mascot. Nunito carries words and aligned tabular figures. Monospace is reserved for addresses and technical details. This supersedes Tenor's ivory, deep-green and brass private-desk styling.
+Calm, clear, precise. White and cool-blue surfaces, navy ink and blue primary actions; navy panels mark private features. The mark is a pebble crossed by a wave; active art is broad sculptural satin ribbons in blue, navy and white, never a mascot. The small existing mark and favicon stay unchanged. Nunito carries words and aligned tabular figures. Monospace is reserved for addresses and technical details. This supersedes Tenor's ivory, deep-green and brass private-desk styling.
 
 ## Principles
 
@@ -39,3 +39,5 @@ WCAG 2.2 AA. Body text starts at 16px. Text contrast is at least 4.5:1. Status u
 ## Anti-references
 
 No casino styling, neon crypto motifs, dense trading terminals, decorative mono figures, invented traction or guaranteed-return claims. The landing page tells a real loan story rather than displaying generic marketing cards.
+
+Learning starts at `/learn`, with wallet-free simulation and wallet-based Loan Lab at `/devnet/learn`. Private is a verified deal workspace: rooms and invitations first, funding when needed, members and visibility boundaries beside the conversation. Failed reads must show unavailability, never an empty or healthy market. Artwork motion pauses offscreen, in hidden tabs, on request and for reduced motion.

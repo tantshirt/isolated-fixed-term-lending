@@ -16,6 +16,7 @@ export function PublicHeader() {
           <Link className={s.desktop} href="/devnet/private">
             Private
           </Link>
+          <Link href="/learn">Learn</Link>
           <Link className={`${s.navSoft} ${s.desktop}`} href="/devnet">
             Use Devnet
           </Link>

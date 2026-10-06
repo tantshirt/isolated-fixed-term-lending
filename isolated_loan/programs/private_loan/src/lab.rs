@@ -23,24 +23,36 @@ pub struct LabScenario {
 }
 
 pub fn request_scenario(ctx: Context<RequestScenario>, client_seed: u8) -> Result<()> {
-    let s = &mut ctx.accounts.scenario;
-    s.learner = ctx.accounts.learner.key();
+    let ix = prepare_scenario(&mut ctx.accounts.scenario, ctx.accounts.learner.key(), ctx.accounts.oracle_queue.key(), ctx.bumps.scenario, client_seed)?;
+    ctx.accounts.invoke_signed_vrf(&ctx.accounts.learner.to_account_info(), &ix)?;
+    Ok(())
+}
+
+pub fn request_first_scenario(ctx: Context<RequestFirstScenario>, client_seed: u8) -> Result<()> {
+    let ix = prepare_scenario(&mut ctx.accounts.scenario, ctx.accounts.learner.key(), ctx.accounts.oracle_queue.key(), ctx.bumps.scenario, client_seed)?;
+    ctx.accounts.invoke_signed_vrf(&ctx.accounts.learner.to_account_info(), &ix)?;
+    Ok(())
+}
+
+fn prepare_scenario(
+    s: &mut Account<LabScenario>, learner: Pubkey, oracle_queue: Pubkey, bump: u8, client_seed: u8,
+) -> Result<anchor_lang::solana_program::instruction::Instruction> {
+    s.learner = learner;
     s.status = 0;
     s.randomness = [0; 32];
     s.rounds = s.rounds.saturating_add(1);
     s.requested_at = Clock::get()?.unix_timestamp;
-    s.bump = ctx.bumps.scenario;
+    s.bump = bump;
     let ix = create_request_randomness_ix(RequestRandomnessParams {
-        payer: ctx.accounts.learner.key(),
-        oracle_queue: ctx.accounts.oracle_queue.key(),
+        payer: learner,
+        oracle_queue,
         callback_program_id: crate::ID,
         callback_discriminator: crate::instruction::ScenarioCallback::DISCRIMINATOR.to_vec(),
         caller_seed: [client_seed; 32],
         accounts_metas: Some(vec![SerializableAccountMeta { pubkey: s.key(), is_signer: false, is_writable: true }]),
         ..Default::default()
     });
-    ctx.accounts.invoke_signed_vrf(&ctx.accounts.learner.to_account_info(), &ix)?;
-    Ok(())
+    Ok(ix)
 }
 
 /// Only the VRF program can call this (`#[vrf_callback]`).
@@ -57,6 +69,21 @@ pub struct RequestScenario<'info> {
     #[account(mut)]
     pub learner: Signer<'info>,
     #[account(init_if_needed, payer = learner, space = 8 + LabScenario::INIT_SPACE, seeds = [LAB_SEED, learner.key().as_ref()], bump)]
+    pub scenario: Account<'info, LabScenario>,
+    /// CHECK: Devnet VRF oracle queue.
+    #[account(mut, address = ephemeral_rollups_sdk::vrf::consts::DEFAULT_QUEUE)]
+    pub oracle_queue: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+// Unlike the repeatable self-funded draw, this path rejects an existing PDA
+// before any VRF call. A duplicate sponsored transaction rolls its transfer back.
+#[vrf]
+#[derive(Accounts)]
+pub struct RequestFirstScenario<'info> {
+    #[account(mut)]
+    pub learner: Signer<'info>,
+    #[account(init, payer = learner, space = 8 + LabScenario::INIT_SPACE, seeds = [LAB_SEED, learner.key().as_ref()], bump)]
     pub scenario: Account<'info, LabScenario>,
     /// CHECK: Devnet VRF oracle queue.
     #[account(mut, address = ephemeral_rollups_sdk::vrf::consts::DEFAULT_QUEUE)]

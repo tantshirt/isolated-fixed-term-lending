@@ -24,6 +24,6 @@ export async function POST(request: Request) {
     if (e instanceof AiUnavailable) return Response.json({ error: e.message }, { status: 503 });
     if (e instanceof AiRejected) return Response.json({ error: e.message }, { status: 400 });
     console.error("private ai", e instanceof Error ? e.message : e);
-    return Response.json({ error: "The copilot could not answer. Nothing was changed." }, { status: 502 });
+    return Response.json({ error: "The copilot could not answer. Your loan terms were not changed; start a new request to try again." }, { status: 502 });
   }
 }

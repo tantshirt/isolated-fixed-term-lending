@@ -236,6 +236,7 @@ impl Env {
             program_id: private_loan::ID,
             accounts: private_loan::accounts::FundQuote {
                 liquidator: k.pubkey(),
+                anchor: self.anchor,
                 quote: self.quote,
                 pool: self.pool,
                 liquidator_usdc: ata(&k.pubkey(), &self.usdc),
@@ -254,6 +255,7 @@ impl Env {
             program_id: private_loan::ID,
             accounts: private_loan::accounts::SettleTicket {
                 liquidator: k.pubkey(),
+                anchor: self.anchor,
                 quote: self.quote,
                 pool: self.pool,
                 liquidator_usdc: ata(&k.pubkey(), &self.usdc),
@@ -365,6 +367,67 @@ fn stale_price_does_nothing() {
     env.post_price(PRICE_DROP, 0, START - 600);
     env.watch().unwrap();
     assert_eq!(env.quote()[q::VERSION], 0);
+}
+
+#[test]
+fn unrelated_program_records_cannot_fund_or_collect_pool_assets() {
+    let mut env = Env::new();
+    env.post_price(PRICE_DROP, 0, START + 60);
+    env.watch().unwrap();
+    let unrelated = Pubkey::new_unique();
+    env.put(unrelated, private_loan::ID, env.quote());
+    let canonical = env.quote;
+    env.quote = unrelated;
+    assert!(env.fund(1, 1).is_err());
+    assert_eq!(env.balance(env.pool, env.usdc), 0);
+    env.quote = canonical;
+    env.fund(1, 1).unwrap();
+    env.watch().unwrap();
+    let before = env.balance(env.pool, env.wsol);
+    env.put(unrelated, private_loan::ID, env.quote());
+    env.quote = unrelated;
+    assert!(env.settle(1).is_err());
+    assert_eq!(env.balance(env.pool, env.wsol), before);
+    assert_eq!(env.balance(env.liquidator.pubkey(), env.wsol), 0);
+    env.quote = canonical;
+    env.settle(1).unwrap();
+    assert_eq!(env.balance(env.liquidator.pubkey(), env.wsol), before);
+}
+
+#[test]
+fn malformed_quote_layouts_fail_before_moving_funds() {
+    for case in 0..5 {
+        let mut env = Env::new();
+        env.post_price(PRICE_DROP, 0, START + 60);
+        env.watch().unwrap();
+        let mut data = env.quote();
+        match case {
+            0 => { data.truncate(20); }
+            1 => { data.push(0); }
+            2 => { data[q::VERSION] = 2; }
+            3 => { data[q::COUNT] = 5; }
+            _ => { data[q::STATE] = 9; }
+        }
+        env.put(env.quote, private_loan::ID, data);
+        assert!(env.fund(1, 1).is_err());
+        assert!(env.settle(1).is_err());
+        assert!(env.watch().is_err());
+        assert_eq!(env.balance(env.pool, env.usdc), 0);
+        assert_eq!(env.balance(env.anchor, env.wsol), COLLATERAL);
+    }
+}
+
+#[test]
+fn pool_mints_must_match_the_loan() {
+    let mut env = Env::new();
+    let (_, bump) = pda(&[b"liq-pool"]);
+    let pool = LiquidationPool { usdc_mint: Pubkey::new_unique(), wsol_mint: env.wsol, bump };
+    let mut data = Vec::new();
+    pool.try_serialize(&mut data).unwrap();
+    env.put(env.pool, private_loan::ID, data);
+    assert!(env.watch().is_err());
+    assert_eq!(env.status(), STATUS_ACTIVE);
+    assert_eq!(env.balance(env.anchor, env.wsol), COLLATERAL);
 }
 
 #[test]

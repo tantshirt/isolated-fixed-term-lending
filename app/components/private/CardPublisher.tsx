@@ -1,7 +1,8 @@
 "use client";
 
 import type { Connection, PublicKey } from "@solana/web3.js";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { pollAfterCompletion } from "@/lib/private/poll";
 import { Button } from "@/components/ui/Button";
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { SHOW, listCards, publishCard, readJoinQueue, retractCard, type Card } from "@/lib/private/discovery";
@@ -21,6 +22,8 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
   const [queue, setQueue] = useState<{ wallet: PublicKey; at: number }[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  const [readError, setReadError] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
   const [cards, setCards] = useState<Card[]>([]);
   const [roles, setRoles] = useState<Record<string, RoleName>>({});
   const hiddenKey = `zenlo:join-dismissed:${room.toBase58()}`;
@@ -39,22 +42,37 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
     } catch {}
   };
 
+  const readSequence = useRef(0);
+  const identity = `${signer.publicKey}:${room}:${er.rpcEndpoint}`;
+  const identityRef = useRef(identity);
+  identityRef.current = identity;
   const load = useCallback(async () => {
-    setQueue(await readJoinQueue(er, room));
-    // This room's live cards, so publishing again replaces instead of duplicating.
-    const all = await listCards(base).catch(() => [] as Card[]);
-    setCards(all.filter((c) => c.room.equals(room) && c.publisher.equals(signer.publicKey)));
-  }, [er, base, room, signer]);
+    const sequence = ++readSequence.current;
+    try {
+      const [nextQueue, all] = await Promise.all([readJoinQueue(er, room), listCards(base)]);
+      if (sequence !== readSequence.current || identityRef.current !== identity) return;
+      setQueue(nextQueue);
+      setCards(all.filter((c) => c.room.equals(room) && c.publisher.equals(signer.publicKey)));
+      setReadError(null);
+      setChecked(true);
+    } catch (e) {
+      if (sequence !== readSequence.current || identityRef.current !== identity) return;
+      setChecked(false);
+      setReadError(e instanceof Error ? e.message : "Cards and join requests could not be checked.");
+    }
+  }, [er, base, room, signer, identity]);
   useEffect(() => {
-    void load();
-    const t = setInterval(() => void load(), 6000);
-    return () => clearInterval(t);
+    setChecked(false);
+    const sequenceRef = readSequence;
+    const stop = pollAfterCompletion(load, 6000);
+    return () => { stop(); sequenceRef.current++; };
   }, [load]);
 
   const toggle = (bit: number) => setShow((s) => s ^ bit);
   const units = (v: string, d: number) => BigInt(Math.round(Number(v || "0") * 10 ** d));
 
   async function publish() {
+    if (!checked) return;
     setBusy("publish");
     setMsg(null);
     try {
@@ -80,6 +98,7 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
   }
 
   async function retract() {
+    if (!checked) return;
     setBusy("retract");
     setMsg(null);
     try {
@@ -102,6 +121,7 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
         <span className={styles.badge}>Opt-in public</span>
       </header>
       <div className={styles.panelBody}>
+        {readError && <p role="alert" className={styles.error}>Discovery card and join requests unavailable. {readError} <button type="button" className={styles.textButton} onClick={() => void load()}>Retry</button></p>}
         <p className={styles.hint}>Publish a card on Discover. Only the boxes you tick are stored; the rest is never written.</p>
         <fieldset className={styles.fields}>
           <legend className="visually-hidden">Fields to show</legend>
@@ -123,18 +143,18 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
           </label>
         </fieldset>
         <div className={styles.actions}>
-          <Button variant="secondary" onClick={publish} loading={busy === "publish"} disabled={!show}>
+          <Button variant="secondary" onClick={publish} loading={busy === "publish"} disabled={!show || !checked || busy !== null}>
             {cards.length ? "Update card" : "Publish card"}
           </Button>
           {cards.length > 0 && (
-            <Button variant="ghost" onClick={retract} loading={busy === "retract"}>
+            <Button variant="ghost" onClick={retract} disabled={!checked || busy !== null} loading={busy === "retract"}>
               Remove from Discover
             </Button>
           )}
         </div>
         <div>
           <p className={styles.fieldLabel}>Asked to join {queue === null ? "" : `(${pending.length})`}</p>
-          {queue === null ? (
+          {!checked ? <p className={styles.hint}>{readError ? "Join requests could not be verified." : "Checking join requests…"}</p> : queue === null ? (
             <p className={styles.hint}>Publish a card to open a private queue only you can read.</p>
           ) : pending.length === 0 ? (
             <p className={styles.hint}>No one is waiting.</p>

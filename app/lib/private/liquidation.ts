@@ -1,14 +1,14 @@
 // Open liquidation through public quotes (story 12.1). A liquidator never reads
 // the loan: they see a short-lived quote (debt to pay, collateral payout,
 // expiry), fund it from a private balance, and later collect a payout or refund.
-import { AnchorProvider, Program, type Idl } from "@coral-xyz/anchor";
+import { AnchorProvider, Program, utils, type Idl } from "@coral-xyz/anchor";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import idl from "@/idl/private_loan.json";
 import { DEVNET_USDC_MINT, NATIVE_WSOL_MINT, PYTH_PRICE_UPDATE_ACCOUNT } from "@/lib/constants";
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { MAGIC_PROGRAM_ID, ata } from "./espl";
-import { loanTermsPda } from "./loan-codec";
-import { advance, newReceipt, saveReceipt } from "./receipts";
+import { loanAnchorPda, loanTermsPda } from "./loan-codec";
+import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
 import { PRIVATE_PROGRAM_ID } from "./room-codec";
 import { validateTransaction } from "./tx-validator";
 
@@ -25,11 +25,12 @@ export type Ticket = { liquidator: PublicKey; paidIn: bigint; revision: number; 
 export type Quote = { address: PublicKey; revision: number; debt: bigint; payout: bigint; expiresAt: number; state: "open" | "executed" | "withdrawn"; tickets: Ticket[] };
 
 export function decodeQuote(address: PublicKey, d: Uint8Array): Quote | null {
-  if (d[0] !== 1) return null;
+  if (d.length !== QUOTE_LEN || d[0] !== 1 || d[29] > 2 || d[30] > 4) return null;
   const v = new DataView(d.buffer, d.byteOffset, d.byteLength);
   const tickets: Ticket[] = [];
   for (let i = 0; i < Math.min(d[30], 4); i++) {
     const o = 31 + i * 61;
+    if (d[o + 60] > 3) return null;
     tickets.push({
       liquidator: new PublicKey(d.slice(o, o + 32)),
       paidIn: v.getBigUint64(o + 32, true),
@@ -58,12 +59,28 @@ export async function listQuotes(er: Connection): Promise<Quote[]> {
 
 const programFor = (base: Connection, signer: LoanSigner) => new Program(idl as Idl, new AnchorProvider(base, signer, { commitment: "confirmed" }));
 
+const ANCHOR_DISCRIMINATOR = Buffer.from(idl.accounts.find((a) => a.name === "LoanAnchor")!.discriminator);
+
+/** Public anchor metadata identifies a quote without reading private loan terms. */
+async function resolveQuoteAnchor(er: Connection, quote: Quote): Promise<PublicKey> {
+  const anchors = await er.getProgramAccounts(PRIVATE_PROGRAM_ID, {
+    filters: [{ dataSize: 137 }, { memcmp: { offset: 0, bytes: utils.bytes.bs58.encode(ANCHOR_DISCRIMINATOR) } }],
+  });
+  for (const { pubkey, account } of anchors) {
+    if (!account.owner.equals(PRIVATE_PROGRAM_ID) || account.data.length !== 137 || !account.data.subarray(0, 8).equals(ANCHOR_DISCRIMINATOR)) continue;
+    if (!loanAnchorPda(account.data.subarray(8, 40)).equals(pubkey)) continue;
+    if (quotePda(pubkey).equals(quote.address)) return pubkey;
+  }
+  throw new Error("This quote could not be matched to a verified loan. Refresh and try again.");
+}
+
 async function sendEr(er: Connection, signer: LoanSigner, tx: Transaction, intent: string) {
   tx.feePayer = signer.publicKey;
   validateTransaction(tx, { feePayer: signer.publicKey });
   tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
   const signed = await signer.signTransaction(tx);
   const receipt = newReceipt(intent, "er");
+  recordSignedReceipt(signer.publicKey.toBase58(), receipt, signed);
   const sig = await er.sendRawTransaction(signed.serialize(), { skipPreflight: true });
   const res = await er.confirmTransaction(sig, "confirmed");
   saveReceipt(signer.publicKey.toBase58(), advance(receipt, { erSignature: sig, stage: res.value.err ? "failed" : "executed" }));
@@ -73,6 +90,7 @@ async function sendEr(er: Connection, signer: LoanSigner, tx: Transaction, inten
 
 export async function fundQuote(base: Connection, er: Connection, signer: LoanSigner, quote: Quote) {
   const p = programFor(base, signer);
+  const anchor = await resolveQuoteAnchor(er, quote);
   const pool = poolPda();
   return sendEr(
     er,
@@ -80,7 +98,7 @@ export async function fundQuote(base: Connection, er: Connection, signer: LoanSi
     new Transaction().add(
       await p.methods
         .fundQuote(quote.revision)
-        .accountsPartial({ liquidator: signer.publicKey, quote: quote.address, pool, liquidatorUsdc: ata(signer.publicKey, DEVNET_USDC_MINT), poolUsdc: ata(pool, DEVNET_USDC_MINT) })
+        .accountsPartial({ liquidator: signer.publicKey, anchor, quote: quote.address, pool, liquidatorUsdc: ata(signer.publicKey, DEVNET_USDC_MINT), poolUsdc: ata(pool, DEVNET_USDC_MINT) })
         .instruction(),
     ),
     `Fund a liquidation quote (${Number(quote.debt) / 1e6} USDC)`,
@@ -89,6 +107,7 @@ export async function fundQuote(base: Connection, er: Connection, signer: LoanSi
 
 export async function settleTicket(base: Connection, er: Connection, signer: LoanSigner, quote: Quote) {
   const p = programFor(base, signer);
+  const anchor = await resolveQuoteAnchor(er, quote);
   const pool = poolPda();
   return sendEr(
     er,
@@ -98,6 +117,7 @@ export async function settleTicket(base: Connection, er: Connection, signer: Loa
         .settleTicket()
         .accountsPartial({
           liquidator: signer.publicKey,
+          anchor,
           quote: quote.address,
           pool,
           liquidatorUsdc: ata(signer.publicKey, DEVNET_USDC_MINT),

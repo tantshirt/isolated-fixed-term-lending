@@ -79,6 +79,27 @@ fn pool_seeds(bump: &u8) -> [&[u8]; 2] {
     [LIQ_POOL_SEED, core::slice::from_ref(bump)]
 }
 
+/// Ownership alone does not identify an ER record. PDA constraints bind the
+/// quote to a typed loan anchor; validate its raw layout before reading offsets.
+fn validate_quote(info: &AccountInfo, allow_empty: bool) -> Result<()> {
+    require_keys_eq!(*info.owner, crate::ID, PrivateLoanError::InvalidRecord);
+    let d = info.try_borrow_data()?;
+    require!(d.len() == q::LEN, PrivateLoanError::InvalidRecord);
+    if allow_empty && d.iter().all(|b| *b == 0) { return Ok(()); }
+    require!(d[q::VERSION] == 1 && d[q::STATE] <= QUOTE_WITHDRAWN, PrivateLoanError::InvalidRecord);
+    require!((d[q::COUNT] as usize) <= MAX_TICKETS, PrivateLoanError::InvalidRecord);
+    for i in 0..d[q::COUNT] as usize {
+        require!(d[q::TICKETS + i * q::T + q::T - 1] <= TICKET_PAID, PrivateLoanError::InvalidRecord);
+    }
+    Ok(())
+}
+
+fn validate_pool_mints(anchor: &LoanAnchor, pool: &LiquidationPool) -> Result<()> {
+    require_keys_eq!(anchor.usdc_mint, pool.usdc_mint, PrivateLoanError::WrongTokenAccount);
+    require_keys_eq!(anchor.wsol_mint, pool.wsol_mint, PrivateLoanError::WrongTokenAccount);
+    Ok(())
+}
+
 fn transfer<'info>(tp: &Program<'info, Token>, from: &AccountInfo<'info>, to: &AccountInfo<'info>, auth: &AccountInfo<'info>, seeds: Option<&[&[u8]]>, amount: u64) -> Result<()> {
     if amount == 0 {
         return Ok(());
@@ -115,6 +136,7 @@ pub fn init_liquidation_pool(ctx: Context<InitLiquidationPool>) -> Result<()> {
 /// Anyone, once per active loan: schedules `watch_loan` with fixed accounts.
 pub fn schedule_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
     let a = &ctx.accounts;
+    validate_pool_mints(&a.anchor, &a.pool)?;
     let t: LoanTerms = load(&a.terms.to_account_info())?;
     require!(t.status == STATUS_ACTIVE, PrivateLoanError::WrongStatus);
     let anchor = &a.anchor;
@@ -166,6 +188,8 @@ pub fn schedule_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
 
 pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
     let a = &ctx.accounts;
+    validate_pool_mints(&a.anchor, &a.pool)?;
+    validate_quote(&a.quote.to_account_info(), true)?;
     let terms_info = a.terms.to_account_info();
     let mut t: LoanTerms = load(&terms_info)?;
     if t.status != STATUS_ACTIVE {
@@ -186,7 +210,7 @@ pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
         store(&terms_info, &t)?;
         if !quote_info.data_is_empty() {
             let mut d = quote_info.try_borrow_mut_data()?;
-            if d[q::STATE] == QUOTE_OPEN {
+            if d[q::VERSION] == 1 && d[q::STATE] == QUOTE_OPEN {
                 d[q::STATE] = QUOTE_WITHDRAWN;
             }
         }
@@ -206,7 +230,7 @@ pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
     if ltv < t.liquidation_ltv_bps {
         if !quote_info.data_is_empty() {
             let mut d = quote_info.try_borrow_mut_data()?;
-            if d[q::STATE] == QUOTE_OPEN {
+            if d[q::VERSION] == 1 && d[q::STATE] == QUOTE_OPEN {
                 d[q::STATE] = QUOTE_WITHDRAWN;
             }
         }
@@ -263,7 +287,8 @@ pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
 pub fn fund_quote(ctx: Context<FundQuote>, revision: u32) -> Result<()> {
     let a = &ctx.accounts;
     let info = a.quote.to_account_info();
-    require_keys_eq!(*info.owner, crate::ID, PrivateLoanError::InvalidRecord);
+    validate_pool_mints(&a.anchor, &a.pool)?;
+    validate_quote(&info, false)?;
     let (debt, payout) = {
         let d = info.try_borrow_data()?;
         require!(d[q::VERSION] == 1 && d[q::STATE] == QUOTE_OPEN, PrivateLoanError::WrongStatus);
@@ -294,7 +319,8 @@ pub fn fund_quote(ctx: Context<FundQuote>, revision: u32) -> Result<()> {
 pub fn settle_ticket(ctx: Context<SettleTicket>) -> Result<()> {
     let a = &ctx.accounts;
     let info = a.quote.to_account_info();
-    require_keys_eq!(*info.owner, crate::ID, PrivateLoanError::InvalidRecord);
+    validate_pool_mints(&a.anchor, &a.pool)?;
+    validate_quote(&info, false)?;
     let me = a.liquidator.key();
     require_keys_eq!(a.liquidator_usdc.key(), get_associated_token_address(&me, &a.pool.usdc_mint), PrivateLoanError::WrongTokenAccount);
     require_keys_eq!(a.liquidator_wsol.key(), get_associated_token_address(&me, &a.pool.wsol_mint), PrivateLoanError::WrongTokenAccount);
@@ -449,8 +475,10 @@ pub struct WatchLoan<'info> {
 #[derive(Accounts)]
 pub struct FundQuote<'info> {
     pub liquidator: Signer<'info>,
-    /// CHECK: Public quote record; validated in the handler.
-    #[account(mut)]
+    #[account(seeds = [LOAN_SEED, anchor.loan_id.as_ref()], bump = anchor.bump)]
+    pub anchor: Account<'info, LoanAnchor>,
+    /// CHECK: Canonical quote for the typed loan anchor; layout checked in handler.
+    #[account(mut, seeds = [QUOTE_SEED, anchor.key().as_ref()], bump)]
     pub quote: UncheckedAccount<'info>,
     #[account(seeds = [LIQ_POOL_SEED], bump = pool.bump)]
     pub pool: Account<'info, LiquidationPool>,
@@ -466,8 +494,10 @@ pub struct FundQuote<'info> {
 #[derive(Accounts)]
 pub struct SettleTicket<'info> {
     pub liquidator: Signer<'info>,
-    /// CHECK: Public quote record; validated in the handler.
-    #[account(mut)]
+    #[account(seeds = [LOAN_SEED, anchor.loan_id.as_ref()], bump = anchor.bump)]
+    pub anchor: Account<'info, LoanAnchor>,
+    /// CHECK: Canonical quote for the typed loan anchor; layout checked in handler.
+    #[account(mut, seeds = [QUOTE_SEED, anchor.key().as_ref()], bump)]
     pub quote: UncheckedAccount<'info>,
     #[account(seeds = [LIQ_POOL_SEED], bump = pool.bump)]
     pub pool: Account<'info, LiquidationPool>,

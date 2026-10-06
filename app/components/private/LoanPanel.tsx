@@ -1,7 +1,8 @@
 "use client";
 
 import type { Connection, PublicKey } from "@solana/web3.js";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { pollAfterCompletion } from "@/lib/private/poll";
 import { Button } from "@/components/ui/Button";
 import { usePrice } from "@/lib/client/hooks";
 import type { LoanSigner } from "@/lib/keypair-wallet";
@@ -53,7 +54,7 @@ function Compare({ loans, me }: { loans: Ctx["loans"]; me: PublicKey }) {
   });
   const cheapest = Math.min(...rows.map((r) => Number(r.owed - r.l.terms.principal)));
   return (
-    <div>
+    <div className={styles.compareScroll} tabIndex={0} aria-label="Compare loan proposals">
       <p className="visually-hidden" id="compare-h">
         Compare offers
       </p>
@@ -63,7 +64,7 @@ function Compare({ loans, me }: { loans: Ctx["loans"]; me: PublicKey }) {
             <th scope="col">Offer</th>
             {rows.map((r) => (
               <th scope="col" key={r.i}>
-                {r.i + 1} · {r.l.terms.status === "funded" ? "funded" : "draft"}
+                {r.i + 1} · {r.l.terms.status === "funded" ? "funded" : "draft"} · revision {r.l.terms.revision}
               </th>
             ))}
           </tr>
@@ -142,23 +143,55 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
   const [t, setT] = useState<LoanTerms | null | "hidden">(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [readError, setReadError] = useState<string | null>(null);
+  const [auxError, setAuxError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now() / 1000);
 
   const loanIdBytes = useMemo(() => utils.bytes.bs58.decode(id), [id]);
   const [watch, setWatch] = useState<Awaited<ReturnType<typeof watchStatus>> | null>(null);
   const [receipt, setReceipt] = useState<Awaited<ReturnType<typeof readReceipt>>>(null);
+  const readSequence = useRef(0);
+  const identity = `${signer.publicKey}:${anchor}:${er.rpcEndpoint}`;
+  const identityRef = useRef(identity);
+  identityRef.current = identity;
   const load = useCallback(async () => {
-    const terms = await readLoan(er, anchor);
-    setT(terms ?? "hidden");
-    if (terms?.status === "active" || terms?.status === "repaid" || terms?.status === "expired") setWatch(await watchStatus(er, anchor, loanIdBytes));
-    if (terms && !["draft", "funded", "active"].includes(terms.status)) setReceipt(await readReceipt(base, anchor));
-  }, [er, base, anchor, loanIdBytes]);
+    const sequence = ++readSequence.current;
+    const current = () => sequence === readSequence.current && identityRef.current === identity;
+    let terms: LoanTerms | null;
+    try {
+      terms = await readLoan(er, anchor);
+      if (!current()) return;
+      setT(terms ?? "hidden");
+      setReadError(null);
+      setWatch(null);
+      setReceipt(null);
+      setAuxError(null);
+    } catch (e) {
+      if (!current()) return;
+      setT(null);
+      setReadError(e instanceof Error ? e.message : "This loan could not be verified.");
+      return;
+    }
+    // Watch and publication metadata never gate a verified loan's repayment.
+    const results = await Promise.allSettled([
+      terms && ["active", "repaid", "expired"].includes(terms.status) ? watchStatus(er, anchor, loanIdBytes) : Promise.resolve(null),
+      terms && !["draft", "funded", "active"].includes(terms.status) ? readReceipt(base, anchor) : Promise.resolve(null),
+    ]);
+    if (!current()) return;
+    const [nextWatch, nextReceipt] = results;
+    if (nextWatch.status === "fulfilled") setWatch(nextWatch.value);
+    if (nextReceipt.status === "fulfilled") setReceipt(nextReceipt.value);
+    if (results.some((r) => r.status === "rejected")) setAuxError("Automatic-check or receipt details are unavailable. Verified loan terms remain usable; retry to check those details.");
+  }, [er, base, anchor, loanIdBytes, identity]);
   useEffect(() => {
-    void load();
-    const i = setInterval(() => (setNow(Date.now() / 1000), void load()), 5000);
-    return () => clearInterval(i);
+    setT(null);
+    const sequenceRef = readSequence;
+    const stop = pollAfterCompletion(load, 5000);
+    const clock = setInterval(() => setNow(Date.now() / 1000), 1000);
+    return () => { stop(); clearInterval(clock); sequenceRef.current++; };
   }, [load]);
 
+  if (readError) return <div role="alert" className={styles.error}><p>Loan unavailable. {readError}</p><Button disabled={busy !== null} variant="secondary" onClick={() => void load()}>Retry loan</Button></div>;
   if (t === null) return <p className={styles.muted}>Loading a loan…</p>;
   if (t === "hidden") return <p className={styles.muted}>A loan between other members of this room. Its terms are private to them.</p>;
 
@@ -172,6 +205,8 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
     setBusy(label);
     setError(null);
     try {
+      const current = await readLoan(er, anchor);
+      if (!current || t === null || t === "hidden" || current.revision !== t.revision || current.status !== t.status) { await load(); throw new Error("The loan changed. Review its current revision and status before signing."); }
       await f();
       await load();
       onChange();
@@ -222,7 +257,7 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
         </p>
       )}
       {t.status === "active" && watch && !watch.watching && (
-        <Button variant="ghost" onClick={() => act("watch", () => scheduleWatch(base, er, signer, anchor, loanIdBytes))} loading={busy === "watch"}>
+        <Button disabled={busy !== null} variant="ghost" onClick={() => act("watch", () => scheduleWatch(base, er, signer, anchor, loanIdBytes))} loading={busy === "watch"}>
           Turn on automatic checks
         </Button>
       )}
@@ -234,23 +269,24 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
         </p>
       )}
       {receipt && !receipt.published && (
-        <Button variant="ghost" onClick={() => act("receipt", () => publishReceipt(base, er, signer, anchor))} loading={busy === "receipt"}>
+        <Button disabled={busy !== null} variant="ghost" onClick={() => act("receipt", () => publishReceipt(base, er, signer, anchor))} loading={busy === "receipt"}>
           Publish settlement receipt
         </Button>
       )}
       <div className={styles.actions}>
         {isLender && t.status === "draft" && (
-          <Button onClick={() => act("fund", () => fundLoan(base, er, signer, anchor, t.revision))} loading={busy === "fund"}>
+          <Button disabled={busy !== null} onClick={() => act("fund", () => fundLoan(base, er, signer, anchor, t.revision))} loading={busy === "fund"}>
             Lock USDC
           </Button>
         )}
         {isLender && (t.status === "draft" || t.status === "funded") && (
-          <Button variant="secondary" onClick={() => act("cancel", () => cancelLoan(base, er, signer, anchor, t.status === "funded"))} loading={busy === "cancel"}>
+          <Button disabled={busy !== null} variant="secondary" onClick={() => act("cancel", () => cancelLoan(base, er, signer, anchor, t.status === "funded"))} loading={busy === "cancel"}>
             Cancel offer
           </Button>
         )}
         {isBorrower && t.status === "funded" && (
           <Button
+            disabled={busy !== null}
             onClick={() =>
               act("accept", async () => {
                 await acceptLoan(base, er, signer, anchor, t, room);
@@ -263,16 +299,17 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
           </Button>
         )}
         {isBorrower && t.status === "active" && !expired && (
-          <Button onClick={() => act("repay", () => repayLoan(base, er, signer, anchor, t))} loading={busy === "repay"}>
+          <Button disabled={busy !== null} onClick={() => act("repay", () => repayLoan(base, er, signer, anchor, t))} loading={busy === "repay"}>
             Repay {usdc(owed)} USDC
           </Button>
         )}
         {expired && (
-          <Button onClick={() => act("claim", () => claimLoan(base, er, signer, anchor, t))} loading={busy === "claim"}>
+          <Button disabled={busy !== null} onClick={() => act("claim", () => claimLoan(base, er, signer, anchor, t))} loading={busy === "claim"}>
             Claim collateral for the lender
           </Button>
         )}
       </div>
+      {auxError && <p role="status" className={styles.hint}>{auxError} <button type="button" className={styles.textButton} onClick={() => void load()}>Retry details</button></p>}
       {error && (
         <p role="alert" className={styles.error}>
           {error}

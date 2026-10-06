@@ -17,7 +17,7 @@ const COPY: Record<TeeStatus, { title: string; body: string }> = {
   verifying: { title: "Verifying the private rollup", body: "Checking the TEE's Intel TDX attestation before any private request." },
   signing: { title: "Approve the sign-in in your wallet", body: "This proves you own the wallet. It is not a transaction." },
   ready: { title: "Connected privately", body: "Attestation verified. Only you and the members you invite can read your rooms." },
-  error: { title: "Could not connect privately", body: "Nothing private was sent. You can try again." },
+  error: { title: "Could not connect privately", body: "Private actions are paused until your connection is verified. You can try again." },
 };
 
 export function TeeCard({ status, error, onConnect }: { status: TeeStatus; error: string | null; onConnect: () => void }) {

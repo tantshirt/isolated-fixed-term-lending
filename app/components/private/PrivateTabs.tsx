@@ -6,9 +6,8 @@ import { useEffect, useRef } from "react";
 import styles from "./PrivateTabs.module.css";
 
 const MAIN = [
-  { href: "/devnet/private", label: "Overview" },
+  { href: "/devnet/private", label: "Workspace" },
   { href: "/devnet/private/liquidate", label: "Liquidations" },
-  { href: "/devnet/private/lab", label: "Loan lab" },
 ];
 
 const MORE = [

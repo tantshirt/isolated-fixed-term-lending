@@ -454,5 +454,113 @@
     "taskId": "391b41e1c32aa10a0acdf7832ee345e3",
     "creditsConsumed": 10,
     "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-hero",
+    "taskId": "5d993125568fb942cdcd6c999c992533",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zr-story-exchange",
+    "taskId": "14f7f63af9fb39fd043f0a67eaef9c85",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-story-settle",
+    "taskId": "8f3fcef971b1b0ae9e97afa749907594",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-private-room",
+    "taskId": "7aad8c7616e49af8df1cf9a686358e9a",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-private-agree",
+    "taskId": "9f27d778c9239c0a33437251b68647a1",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-private-settle",
+    "taskId": "0417f8e23a33fe702bbd072eb08bcd45",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-uc-private-borrow",
+    "taskId": "04a12dd1f02a6bfeaf9157dd1896055f",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-uc-invited-lend",
+    "taskId": "8b0321c7e271fd1c9ebb747f53039e4c",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-uc-blind-bids",
+    "taskId": "26aeeccb3b8e49b970daa091fff23303",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-uc-liquidate",
+    "taskId": "0d138a226661ac741dae625de013f0a9",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-uc-learn",
+    "taskId": "4e8a0b56d7d4c19c3937ec7c985663cd",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-uc-verify",
+    "taskId": "8ceea97a652f869d43f6eaa2a20a21f7",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-venue-public",
+    "taskId": "dda9868a768b7b95ab299a32b83692af",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-venue-private",
+    "taskId": "23ff265712ad85e281ddcadec6708305",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-spot-waiting",
+    "taskId": "10f991e9ee85ddd5b5430b62102b04e4",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-spot-notfound",
+    "taskId": "8f8be6f2b171a8628d39f46bcb2ab810",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-spot-private",
+    "taskId": "90714b07bc90b8dbad07b357e2462fdf",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zr-spot-success",
+    "taskId": "5bbaaa8bef7115ab656243561f10af6c",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
   }
 ]

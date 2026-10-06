@@ -12,7 +12,7 @@ import styles from "./Header.module.css";
 const NAV = [
   { href: "/devnet/discover", label: "Discover" },
   { href: "/devnet", label: "Offers" },
-  { href: "/devnet/create", label: "Create offer" },
+  { href: "/devnet/learn", label: "Learn" },
   { href: "/devnet/private", label: "Private" },
 ];
 
@@ -30,7 +30,7 @@ export function Header() {
             const active =
               n.href === "/devnet"
                 ? pathname === "/devnet" ||
-                  pathname.startsWith("/devnet/offers")
+                  pathname.startsWith("/devnet/offers") || pathname.startsWith("/devnet/create")
                 : n.href === "/devnet/discover"
                 ? pathname.startsWith("/devnet/discover") ||
                   pathname.startsWith("/devnet/requests")

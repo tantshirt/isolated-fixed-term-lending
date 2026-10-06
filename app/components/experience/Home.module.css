@@ -409,3 +409,11 @@
     transition: none;
   }
 }
+
+.fundFlow { display: grid; gap: 10px; margin: 20px 0; padding: 16px 0; border-block: 1px solid var(--color-border); font-size: 16px; }
+.fundFlow span { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fundFlow b { color: var(--color-accent); font-weight: 800; }
+
+.learnPrimary { background: var(--color-accent); color: var(--color-on-accent); }
+.learnPrimary h2, .learnPrimary p { color: var(--color-on-accent); }
+.learnPrimary .btn { background: var(--color-background-surface); color: var(--color-accent); }

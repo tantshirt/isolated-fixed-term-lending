@@ -6,7 +6,7 @@ import { DEVNET_USDC_MINT, NATIVE_WSOL_MINT, PYTH_PRICE_UPDATE_ACCOUNT } from "@
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { DELEGATION_PROGRAM_ID, ESPL_PROGRAM_ID, MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID, ata, eataPda, permissionPda } from "./espl";
 import { decodeLoanTerms, loanAnchorPda, loanTermsPda, type LoanTerms } from "./loan-codec";
-import { advance, newReceipt, saveReceipt } from "./receipts";
+import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
 import { PRIVATE_PROGRAM_ID, roomStatePda } from "./room-codec";
 import { validateTransaction } from "./tx-validator";
 
@@ -71,6 +71,7 @@ async function sendEr(er: Connection, signer: LoanSigner, ix: Awaited<ReturnType
   const signed = await signer.signTransaction(tx);
   const wallet = signer.publicKey.toBase58();
   const receipt = newReceipt(intent, "er", revision);
+  recordSignedReceipt(wallet, receipt, signed);
   const sig = await er.sendRawTransaction(signed.serialize(), { skipPreflight: true });
   saveReceipt(wallet, advance(receipt, { erSignature: sig }));
   const res = await er.confirmTransaction(sig, "confirmed");
@@ -122,9 +123,14 @@ export async function proposeLoan(base: Connection, er: Connection, signer: Loan
   const signed = await signer.signTransaction(tx);
   const wallet = signer.publicKey.toBase58();
   const receipt = newReceipt("Set up the loan's private custody", "base");
+  recordSignedReceipt(wallet, receipt, signed);
   const sig = await base.sendRawTransaction(signed.serialize());
   saveReceipt(wallet, advance(receipt, { baseSignature: sig }));
-  await base.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+  const confirmation = await base.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+  if (confirmation.value.err) {
+    saveReceipt(wallet, advance(receipt, { baseSignature: sig, stage: "failed" }));
+    throw new Error("Solana rejected this transaction. Its receipt is saved.");
+  }
   saveReceipt(wallet, advance(receipt, { baseSignature: sig, stage: "settled" }));
   for (let i = 0; i < 30 && !(await er.getAccountInfo(anchor)); i++) await new Promise((r) => setTimeout(r, 1000));
 

@@ -218,7 +218,12 @@ pub mod private_loan {
         ai::create_ai_request(ctx, request_id, task, payload_hash, revision, ttl_seconds)
     }
 
-    /// Ephemeral rollup. The worker stores the typed answer once.
+    /// Ephemeral rollup. The worker claims the single paid generation attempt.
+    pub fn claim_ai_request(ctx: Context<ClaimAiRequest>, claim_id: [u8; 32]) -> Result<()> {
+        ai::claim_ai_request(ctx, claim_id)
+    }
+
+    /// Ephemeral rollup. The worker stores the claimed typed answer once.
     pub fn ai_callback(ctx: Context<AiCallback>, result: Vec<u8>) -> Result<()> {
         ai::ai_callback(ctx, result)
     }
@@ -226,6 +231,11 @@ pub mod private_loan {
     /// Base layer. A learner asks MagicBlock VRF for a random lab scenario.
     pub fn request_scenario(ctx: Context<RequestScenario>, client_seed: u8) -> Result<()> {
         lab::request_scenario(ctx, client_seed)
+    }
+
+    /// Base layer. A sponsored draw may initialize a learner's scenario only once.
+    pub fn request_first_scenario(ctx: Context<RequestFirstScenario>, client_seed: u8) -> Result<()> {
+        lab::request_first_scenario(ctx, client_seed)
     }
 
     /// Base layer, VRF program only: stores the randomness.

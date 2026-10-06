@@ -13,10 +13,10 @@ Light only: white and cool-blue surfaces, navy ink (`#0f1f4b`), blue primary act
 The product is **ZenLo**, spelled with a capital Z and a capital L. The name promises calm; the page proves it, because both parties see every term before anything is signed.
 
 - **Mark:** a pebble crossed by a wave on a blue rounded tile (`docs/brand/zenlo/mark.svg`, component `components/brand/Mark.tsx`). It doubles as the favicon and reads at 16px. `LogoMark` stays the progress ring used for transaction state.
-- **No mascot.** Art is abstract: soft matte clay pebbles and shapes, two-tone blue, resting on still white-blue water with clean concentric ripples. The hero is a balanced stack of three pebbles.
+- **No mascot.** Active illustrations are broad, precisely folded satin ribbons in blue, navy and white, with directional studio lighting, negative space and restrained depth. No pebbles, coins, toys, people, generic blobs or generated typography. The existing small pebble-and-wave mark and favicon remain unchanged.
 - **Where art appears:** heroes, story chapters, use cases, the private chapter, empty and error states, and the request venue choice. Never inside a figure readout, a risk warning, a signing control or a liquidation state.
-- **Prompts:** in `docs/brand/zenlo-prompts.json`, generated with `app/scripts/generate-art.mjs` using the approved stack image as the only style reference. Receipts are in `docs/brand/generation-receipts.json`.
-- **Motion:** one entrance on the hero (at most 250 ms), then still. No idle loops.
+- **Prompts:** in `docs/brand/zenlo-ribbon-prompts.json`, generated with `app/scripts/generate-art.mjs` using the inspected `zr-hero.webp` as the only style reference. Receipts are in `docs/brand/generation-receipts.json`.
+- **Motion:** restrained continuous hero-art movement is allowed under the approved refinement. Pause offscreen and in hidden tabs, expose a pause/resume control, and respect reduced motion. Financial readouts, risk text and signing controls stay steady.
 
 ## Returning users
 
@@ -26,6 +26,10 @@ There is no account sign-up. A remembered wallet is the identity: it reconnects 
 
 - `/`: explanatory landing page, primary **Try the demo**, secondary **Use Devnet**.
 - `/demo`: wallet-free guided simulation and free exploration.
+- `/learn`: wallet-free learning entry with simulation and Devnet practice choices.
+- `/devnet/learn`: wallet-based Loan Lab; optional public SOAR achievement disclosure remains explicit. The old `/devnet/private/lab` link redirects here.
+- Main navigation keeps Offers, Discover, Private and Learn. Create offer stays inside Offers; its URL remains valid.
+- `/devnet/private`: verify private access, then enter the workspace with rooms and invitations. Funding is contextual and available from the workspace and rooms. Existing step links remain supported.
 - `/devnet`: actual offer list and wallet-based transactions.
 - `/devnet/me`: My loans, the home for a returning wallet. Totals, then Lending and Borrowing tabs ordered by urgency: past due, past the liquidation line, due within a day, near the line, running, open, settled. Each row names the next action and links to the screen that performs it; running loans can be added to a calendar. The header shows My loans with a count of items that need attention once a wallet is connected.
 - `/devnet/discover`: the live marketplace. **Borrowers asking** and **Lenders offering**, each with **Public** and **Private**. Public rows are on-chain requests and offers; private borrower rows are discovery cards showing only the fields their borrower chose. Private lenders have no listing, and the page says so instead of inventing one. A status badge says whether the list is live, polling, or unreachable, in words.
@@ -76,7 +80,7 @@ Guide Devnet users to test SOL and canonical test USDC, and provide explicit wra
 
 ## Motion and accessibility
 
-Use the existing Motion library for short state transitions, not decorative loops. Typical product transitions are 150–250ms without financial overshoot. Native scrolling remains intact. Reduced motion retains every state and explanation with instant or gentle transitions. Keyboard navigation, meaningful step focus, announcements, readable contrast and status words are required.
+Use the existing Motion library for short state transitions and the approved restrained artwork motion. Typical product transitions are 150–250ms without financial overshoot. Native scrolling remains intact. Reduced motion retains every state and explanation with instant or gentle transitions. Keyboard navigation, meaningful step focus, announcements, readable contrast and status words are required.
 
 Desktop layouts pair the decision area with a stable summary; phones stack them without losing the figures needed to make the decision. Validate 390px, tablet and 1440px layouts, including long addresses and fractional token amounts.
 
@@ -85,3 +89,11 @@ Desktop layouts pair the decision area with a stable summary; phones stack them 
 Keep actions understandable and consistent: **Lock USDC**, **Cancel offer**, **Lock wSOL and borrow**, **Repay**, **Claim collateral**, **Pay the lender and take collateral**, and **Close and reclaim rent**. Requests add **Lock wSOL and post request**, **Fund this request**, **Cancel request**, and **Close request**. Simulation may use explanatory introductions but must preserve each action's actual consequence.
 
 States remain **Open offer**, **Waiting for repayment**, **Repaid**, **Expired**, **Liquidated**, **Cancelled**, with a separate closed-account result. A transaction submission alone does not establish a new loan state.
+
+## Deal-room refinement · 6 October 2026
+
+Room conversation is visible to current room members; each loan proposal, revision and comparison stays between its lender and borrower. Show members and roles, the real next action, contextual private balances and truthful receipts. Expired sessions, disconnected wallets, revoked access and failed room reads must close private contents and actions until verification succeeds. Quick replies remain message-only and limited to one hour; money always needs a wallet signature.
+
+Liquidation distinguishes loading, no open quotes and unavailable reads. A failed read does not prove healthy loans or an empty market. Funding reserves USDC without guaranteeing execution; execution makes wSOL collectible, while expired or superseded unsuccessful tickets become refundable. Re-read current quote terms and ticket eligibility before signing. Diagnostics and proof remain secondary.
+
+Copilot distinguishes checking, disabled and unavailable states. Offer only applicable tasks; show the exact shared text and revision before approval, invalidate review when that text changes, and mark answers stale when their bound revision changes. A suggested proposal remains an editable draft.

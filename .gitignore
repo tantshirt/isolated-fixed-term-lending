@@ -14,6 +14,7 @@ _bmad/custom/*
 *.log
 node_modules/
 app/.next/
+app/.next-security/
 app/.local/
 isolated_loan/.local/
 isolated_loan/target/
@@ -26,3 +27,4 @@ docs/brand/references/
 # Generated 2K PNGs stay local (skip-if-exists cache); compact WebPs ship in app/public
 docs/brand/originals/sharky-*.png
 docs/brand/originals/zl-*.png
+docs/brand/originals/zr-*.png

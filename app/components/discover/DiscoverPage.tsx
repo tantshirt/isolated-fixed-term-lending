@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AnimatePresence, m } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useMemo, useState, type ReactNode } from "react";
 import { Spot } from "@/components/brand/Spot";
 import { OfferRow } from "@/components/offers/OfferRow";
@@ -237,6 +237,7 @@ export function DiscoverPage() {
 
       {showFilters && (
         <section className={styles.filters} aria-label="Filters">
+          {(filters.maxRateBps !== DEFAULT_FILTERS.maxRateBps || filters.term !== DEFAULT_FILTERS.term) && <button type="button" className={list.emptyLink} onClick={() => setFilters(DEFAULT_FILTERS)}>Reset filters</button>}
           <div className={styles.rate}>
             <Slider
               label="Max interest for the term"
@@ -287,12 +288,12 @@ function ListState<T>({
   empty: ReactNode;
   children: (items: T[]) => ReactNode;
 }) {
-  if (items === null && error)
+  if (error)
     return (
       <div role="alert" className={list.empty}>
         <Spot kind="notFound" size={110} />
         <p className={list.emptyTitle}>Devnet is not answering</p>
-        <p className={list.emptyBody}>Nothing here is lost. The list reloads by itself as soon as the network responds.</p>
+        <p className={list.emptyBody}>Current listings could not be verified. The list retries automatically when the network responds.</p>
       </div>
     );
   if (items === null)
@@ -313,6 +314,7 @@ function ListState<T>({
 }
 
 function Rows({ header, children }: { header: string[]; children: { key: string; node: ReactNode }[] }) {
+  const reduced = useReducedMotion();
   if (children.length === 0)
     return (
       <div className={list.empty}>
@@ -331,9 +333,9 @@ function Rows({ header, children }: { header: string[]; children: { key: string;
         {children.map(({ key, node }) => (
           <m.li
             key={key}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
-            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            initial={false}
+            animate={{ opacity: 1, y: 0, transition: { duration: reduced ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] } }}
+            exit={{ opacity: 0, transition: { duration: reduced ? 0 : 0.12 } }}
           >
             {node}
           </m.li>
@@ -345,7 +347,7 @@ function Rows({ header, children }: { header: string[]; children: { key: string;
 
 function Empty({ title, body, href, cta }: { title: string; body: string; href: string; cta: string }) {
   return (
-    <m.div className={list.empty} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <m.div className={list.empty} initial={false} animate={{ opacity: 1 }}>
       <Spot kind="waiting" size={120} />
       <p className={list.emptyTitle}>{title}</p>
       <p className={list.emptyBody}>{body}</p>

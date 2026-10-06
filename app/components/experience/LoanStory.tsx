@@ -31,8 +31,8 @@ const steps = [
     detail: "Held as collateral for this loan",
     body: "The borrower locks 1.1 wSOL and receives 100 USDC. That exchange starts the seven-day clock. At the example SOL price of $150, the collateral is worth $165.",
     note: "The program checks the collateral limit against a fresh SOL price before acceptance.",
-    image: "zl-story-exchange",
-    alt: "A white sphere moves across calm water while a blue pebble settles into a clear glass box: the collateral is held separately.",
+    image: "zr-story-exchange",
+    alt: "A blue ribbon bridges above a separate protective white fold.",
   },
   {
     title: "105 USDC back. The collateral goes home.",
@@ -43,8 +43,8 @@ const steps = [
     detail: "100 principal + 5 fixed interest",
     body: "Before the deadline, the borrower repays 105 USDC. The lender receives the principal and interest; the borrower gets all 1.1 wSOL back.",
     note: "Repay early if you like. The 5 USDC full-term interest stays the same.",
-    image: "zl-story-settle",
-    alt: "A blue pebble lifts out of an open glass box and rests beside a white pebble, their ripples merging into one calm ring.",
+    image: "zr-story-settle",
+    alt: "Blue and white satin ribbons unfold outward from a shared center.",
   },
 ];
 

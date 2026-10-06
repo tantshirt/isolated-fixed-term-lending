@@ -163,7 +163,7 @@
   font-weight: 800;
 }
 
-.tab[aria-selected="true"] {
+.tab[aria-pressed="true"] {
   background: var(--color-navy);
   color: var(--color-on-navy);
 }
@@ -445,3 +445,6 @@
 .privateDesk > button {
   justify-self: start;
 }
+
+.figures dd, .headline, .rowActions { overflow-wrap: anywhere; }
+.rowSide { min-width: 0; }

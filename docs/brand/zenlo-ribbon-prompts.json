@@ -1,0 +1,161 @@
+[
+  {
+    "name": "zr-hero",
+    "aspect_ratio": "4:3",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: Two broad blue and white ribbons turn around one another in an airy asymmetric sculptural arch; navy reverse faces and generous empty center.",
+    "width": 1600
+  },
+  {
+    "name": "zr-story-exchange",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: A blue ribbon bridges to the right above a white ribbon folded into a protective squared loop. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-story-settle",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: Two ribbons unfold outward from a shared center, blue extending left and white right. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-private-room",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: A broad navy ribbon forms a sheltering arch around two separate blue and white folded strips. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-private-agree",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: Two broad blue and white ribbons align side by side, their crisp folded edges meeting. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-private-settle",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: A white folded strip emerges from a broad navy sculptural loop. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-uc-private-borrow",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: A blue ribbon passes behind a tall navy satin screen; a white fold marks the entrance. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-uc-invited-lend",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: Blue and white ribbon arches linked by one short navy fold. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-uc-blind-bids",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: Exactly three separate freestanding navy, blue and white folded panels angled to conceal each interior. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-uc-liquidate",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: A crisp blue ribbon bends downward beside a stable white folded platform. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-uc-learn",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: One blue ribbon opens into exactly three orderly outward steps, with white reverse surfaces. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-uc-verify",
+    "aspect_ratio": "3:2",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: A broad white loop frames one crisp blue fold, edges clearly lit. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-venue-public",
+    "aspect_ratio": "4:3",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: Blue and white bands form an open rectangular frame with a fully visible center. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-venue-private",
+    "aspect_ratio": "4:3",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: A navy folded ribbon forms a protective partial enclosure around a white and blue folded pair. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 1600,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-spot-waiting",
+    "aspect_ratio": "1:1",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: One compact blue satin ribbon folded into an open loop, simple centered silhouette. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 640,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-spot-notfound",
+    "aspect_ratio": "1:1",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: Two short blue and white satin folds separated by a clear gap, simple centered silhouette. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 640,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-spot-private",
+    "aspect_ratio": "1:1",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: One compact navy arch shelters a short white ribbon, simple centered silhouette. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 640,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  },
+  {
+    "name": "zr-spot-success",
+    "aspect_ratio": "1:1",
+    "prompt": "Premium editorial studio photograph for ZenLo. Broad precisely folded satin ribbon surfaces in cobalt blue, navy and porcelain white. Exquisite satin sheen, crisp architectural folds, restrained depth, directional studio key light from upper left, soft shadows, seamless white and cool-blue backdrop. Generous negative space, 15 percent clear margins. No pebbles, rocks, people, mascots, coins, toys, generic blobs, tubes, text, logos, watermarks, signature or collage. SUBJECT: Two short blue and white folded ribbons align in an ascending gesture, simple centered silhouette. Use uploaded image 1 as the ONLY material, palette and lighting reference; create the new composition described here.",
+    "width": 640,
+    "references": [
+      "app/public/illustrations/zr-hero.webp"
+    ]
+  }
+]

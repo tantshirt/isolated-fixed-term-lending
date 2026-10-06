@@ -196,7 +196,7 @@ export function MyLoans() {
         </div>
       </header>
 
-      {error && !portfolio && <p className={s.error}>Devnet is not answering. Your loans are unchanged; this page retries every 15 seconds.</p>}
+      {error && <p role="alert" className={s.error}>Devnet is not answering. {portfolio ? "These are the last received figures; current balances and loan states are unverified." : "Your loans could not be checked."} This page retries every 15 seconds.</p>}
 
       <section className={s.totals} aria-label="Totals">
         <div className={s.total}>
@@ -217,7 +217,7 @@ export function MyLoans() {
         </div>
         <div className={`${s.total} ${s.totalNavy}`}>
           <span>Next deadline</span>
-          <strong className="num">{t?.nextDueTs ? formatCountdown(t.nextDueTs - now) : "None"}</strong>
+          <strong className="num">{!t ? "Checking…" : t.nextDueTs ? formatCountdown(t.nextDueTs - now) : "None"}</strong>
         </div>
       </section>
 
@@ -227,13 +227,12 @@ export function MyLoans() {
         </p>
       )}
 
-      <div className={s.tabs} role="tablist" aria-label="Side">
+      <div className={s.tabs} role="group" aria-label="Side">
         {(["lender", "borrower"] as const).map((x) => (
           <button
             key={x}
             type="button"
-            role="tab"
-            aria-selected={current === x}
+            aria-pressed={current === x}
             className={s.tab}
             onClick={() => setSide(x)}
           >
@@ -244,11 +243,11 @@ export function MyLoans() {
       </div>
 
       {portfolio === null ? (
-        <p className={s.loading}>Reading your loans from Devnet…</p>
+        <p role="status" className={s.loading}>{error ? "Waiting for Devnet to recover…" : "Reading your loans from Devnet…"}</p>
       ) : list.length === 0 ? (
         <Empty side={current} />
       ) : (
-        <ul className={s.list} role="tabpanel">
+        <ul className={s.list} aria-label={current === "lender" ? "Lending" : "Borrowing"}>
           {list.map((item) => (
             <Row key={item.key} item={item} now={now} />
           ))}

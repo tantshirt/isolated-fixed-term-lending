@@ -86,3 +86,10 @@ Findings from building it:
 | Loans are listed per room | PASS | 2026-10-06 | `LoanAnchor` records (public, `room` at byte 40) list through the TEE by discriminator; `LoanTerms` then read only for the lender and borrower. |
 
 Decision: the invite inbox and the room loan registry need no program change. The permission program already filters `getProgramAccounts` by the caller's token, so the app lists what a wallet may read instead of keeping a private inbox account.
+
+
+## Security release verification, 2026-10-06
+
+The October 5 rows above describe the previous deployed binary. They do not certify the local security changes. Updated settlement account binding, atomic AI claims and initialization-only sponsored draws pass local SBF/LiteSVM regression tests. The program, application and IDL require coordinated release; no deployment was performed during this audit.
+
+A fresh public/private Devnet cycle was attempted on October 6, but public RPC WebSocket rate limits and confirmation expiry prevented completion. Temporary test funds were returned and the temporary signing key removed after verified cleanup. This attempt does not replace earlier cycle evidence or establish hosted-TEE behavior for the new instructions.

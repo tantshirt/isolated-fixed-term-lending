@@ -6,7 +6,7 @@ import { Connection, Keypair, PublicKey, Transaction, type TransactionInstructio
 import idl from "@/idl/private_loan.json";
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID, permissionPda } from "./espl";
-import { advance, newReceipt, saveReceipt, type ExecutionReceipt } from "./receipts";
+import { advance, newReceipt, recordSignedReceipt, saveReceipt, type ExecutionReceipt } from "./receipts";
 import {
   ROLE,
   SCOPE,
@@ -76,6 +76,7 @@ async function sendEr(
   validateTransaction(tx, { feePayer });
   tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
   const signed = await sign(tx);
+  recordSignedReceipt(wallet, receipt, signed);
   const sig = await er.sendRawTransaction(signed.serialize(), { skipPreflight: true });
   saveReceipt(wallet, advance(receipt, { erSignature: sig }));
   const res = await er.confirmTransaction(sig, "confirmed");
@@ -124,9 +125,14 @@ export async function openRoom(base: Connection, er: Connection, signer: LoanSig
   const { blockhash, lastValidBlockHeight } = await base.getLatestBlockhash();
   tx.recentBlockhash = blockhash;
   const signed = await signer.signTransaction(tx);
+  recordSignedReceipt(wallet, receipt, signed);
   const sig = await base.sendRawTransaction(signed.serialize());
   saveReceipt(wallet, advance(receipt, { baseSignature: sig }));
-  await base.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+  const confirmation = await base.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+  if (confirmation.value.err) {
+    saveReceipt(wallet, advance(receipt, { baseSignature: sig, stage: "failed" }));
+    throw new Error("Solana rejected this transaction. Its receipt is saved.");
+  }
   saveReceipt(wallet, advance(receipt, { baseSignature: sig, stage: "settled" }));
   rememberRoom(wallet, roomId);
 

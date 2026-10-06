@@ -24,7 +24,9 @@ const fmt = (atoms: bigint | null, decimals: number) =>
 export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigner | null; base: Connection; er: Connection | null; onChange: () => void }) {
   const [token, setToken] = useState<TokenName>("USDC");
   const t = TOKENS[token];
-  const [state, setState] = useState<PrivateBalanceState | null>(null);
+  const [snapshot, setState] = useState<PrivateBalanceState | null>(null);
+  const [checkedIdentity, setCheckedIdentity] = useState("");
+  const [readError, setReadError] = useState<string | null>(null);
   const [amount, setAmount] = useState("0.10");
   const [busy, setBusy] = useState<"deposit" | "withdraw" | "send" | null>(null);
   const [to, setTo] = useState("");
@@ -32,19 +34,22 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
   const key = signer?.publicKey.toBase58() ?? null;
-  const current = useRef(key);
-  current.current = key;
+  const identity = `${key}:${token}:${er?.rpcEndpoint ?? ""}`;
+  const current = useRef(identity);
+  current.current = identity;
+  const state = checkedIdentity === identity ? snapshot : null;
   const refresh = useCallback(async () => {
     if (!signer) return setState(null);
-    const asked = signer.publicKey.toBase58();
+    const asked = identity;
     let next: PrivateBalanceState | null = null;
     try {
       next = await readPrivateBalance(base, er, signer.publicKey, t.mint);
     } catch {
-      next = null;
+      if (current.current === asked) { setState(null); setReadError("Balances are unavailable. Retry before depositing, withdrawing or sending."); }
+      return;
     }
-    if (current.current === asked) setState(next); // drop reads for a wallet that was switched away
-  }, [signer, base, er, t.mint]);
+    if (current.current === asked) { setState(next); setCheckedIdentity(asked); setReadError(null); } // drop reads for an old wallet, token or session
+  }, [signer, base, er, t.mint, identity]);
   useEffect(() => void refresh(), [refresh]);
 
   // A different wallet never inherits the previous one's draft or messages.
@@ -53,6 +58,7 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
     setTo("");
     setSendAmount("");
     setState(null);
+    setReadError(null);
   }, [key]);
 
   const atoms = (() => {
@@ -80,16 +86,18 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
   }
 
   async function send() {
-    if (!signer || !er || !toKey) return;
+    if (!signer || !er || !toKey || !state || busy) return;
     setBusy("send");
     setMessage(null);
     try {
       await sendPrivately(er, signer, t.mint, t.decimals, toKey, sendAtoms);
+      if (current.current !== identity) return;
       setMessage({ tone: "ok", text: "Sent inside the private rollup. Nothing appeared on Solana." });
       setSendAmount("");
       onChange();
       await refresh();
     } catch (e) {
+      if (current.current !== identity) return;
       setMessage({ tone: "error", text: messageFromAnchorError(e) });
     } finally {
       setBusy(null);
@@ -97,16 +105,18 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
   }
 
   async function run(kind: "deposit" | "withdraw") {
-    if (!signer || !er) return;
+    if (!signer || !er || !state || busy) return;
     setBusy(kind);
     setMessage(null);
     try {
       if (kind === "deposit") await depositPrivately(base, er, signer, t.mint, atoms);
       else await withdrawPrivately(base, er, signer, t.mint);
+      if (current.current !== identity) return;
       setMessage({ tone: "ok", text: kind === "deposit" ? "Deposited. Your balance is now private." : "Withdrawn to your wallet." });
       onChange();
       await refresh();
     } catch (e) {
+      if (current.current !== identity) return;
       setMessage({ tone: "error", text: messageFromAnchorError(e) });
     } finally {
       setBusy(null);
@@ -117,11 +127,12 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
     <div className={styles.panelBody}>
       <div className={styles.tokenSwitch} role="group" aria-label="Token">
         {(Object.keys(TOKENS) as TokenName[]).map((k) => (
-          <button type="button" key={k} aria-pressed={token === k} onClick={() => chooseToken(k)}>
+          <button type="button" key={k} aria-pressed={token === k} disabled={busy !== null} onClick={() => chooseToken(k)}>
             {k}
           </button>
         ))}
       </div>
+      {readError && <p role="alert" className={styles.error}>{readError} <button type="button" className={styles.textButton} onClick={() => void refresh()}>Retry balances</button></p>}
       <dl className={styles.balances}>
         <div>
           <dt>Private {token}</dt>
@@ -140,7 +151,7 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
       )}
       <div className={styles.depositRow}>
         <AmountInput label="Amount" value={amount} onChange={setAmount} unit={token} decimals={t.decimals} />
-        <Button block onClick={() => run("deposit")} loading={busy === "deposit"} disabled={!er || atoms === 0n || atoms > (state?.walletAmount ?? 0n)}>
+        <Button block onClick={() => run("deposit")} loading={busy === "deposit"} disabled={busy !== null || !state || !er || atoms === 0n || atoms > (state?.walletAmount ?? 0n)}>
           Deposit privately
         </Button>
       </div>
@@ -163,7 +174,7 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
       <p className={styles.hint}>
         Deposits and withdrawals are visible on Solana. What happens to the balance in between is not.
       </p>
-      <Button variant="secondary" block onClick={() => run("withdraw")} loading={busy === "withdraw"} disabled={!er || !state?.exists}>
+      <Button variant="secondary" block onClick={() => run("withdraw")} loading={busy === "withdraw"} disabled={busy !== null || !state || !er || !state?.exists}>
         Withdraw everything to my wallet
       </Button>
       <details className={styles.sendBox}>
@@ -184,7 +195,7 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
           />
           <AmountInput label="Amount" value={sendAmount} onChange={setSendAmount} unit={token} decimals={t.decimals} />
           <p className={styles.hint}>The recipient needs a private {token} balance already. Only the two of you can see this transfer.</p>
-          <Button variant="secondary" onClick={send} loading={busy === "send"} disabled={!er || !toKey || sendAtoms === 0n || (state?.privateAmount ?? 0n) < sendAtoms}>
+          <Button variant="secondary" onClick={send} loading={busy === "send"} disabled={busy !== null || !state || !er || !toKey || sendAtoms === 0n || (state?.privateAmount ?? 0n) < sendAtoms}>
             Send {sendAmount || "0"} {token} privately
           </Button>
         </div>

@@ -8,7 +8,7 @@ import { getAuthToken } from "@magicblock-labs/ephemeral-rollups-sdk";
 import nacl from "tweetnacl";
 import idl from "../../idl/private_loan.json";
 import { PRIVATE_PROGRAM_ID } from "../private/room-codec";
-import { TEE_RPC } from "../private/tee";
+import { attestTee, TEE_RPC } from "../private/tee";
 
 export const HYDRA_EPHEMERAL = new PublicKey("eHyd5BU8QffvHi4GnXwxrK4WpS7pM2x9UGKHBWii7mf");
 const HEADER = 120;
@@ -46,6 +46,7 @@ export function crankerKey(): Keypair | null {
 }
 
 export async function teeAs(kp: Keypair): Promise<Connection> {
+  await attestTee();
   const { token } = await getAuthToken(TEE_RPC, kp.publicKey, async (m) => nacl.sign.detached(m, kp.secretKey));
   return new Connection(`${TEE_RPC}?token=${token}`, "confirmed");
 }

@@ -9,7 +9,7 @@ import { debt } from "@/lib/loan-math";
 import { AI_TASK, aiConfigPda, aiRequestPda, decodeAiRequest, disclosureHash, type AiRequestRecord, type AiTask } from "./ai-codec";
 import { MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID, permissionPda } from "./espl";
 import { loanTermsPda, type LoanTerms } from "./loan-codec";
-import { advance, newReceipt, saveReceipt } from "./receipts";
+import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
 import { roomStatePda } from "./room-codec";
 import { validateTransaction } from "./tx-validator";
 
@@ -17,7 +17,11 @@ const EPHEMERAL_VAULT_ID = new PublicKey("MagicVau1t9999999999999999999999999999
 
 export type AiInfo = { configured: boolean; model: string; provider: string };
 export async function aiInfo(): Promise<AiInfo> {
-  return (await fetch("/api/private/ai", { cache: "no-store" })).json();
+  const response = await fetch("/api/private/ai", { cache: "no-store" });
+  if (!response.ok) throw new Error("Copilot availability could not be checked. Try again.");
+  const info = await response.json();
+  if (typeof info.configured !== "boolean") throw new Error("Copilot availability response was invalid. Try again.");
+  return info;
 }
 
 const usdc = (a: bigint) => (Number(a) / 1e6).toString();
@@ -72,6 +76,7 @@ export async function askCopilot(
   tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
   const signed = await signer.signTransaction(tx);
   const receipt = newReceipt("Approve an AI disclosure", "er", loan?.revision);
+  recordSignedReceipt(signer.publicKey.toBase58(), receipt, signed);
   const sig = await er.sendRawTransaction(signed.serialize(), { skipPreflight: true });
   const res = await er.confirmTransaction(sig, "confirmed");
   saveReceipt(signer.publicKey.toBase58(), advance(receipt, { erSignature: sig, stage: res.value.err ? "failed" : "executed" }));

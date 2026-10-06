@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ArtMotion } from "@/components/experience/ArtMotion";
 import { LoanStory } from "@/components/experience/LoanStory";
 import { PrivateChapter } from "@/components/experience/PrivateChapter";
 import { PublicHeader } from "@/components/experience/PublicHeader";
@@ -79,16 +80,16 @@ export default function Home() {
               </div>
               <p className={h.fine}>No wallet needed for the demo. No real funds at risk.</p>
             </div>
-            <div className={h.heroArt}>
+            <div className={h.heroArt}><ArtMotion>
               <Image
-                src="/illustrations/zl-hero-opt-stack.webp"
-                alt="Three pebbles, blue, sky blue and white, balanced on calm water."
+                src="/illustrations/zr-hero.webp"
+                alt="Broad blue and white satin ribbons form an open sculptural arch."
                 width={1600}
                 height={1200}
                 priority
                 sizes="(max-width: 900px) 92vw, 46vw"
               />
-            </div>
+              </ArtMotion></div>
           </div>
         </section>
 
@@ -160,6 +161,7 @@ export default function Home() {
               <article className={h.ending}>
                 <span className={`${h.pill} ${h.repaid}`}>Repaid</span>
                 <h3>You pay back on time.</h3>
+                <div className={h.fundFlow} aria-label="Repayment fund flow"><span>Borrower <b>105 USDC →</b> Lender</span><span>Vault <b>1.1 wSOL →</b> Borrower</span></div>
                 <p>
                   The borrower repays 105 USDC before the deadline and gets all
                   1.1 wSOL back. The lender receives the 105.
@@ -168,6 +170,7 @@ export default function Home() {
               <article className={h.ending}>
                 <span className={`${h.pill} ${h.liquidated}`}>Liquidated</span>
                 <h3>The price drops too far.</h3>
+                <div className={h.fundFlow} aria-label="Liquidation fund flow"><span>Liquidator <b>Debt →</b> Lender</span><span>Vault <b>Payout →</b> Liquidator</span><span>Vault <b>Remainder →</b> Borrower</span></div>
                 <p>
                   At the liquidation threshold, a liquidator can pay the debt and
                   receive collateral plus a 5% incentive, capped by the
@@ -177,6 +180,7 @@ export default function Home() {
               <article className={h.ending}>
                 <span className={`${h.pill} ${h.expired}`}>Expired</span>
                 <h3>The clock runs out.</h3>
+                <div className={h.fundFlow} aria-label="Expiry fund flow"><span>Vault <b>All wSOL →</b> Lender</span><span>Borrower <b>loses collateral</b></span></div>
                 <p>
                   If you do not repay by then, the lender receives your wSOL. Its
                   value may be less than the debt.
@@ -239,7 +243,7 @@ export default function Home() {
             </div>
             <div className={h.ctaArt}>
               <Image
-                src="/illustrations/zl-band-drop.webp"
+                src="/illustrations/zr-story-settle.webp"
                 alt=""
                 fill
                 sizes="(max-width: 900px) 92vw, 46vw"

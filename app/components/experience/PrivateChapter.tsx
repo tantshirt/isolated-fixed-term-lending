@@ -10,22 +10,22 @@ const STEPS = [
     n: "1",
     title: "Meet in a private room",
     body: "Invite a lender, or publish a card and choose who joins. A link alone opens nothing.",
-    image: "/illustrations/zl-private-room.webp",
-    alt: "A small frosted-glass pavilion stands in calm water with two pebbles blurred inside it.",
+    image: "/illustrations/zr-private-room.webp",
+    alt: "A navy satin arch shelters separate blue and white folds.",
   },
   {
     n: "2",
     title: "Agree on exact terms",
     body: "Offers stay between one lender and you. Both sides approve the same revision; any edit starts over.",
-    image: "/illustrations/zl-private-agree.webp",
-    alt: "A blue pebble and a navy pebble touch in calm water with a white sphere balanced where they meet.",
+    image: "/illustrations/zr-private-agree.webp",
+    alt: "Blue and white satin edges align in a shared fold.",
   },
   {
     n: "3",
     title: "Settle with only balances public",
     body: "Repay, expire, or liquidate with the usual rules. The terms never reach Solana.",
-    image: "/illustrations/zl-private-settle.webp",
-    alt: "A frosted card floats face down on calm water while two small glowing spheres rise above it.",
+    image: "/illustrations/zr-private-settle.webp",
+    alt: "A white satin strip emerges from a navy loop.",
   },
 ];
 

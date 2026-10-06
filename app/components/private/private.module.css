@@ -1423,3 +1423,16 @@ span.receiptLink {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Deal-room content stays legible with long addresses and competing proposals. */
+.compareScroll { max-width: 100%; overflow-x: auto; }
+.roomLayout > *, .side > *, .thread { min-width: 0; }
+.message, .members li, .summary dd, .error, .hint { overflow-wrap: anywhere; }
+.activity > summary { cursor: pointer; min-height: 44px; padding-block: 12px; }
+@media (max-width: 760px) {
+  .composer { flex-wrap: wrap; }
+  .composer input { min-width: 0; flex: 1 1 180px; }
+  .panelHead { flex-wrap: wrap; }
+  .roleChoice { flex-wrap: wrap; }
+  .input, .textarea, .roleChoice button { font-size: 16px; }
+}

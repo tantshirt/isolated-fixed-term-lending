@@ -780,3 +780,8 @@
     font-size: 14px;
   }
 }
+
+@media (max-width: 760px) {
+  .nav { font-size: 16px; gap: 10px; }
+  .navSolid { padding-inline: 14px; }
+}

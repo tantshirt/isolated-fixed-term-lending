@@ -14,6 +14,7 @@ export type SignMessage = (message: Uint8Array) => Promise<Uint8Array>;
 export type TeeSession = { connection: Connection; wallet: string; expiresAt: number; attestedAt: number };
 
 let attestedAt: number | null = null;
+let attesting: Promise<number> | null = null;
 const sessions = new Map<string, TeeSession>();
 
 export class PrivateEndpointError extends Error {}
@@ -28,34 +29,52 @@ export function assertPrivateEndpoint(url: string): void {
 
 export async function attestTee(): Promise<number> {
   if (attestedAt) return attestedAt;
-  await verifyTeeRpcIntegrity(TEE_RPC);
-  attestedAt = Date.now();
-  return attestedAt;
+  attesting ??= verifyTeeRpcIntegrity(TEE_RPC).then(() => {
+    attestedAt = Date.now();
+    return attestedAt;
+  }).finally(() => { attesting = null; });
+  return attesting;
 }
 
 const tokenKey = (wallet: string) => `zenlo:tee-token:${wallet}`;
 
 function restore(wallet: string): TeeSession | null {
+  // A timestamp in browser storage is not proof of attestation in this runtime.
+  if (!attestedAt) return null;
   try {
     const raw = sessionStorage.getItem(tokenKey(wallet));
     if (!raw) return null;
-    const { token, expiresAt, attestedAt: at } = JSON.parse(raw) as { token: string; expiresAt: number; attestedAt: number };
-    if (!(expiresAt > Date.now() + 60_000)) return sessionStorage.removeItem(tokenKey(wallet)), null;
-    const url = `${TEE_RPC}?token=${token}`;
+    const { token, expiresAt } = JSON.parse(raw) as { token: string; expiresAt: number };
+    if (typeof token !== "string" || !token || !Number.isFinite(expiresAt) || !(expiresAt > Date.now() + 60_000)) return sessionStorage.removeItem(tokenKey(wallet)), null;
+    const url = `${TEE_RPC}?token=${encodeURIComponent(token)}`;
     assertPrivateEndpoint(url);
-    const session = { connection: new Connection(url, "confirmed"), wallet, expiresAt, attestedAt: at };
+    const session = { connection: new Connection(url, "confirmed"), wallet, expiresAt, attestedAt };
     sessions.set(wallet, session);
-    attestedAt ??= at;
     return session;
   } catch {
     return null;
   }
 }
 
+export function sessionMatchesWallet(session: TeeSession | null, wallet: string | undefined, now = Date.now()): boolean {
+  return !!session && session.wallet === wallet && Number.isFinite(session.expiresAt) && session.expiresAt > now + 60_000;
+}
+
+/** Reverify the endpoint after reload before reusing a saved bearer token. */
+export async function resumeTeeSession(wallet: PublicKey): Promise<TeeSession | null> {
+  const live = currentTeeSession(wallet);
+  if (live) return live;
+  try {
+    if (!sessionStorage.getItem(tokenKey(wallet.toBase58()))) return null;
+  } catch { return null; }
+  await attestTee();
+  return currentTeeSession(wallet);
+}
+
 export function currentTeeSession(wallet: PublicKey): TeeSession | null {
   const key = wallet.toBase58();
   const s = sessions.get(key) ?? restore(key);
-  return s && s.expiresAt > Date.now() + 60_000 ? s : null;
+  return sessionMatchesWallet(s ?? null, key) ? s! : null;
 }
 
 export async function openTeeSession(wallet: PublicKey, signMessage: SignMessage): Promise<TeeSession> {
@@ -63,7 +82,7 @@ export async function openTeeSession(wallet: PublicKey, signMessage: SignMessage
   if (existing) return existing;
   const at = await attestTee();
   const { token, expiresAt } = await getAuthToken(TEE_RPC, wallet, signMessage);
-  const url = `${TEE_RPC}?token=${token}`;
+  const url = `${TEE_RPC}?token=${encodeURIComponent(token)}`;
   assertPrivateEndpoint(url);
   const session = { connection: new Connection(url, "confirmed"), wallet: wallet.toBase58(), expiresAt, attestedAt: at };
   sessions.set(session.wallet, session);

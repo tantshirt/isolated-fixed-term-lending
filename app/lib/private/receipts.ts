@@ -4,6 +4,8 @@
 // on Solana, and a commit can be queued without having landed. The receipt keeps
 // those as separate facts and survives reloads until it is reconciled. Nothing
 // here ever re-sends a transaction: recovery reuses the recorded signatures.
+import { utils } from "@coral-xyz/anchor";
+import type { Transaction } from "@solana/web3.js";
 import type { Connection } from "@solana/web3.js";
 import { readSubmissionStorage, writeSubmissionStorage } from "../transaction-lifecycle";
 
@@ -45,6 +47,7 @@ export type PrivacyDisclosure = {
 
 const KEY = (wallet: string) => `lendspan:private:receipts:${wallet}`;
 const MAX_RECEIPTS = 50;
+export const RECEIPTS_CHANGED = "zenlo:receipts-changed";
 
 function readAll(wallet: string): ExecutionReceipt[] {
   const raw = readSubmissionStorage(KEY(wallet));
@@ -64,7 +67,16 @@ export function saveReceipt(wallet: string, receipt: ExecutionReceipt): Executio
   const closed = all.filter((r) => r.stage !== "submitted" && r.stage !== "settling");
   const kept = [receipt, ...open, ...closed].slice(0, Math.max(MAX_RECEIPTS, open.length + 1));
   writeSubmissionStorage(KEY(wallet), kept);
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(RECEIPTS_CHANGED, { detail: wallet }));
   return receipt;
+}
+
+/** Persist the signed transaction before broadcast, including an uncertain send. */
+export function recordSignedReceipt(wallet: string, receipt: ExecutionReceipt, signed: Pick<Transaction, "signature">, commit = false): string {
+  if (!signed.signature) throw new Error("The transaction was not signed; nothing was sent.");
+  const signature = utils.bytes.bs58.encode(signed.signature);
+  saveReceipt(wallet, advance(receipt, receipt.environment === "er" ? { erSignature: signature, ...(commit ? { commitId: signature } : {}) } : { baseSignature: signature }));
+  return signature;
 }
 
 export function newReceipt(intent: string, environment: Environment, revision?: number): ExecutionReceipt {
@@ -92,7 +104,7 @@ async function statusOf(c: StatusSource, signature: string) {
   } = await c.getSignatureStatuses([signature], { searchTransactionHistory: true });
   if (!s) return "unknown" as const;
   if (s.err) return "failed" as const;
-  return s.confirmationStatus === "processed" ? ("unknown" as const) : ("confirmed" as const);
+  return s.confirmationStatus === "confirmed" || s.confirmationStatus === "finalized" ? ("confirmed" as const) : ("unknown" as const);
 }
 
 /**
@@ -115,6 +127,7 @@ export async function reconcile(r: ExecutionReceipt, er: StatusSource, base: Sta
   if (r.stage === "settling" && r.baseSignature) {
     const s = await statusOf(base, r.baseSignature);
     if (s === "confirmed") return advance(r, { stage: "settled" });
+    if (s === "failed") return advance(r, { stage: "failed", error: "Confirmed on Solana with an error." });
   }
   return r;
 }

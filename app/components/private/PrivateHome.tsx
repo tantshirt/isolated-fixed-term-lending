@@ -20,7 +20,7 @@ const STEPS = [
     title: "Sign in",
     question: "First, check the private rollup and sign in.",
   },
-  { title: "Room", question: "Open a room for one loan." },
+  { title: "Workspace", question: "Your rooms and next steps." },
   { title: "Fund", question: "Move funds into a balance only you can read." },
   { title: "Terms", question: "Agree on terms inside the room." },
 ] as const;
@@ -61,8 +61,8 @@ export function PrivateHome() {
 
   // Steps unlock from real state: signing in opens the room step, having a room opens funding.
   // Terms is readable by anyone, so the rules are clear before a wallet is involved.
-  const reachable = (n: number) => n === 1 || n === 4 || (n === 2 && ready) || (n === 3 && ready && rooms.length > 0);
-  const natural = !ready ? 1 : rooms.length === 0 ? 2 : 3;
+  const reachable = (n: number) => n === 1 || n === 4 || (n === 2 && ready) || (n === 3 && ready);
+  const natural = !ready ? 1 : 2;
   const asked = Number(params.get("step"));
   const step = asked >= 1 && asked <= 4 && reachable(asked) ? asked : natural;
   const current = STEPS[step - 1];
@@ -100,7 +100,7 @@ export function PrivateHome() {
         </div>
         <Image
           className={styles.heroImage}
-          src="/illustrations/zl-hero-opt-pair.webp"
+          src="/illustrations/zr-venue-private.webp"
           alt=""
           aria-hidden
           width={1600}
@@ -110,7 +110,7 @@ export function PrivateHome() {
         />
       </header>
 
-      <InvitesPanel er={er} wallet={signer?.publicKey ?? null} />
+      {ready && <InvitesPanel er={er} wallet={signer?.publicKey ?? null} />}
 
       <div className={wiz.layout}>
         <div className={wiz.main}>
@@ -156,6 +156,7 @@ export function PrivateHome() {
                   invite by wallet, or publish a card on Discover and choose from lenders who ask.
                 </p>
                 <RoomList signer={signer} base={base} er={er} onChange={bump} />
+                <div className={styles.actions}><Button variant="secondary" onClick={() => go(3)}>Manage private balances</Button><Button variant="ghost" onClick={() => go(4)}>How terms work</Button></div>
               </>
             )}
 
@@ -248,7 +249,7 @@ export function PrivateHome() {
 
           <details className={styles.activity}>
             <summary>Recent activity</summary>
-            <ReceiptList wallet={wallet} refresh={refresh} />
+            <ReceiptList base={base} er={er} wallet={wallet} refresh={refresh} />
           </details>
         </div>
 

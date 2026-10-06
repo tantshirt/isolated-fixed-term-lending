@@ -3,6 +3,7 @@
 import { PublicKey } from "@solana/web3.js";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { pollAfterCompletion } from "@/lib/private/poll";
 import { Button } from "@/components/ui/Button";
 import { MAX_BODY, type RoleName } from "@/lib/private/room-codec";
 import {
@@ -21,6 +22,8 @@ import {
   type RoomView as RoomData,
 } from "@/lib/private/rooms";
 import { usePrivate } from "@/lib/private/use-private";
+import { BalancePanel } from "./BalancePanel";
+import { ReceiptList } from "./ReceiptList";
 import { AiPanel } from "./AiPanel";
 import { CardPublisher } from "./CardPublisher";
 import { LoanPanel, proposalCounterparties } from "./LoanPanel";
@@ -45,6 +48,11 @@ export function RoomView({ roomId }: { roomId: string }) {
       return null;
     }
   }, [roomId]);
+  const identity = `${signer?.publicKey.toBase58() ?? ""}:${roomId}:${er?.rpcEndpoint ?? ""}`;
+  const identityRef = useRef(identity);
+  identityRef.current = identity;
+  const [loadedIdentity, setLoadedIdentity] = useState("");
+  const [readError, setReadError] = useState<string | null>(null);
   const [data, setData] = useState<RoomData | null>(null);
   const [draft, setDraft] = useState("");
   const [invitee, setInvitee] = useState("");
@@ -64,31 +72,56 @@ export function RoomView({ roomId }: { roomId: string }) {
   }, [prefill]);
   const threadEnd = useRef<HTMLLIElement>(null);
 
+  const readSequence = useRef(0);
   const load = useCallback(async () => {
-    if (!er || !ref) return;
-    const view = await readRoom(er, ref.anchor);
-    setData(view);
-    if (view.access === "member") {
-      // Every loan in the room, from its public anchors, plus any the thread mentions.
-      const registry = await listRoomLoans(er, ref.anchor).catch(() => []);
-      const ids = [...new Set([...registry.filter((l) => l.terms).map((l) => l.loanId), ...loansInThread(view.messages.map((m) => m.body))])];
-      setLoanIds(ids);
-      const read = await Promise.all(ids.map(async (id) => ({ anchor: loanFromId(id), terms: await readLoan(er, loanFromId(id)) })));
-      setLoans(read.filter((l): l is { anchor: PublicKey; terms: LoanTerms } => l.terms !== null));
-    } else {
-      setCreator(await roomCreator(er, ref.anchor).catch(() => null));
+    const sequence = ++readSequence.current;
+    if (!er || !ref || status !== "ready") return;
+    try {
+      const view = await readRoom(er, ref.anchor);
+      if (identityRef.current !== identity || sequence !== readSequence.current) return;
+      if (view.access === "member") {
+        const registry = await listRoomLoans(er, ref.anchor);
+        const ids = [...new Set([...registry.filter((l) => l.terms).map((l) => l.loanId), ...loansInThread(view.messages.map((m) => m.body))])];
+        const read = await Promise.all(ids.map(async (id) => ({ anchor: loanFromId(id), terms: await readLoan(er, loanFromId(id)) })));
+        if (identityRef.current !== identity || sequence !== readSequence.current) return;
+        setLoanIds(ids);
+        setLoans(read.filter((l): l is { anchor: PublicKey; terms: LoanTerms } => l.terms !== null));
+        if (signer) rememberRoom(signer.publicKey.toBase58(), roomId);
+      } else {
+        setLoans([]);
+        setLoanIds([]);
+        const owner = await roomCreator(er, ref.anchor);
+        if (identityRef.current !== identity || sequence !== readSequence.current) return;
+        setCreator(owner);
+      }
+      setData(view);
+      setLoadedIdentity(identity);
+      setReadError(null);
+    } catch (e) {
+      if (identityRef.current !== identity || sequence !== readSequence.current) return;
+      setData(null);
+      setLoans([]);
+      setLoanIds([]);
+      setReadError(e instanceof Error ? e.message : "Room access could not be verified.");
     }
-    if (view.access === "member" && signer) rememberRoom(signer.publicKey.toBase58(), roomId);
-  }, [er, ref, signer, roomId]);
+  }, [er, ref, signer, roomId, identity, status]);
 
   useEffect(() => {
-    void load();
-    if (!er) return;
-    const t = setInterval(() => void load(), 6000);
-    return () => clearInterval(t);
-  }, [er, load]);
+    setData(null);
+    setLoadedIdentity("");
+    setReadError(null);
+    setDraft("");
+    setNote(null);
+    setAsked(false);
+    setPrefill(null);
+    setProposing(false);
+    const sequenceRef = readSequence;
+    const stop = pollAfterCompletion(load, 6000);
+    return () => { stop(); sequenceRef.current++; };
+  }, [load]);
 
-  useEffect(() => threadEnd.current?.scrollIntoView({ block: "nearest" }), [data]);
+  const lastMessage = data?.access === "member" ? data.messages.at(-1)?.index : undefined;
+  useEffect(() => threadEnd.current?.scrollIntoView({ block: "nearest" }), [lastMessage]);
 
   if (!ref) {
     return (
@@ -101,7 +134,7 @@ export function RoomView({ roomId }: { roomId: string }) {
   }
 
   const me = signer?.publicKey;
-  const member = data?.access === "member" ? data : null;
+  const member = loadedIdentity === identity && data?.access === "member" ? data : null;
   const isOwner = !!(me && member?.state.owner.equals(me));
   const session = me ? activeSession(me, ref.anchor) : null;
 
@@ -110,10 +143,11 @@ export function RoomView({ roomId }: { roomId: string }) {
     setNote(null);
     try {
       await f();
+      if (identityRef.current !== identity) return;
       if (ok) setNote({ tone: "ok", text: ok });
       await load();
     } catch (e) {
-      setNote({ tone: "error", text: e instanceof Error ? e.message : String(e) });
+      if (identityRef.current === identity) setNote({ tone: "error", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy(null);
       force((n) => n + 1);
@@ -141,7 +175,14 @@ export function RoomView({ roomId }: { roomId: string }) {
           <TeeCard status={status} error={error} onConnect={connect} />
           <p className={styles.muted}>Only wallets the room owner invited can read this room, even with the link.</p>
         </div>
-      ) : data?.access === "none" ? (
+      ) : readError ? (
+        <section className={styles.panel}><div className={styles.panelBody}>
+          <h1 className={styles.roomTitle}>Room access could not be verified</h1>
+          <p role="alert" className={styles.error}>{readError}</p>
+          <p className={styles.muted}>Your session may have expired, the connection may be unavailable, or your access may have been revoked. Private contents and actions stay closed until access is verified.</p>
+          <div className={styles.actions}><Button onClick={() => void load()}>Retry room</Button><Button variant="secondary" onClick={connect}>Verify private sign-in</Button></div>
+        </div></section>
+      ) : loadedIdentity === identity && data?.access === "none" ? (
         <div className={styles.narrow}>
           <section className={styles.panel}>
             <div className={styles.panelBody}>
@@ -162,7 +203,7 @@ export function RoomView({ roomId }: { roomId: string }) {
                 <>
                   <h1 className={styles.roomTitle}>You are not in this room</h1>
                   <p className={styles.muted}>
-                    Only wallets the owner invited can read it. Ask to join and the owner sees your wallet,{" "}
+                    Your wallet has no current access, or a previous invitation was revoked. Only wallets the owner invited can read it. Ask to join and the owner sees your wallet,{" "}
                     <span className={styles.mono}>{me ? short(me) : "your wallet"}</span>, in their list of requests. You
                     will see the room under Invitations once they let you in.
                   </p>
@@ -218,7 +259,8 @@ export function RoomView({ roomId }: { roomId: string }) {
               </h1>
               <span className={styles.badge}>{member.state.members.length} members</span>
             </header>
-            <ol className={styles.messages}>
+            <p className={`${styles.panelBody} ${styles.hint}`}>Conversation is visible to all current room members. Each loan’s terms and revisions are readable only by its lender and borrower; competing lenders cannot see each other’s offers.</p>
+            <ol className={styles.messages} aria-label="Room conversation">
               {member.messages.length === 0 && <li className={styles.muted}>No messages yet. Say what you are looking for.</li>}
               {member.messages.map((m) => {
                 const mine = !!me && m.author.equals(me);
@@ -260,7 +302,7 @@ export function RoomView({ roomId }: { roomId: string }) {
                 placeholder="Write to the room"
                 autoComplete="off"
               />
-              <Button type="submit" loading={busy === "post"} disabled={!draft.trim()}>
+              <Button type="submit" loading={busy === "post"} disabled={!draft.trim() || busy !== null}>
                 Send
               </Button>
             </form>
@@ -274,7 +316,7 @@ export function RoomView({ roomId }: { roomId: string }) {
                 </>
               ) : (
                 <>
-                  <span className={styles.hint}>Approve each message, or allow quick replies for one hour. Quick replies can only post; anything involving money still asks your wallet.</span>
+                  <span className={styles.hint}>Approve each message, or allow quick replies for one hour. Expired quick replies require approval again. Quick replies can only post; anything involving money still asks your wallet.</span>
                   <Button variant="secondary" onClick={() => signer && er && act("session", () => startSession(base, er, signer, ref.anchor), "Quick replies on for one hour.")} loading={busy === "session"}>
                     Allow quick replies
                   </Button>
@@ -289,6 +331,7 @@ export function RoomView({ roomId }: { roomId: string }) {
           </section>
 
           <aside className={styles.side}>
+            <section className={styles.panel}><div className={styles.panelBody}><h2>Next in this room</h2><p className={styles.hint}>{loans.length ? "Review your current loan status and exact revision below. Only confirmed actions advance the loan." : isOwner ? "Invite the other party, review join requests, then ask a lender to propose exact terms." : "Introduce yourself in the conversation. A lender proposes terms for the borrower to review."}</p><a className={styles.textLink} href="#room-balances">Manage private balances</a></div></section>
             {signer && er && (
               <LoanPanel
                 signer={signer}
@@ -305,6 +348,8 @@ export function RoomView({ roomId }: { roomId: string }) {
             {signer && er && isOwner && (
               <CardPublisher signer={signer} base={base} er={er} room={ref.anchor} members={member.state.members.map((m) => m.pubkey)} onChange={() => void load()} />
             )}
+            {signer && er && <details id="room-balances" className={styles.activity}><summary>Private balances · deposit or withdraw</summary><BalancePanel signer={signer} base={base} er={er} onChange={() => void load()} /></details>}
+            <details className={styles.activity}><summary>Your transaction receipts</summary><ReceiptList base={base} er={er} wallet={signer?.publicKey.toBase58() ?? null} refresh={data?.access === "member" ? data.messages.length : 0} /></details>
             <section className={styles.panel} aria-labelledby="members-h">
               <header className={styles.panelHead}>
                 <h2 id="members-h">Members</h2>
@@ -361,7 +406,7 @@ export function RoomView({ roomId }: { roomId: string }) {
               <button
                 className={styles.copy}
                 onClick={async () => {
-                  await navigator.clipboard.writeText(inviteLink(window.location.origin, roomId));
+                  try { await navigator.clipboard.writeText(inviteLink(window.location.origin, roomId)); } catch { setNote({ tone: "error", text: "Could not copy the link. Copy this page’s address from your browser." }); return; }
                   setCopied(true);
                   setTimeout(() => setCopied(false), 1600);
                 }}

@@ -16,7 +16,7 @@ import {
   undelegate,
   withdraw,
 } from "./espl";
-import { advance, newReceipt, saveReceipt } from "./receipts";
+import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
 import { assertDevnet, validateTransaction } from "./tx-validator";
 
 export type PrivateBalanceState = {
@@ -32,11 +32,9 @@ export type PrivateBalanceState = {
 };
 
 async function tokenAmount(c: Connection, account: PublicKey): Promise<bigint | null> {
-  try {
-    return BigInt((await c.getTokenAccountBalance(account)).value.amount);
-  } catch {
-    return null;
-  }
+  const info = await c.getAccountInfo(account);
+  if (!info) return null;
+  return BigInt((await c.getTokenAccountBalance(account)).value.amount);
 }
 
 export async function readPrivateBalance(base: Connection, er: Connection | null, owner: PublicKey, mint: PublicKey): Promise<PrivateBalanceState> {
@@ -74,6 +72,7 @@ async function sendBase(base: Connection, signer: LoanSigner, tx: Transaction, i
   tx.recentBlockhash = blockhash;
   const signed = await signer.signTransaction(tx);
   const receipt = newReceipt(intent, "base");
+  recordSignedReceipt(wallet, receipt, signed);
   const sig = await base.sendRawTransaction(signed.serialize());
   saveReceipt(wallet, advance(receipt, { baseSignature: sig }));
   const res = await base.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
@@ -91,6 +90,7 @@ async function bringToSolana(base: Connection, er: Connection, signer: LoanSigne
   tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
   const signed = await signer.signTransaction(tx);
   const receipt = newReceipt("Move private balance to Solana", "er");
+  recordSignedReceipt(signer.publicKey.toBase58(), receipt, signed, true);
   const sig = await er.sendRawTransaction(signed.serialize(), { skipPreflight: true });
   saveReceipt(owner.toBase58(), advance(receipt, { erSignature: sig, commitId: sig, stage: "settling" }));
   const eata = eataPda(owner, mint);

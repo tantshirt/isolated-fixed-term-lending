@@ -5,6 +5,10 @@ import { LabRejected } from "@/lib/server/soar";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+export async function GET() {
+  return Response.json({ configured: !!process.env.PRIVATE_LAB_SPONSOR_SECRET });
+}
+
 /** Body: { wallet }. Returns a sponsor-signed first lab draw for the learner to review and sign. */
 export async function POST(request: Request) {
   try {

@@ -5,7 +5,7 @@ import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { createTransferCheckedInstruction } from "@solana/spl-token";
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { ata } from "./espl";
-import { advance, newReceipt, saveReceipt } from "./receipts";
+import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
 import { ReviewMismatch, validateTransaction } from "./tx-validator";
 
 export async function sendPrivately(er: Connection, signer: LoanSigner, mint: PublicKey, decimals: number, recipient: PublicKey, amount: bigint) {
@@ -21,6 +21,7 @@ export async function sendPrivately(er: Connection, signer: LoanSigner, mint: Pu
   tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
   const signed = await signer.signTransaction(tx);
   const receipt = newReceipt(`Send privately to ${recipient.toBase58().slice(0, 4)}…`, "er");
+  recordSignedReceipt(signer.publicKey.toBase58(), receipt, signed);
   const sig = await er.sendRawTransaction(signed.serialize(), { skipPreflight: true });
   const res = await er.confirmTransaction(sig, "confirmed");
   saveReceipt(signer.publicKey.toBase58(), advance(receipt, { erSignature: sig, stage: res.value.err ? "failed" : "executed" }));

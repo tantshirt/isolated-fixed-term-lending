@@ -64,7 +64,7 @@ function ChooseVenue() {
       </p>
       <div className={own.options}>
         <Link href={`${BASE}?venue=public`} className={own.option}>
-          <Image className={own.optionArt} src="/illustrations/zl-hero-opt-cards.webp" alt="" aria-hidden width={1200} height={900} sizes="(max-width: 760px) 92vw, 40vw" />
+          <Image className={own.optionArt} src="/illustrations/zr-venue-public.webp" alt="" aria-hidden width={1200} height={900} sizes="(max-width: 760px) 92vw, 40vw" />
           <span className={own.optionTag}>Public</span>
           <span className={own.optionTitle}>Post it on chain</span>
           <span className={own.optionBody}>
@@ -74,7 +74,7 @@ function ChooseVenue() {
           <span className={own.optionCta}>Continue in public →</span>
         </Link>
         <Link href="/devnet/private" className={own.option} data-private>
-          <Image className={own.optionArt} src="/illustrations/zl-hero-opt-pair.webp" alt="" aria-hidden width={1200} height={900} sizes="(max-width: 760px) 92vw, 40vw" />
+          <Image className={own.optionArt} src="/illustrations/zr-venue-private.webp" alt="" aria-hidden width={1200} height={900} sizes="(max-width: 760px) 92vw, 40vw" />
           <span className={own.optionTag} data-private>
             Private
           </span>

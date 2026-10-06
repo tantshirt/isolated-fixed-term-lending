@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { pollAfterCompletion } from "@/lib/private/poll";
 import { Button } from "@/components/ui/Button";
 import { messageFromAnchorError } from "@/lib/anchor-errors";
 import { fmt, formatUsdc, formatWsol } from "@/lib/format";
@@ -20,10 +22,15 @@ const CHOICES: { value: LabOutcome; label: string }[] = [
 /** A VRF-drawn loan scenario: guess how it ends, read why, and optionally record it publicly with SOAR. */
 export function LabPage() {
   const { signer, base, connect } = usePrivate();
+  const walletKey = signer?.publicKey.toBase58() ?? null;
+  const walletRef = useRef(walletKey);
+  walletRef.current = walletKey;
   const result = useRef<HTMLDivElement>(null);
   const [randomness, setRandomness] = useState<Uint8Array | null>(null);
   const [rounds, setRounds] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "drawing" | "ready">("idle");
+  const [phase, setPhase] = useState<"checking" | "idle" | "drawing" | "ready">("checking");
+  const drawing = useRef(false);
+  const pendingRound = useRef<number | null>(null);
   const [answer, setAnswer] = useState<LabOutcome | null>(null);
   const [record, setRecord] = useState<"idle" | "busy" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -42,34 +49,66 @@ export function LabPage() {
   const load = useCallback(async () => {
     if (!signer) return null;
     const s = await readLabScenario(base, signer.publicKey);
-    if (s?.ready) show(s);
+    if (walletRef.current !== walletKey) return null;
+    setRounds(s?.rounds ?? 0);
+    if (s?.ready && (pendingRound.current === null || s.rounds >= pendingRound.current)) { pendingRound.current = null; show(s); }
+    else {
+      setRandomness(null);
+      setPhase(s || drawing.current || pendingRound.current !== null ? "drawing" : "idle");
+    }
     return s;
-  }, [base, signer]);
+  }, [base, signer, walletKey]);
 
   useEffect(() => {
     reset();
+    drawing.current = false;
+    pendingRound.current = null;
     setRandomness(null);
-    setPhase("idle");
-    void load();
-  }, [load]);
+    setPhase("checking");
+    setRounds(0);
+  }, [walletKey]);
+
+  useEffect(() => {
+    if (!signer || (phase !== "checking" && phase !== "drawing")) return;
+    return pollAfterCompletion(async () => {
+      // The submission owns the read until its result is known.
+      if (drawing.current) return;
+      try { await load(); }
+      catch (e) { if (walletRef.current === walletKey) setError(messageFromAnchorError(e)); }
+    }, 2000);
+  }, [load, phase, signer, walletKey]);
 
   const draw = async () => {
-    if (!signer) return;
+    if (!signer || drawing.current || phase === "checking" || phase === "drawing") return;
+    drawing.current = true;
     reset();
     setPhase("drawing");
     try {
-      const before = rounds;
-      const broke = rounds === 0 && (await base.getBalance(signer.publicKey)) < 2_000_000;
-      await (broke ? requestSponsoredScenario(base, signer) : requestScenario(base, signer));
-      for (let i = 0; i < 30; i++) {
-        await new Promise((r) => setTimeout(r, 2000));
-        const s = await readLabScenario(base, signer.publicKey);
-        if (s?.ready && s.rounds > before) return show(s);
+      // Read again before submitting: another tab or a reload may already have a pending draw.
+      const existing = await readLabScenario(base, signer.publicKey);
+      if (walletRef.current !== walletKey) return;
+      setRounds(existing?.rounds ?? 0);
+      if (existing && !existing.ready) { pendingRound.current = existing.rounds; setRandomness(null); return; }
+      const broke = !existing && (await base.getBalance(signer.publicKey)) < 2_000_000;
+      if (broke) {
+        const response = await fetch("/api/lab/sponsor", { cache: "no-store" });
+        const capability = response.ok ? await response.json() : null;
+        if (!capability?.configured) throw new Error("Add Devnet SOL to draw with your wallet, or use the wallet-free Learn page.");
       }
-      throw new Error("The VRF oracle has not answered yet. Try again in a minute.");
+      if (walletRef.current !== walletKey) return;
+      await (broke ? requestSponsoredScenario(base, signer) : requestScenario(base, signer));
+      if (walletRef.current !== walletKey) return;
+      pendingRound.current = (existing?.rounds ?? 0) + 1;
+      setRandomness(null);
+      // Poll the persisted account below; never submit a second draw to recover a pending one.
     } catch (e) {
+      if (walletRef.current !== walletKey) return;
       setError(messageFromAnchorError(e));
-      setPhase(randomness ? "ready" : "idle");
+    } finally {
+      if (walletRef.current === walletKey) {
+        drawing.current = false;
+        setPhase("checking");
+      }
     }
   };
 
@@ -80,8 +119,9 @@ export function LabPage() {
     try {
       await registerForAchievements(base, signer);
       await claimAchievement(signer.publicKey, answer);
-      setRecord("done");
+      if (walletRef.current === walletKey) setRecord("done");
     } catch (e) {
+      if (walletRef.current !== walletKey) return;
       setError(messageFromAnchorError(e));
       setRecord("idle");
     }
@@ -116,16 +156,16 @@ export function LabPage() {
               <li><strong>See why</strong> it ends that way.</li>
             </ol>
             <Button onClick={connect}>Connect a Devnet wallet</Button>
-            <p className={styles.hint}>Your first draw is covered, so an empty Devnet wallet works.</p>
+            <p className={styles.hint}>Draws use Devnet SOL. First-draw sponsorship is available when configured.</p>
           </div>
         </section>
       ) : !s ? (
         <section className={styles.panel}>
           <div className={styles.panelBody}>
-            <Button onClick={draw} loading={phase === "drawing"}>
-              {phase === "drawing" ? "Waiting for randomness" : "Draw a scenario"}
+            <Button onClick={draw} loading={phase === "drawing" || phase === "checking"}>
+              {phase === "checking" ? "Checking your scenario" : phase === "drawing" ? "Waiting for randomness" : "Draw a scenario"}
             </Button>
-            <p className={styles.hint}>Your first draw is covered if your wallet has no Devnet SOL. You still sign it, and it can only create your scenario.</p>
+            <p className={styles.hint}>Your wallet signs the draw. If first-draw sponsorship is available, it covers an empty wallet; otherwise add Devnet SOL.</p>
           </div>
         </section>
       ) : (
@@ -168,7 +208,7 @@ export function LabPage() {
               )}
             </div>
             <div className={styles.actions}>
-              <Button variant={answer ? "primary" : "secondary"} onClick={draw} loading={phase === "drawing"}>Draw another</Button>
+              <Button variant={answer ? "primary" : "secondary"} onClick={draw} loading={phase === "drawing" || phase === "checking"}>Draw another</Button>
               {correct && record !== "done" && (
                 <span className={lab.optional}>
                   <span className={styles.badge}>Optional</span>
@@ -186,7 +226,8 @@ export function LabPage() {
           </div>
         </section>
       )}
-      {error && <p className={styles.error} role="alert">{error}</p>}
+      {(error || phase === "checking" || phase === "drawing") && <p className={styles.hint}><Link href="/learn">Continue with wallet-free learning</Link></p>}
+      {error && <div className={styles.error} role="alert"><p>{error}</p><Button variant="secondary" onClick={() => { setError(null); void load().catch((e) => setError(messageFromAnchorError(e))); }}>Retry scenario read</Button></div>}
     </div>
   );
 }

@@ -1,16 +1,16 @@
 import Image from "next/image";
 
 const SPOTS = {
-  waiting: "/illustrations/zl-spot-waiting.webp",
-  notFound: "/illustrations/zl-spot-notfound.webp",
-  private: "/illustrations/zl-spot-private.webp",
-  success: "/illustrations/zl-spot-success.webp",
+  waiting: "/illustrations/zr-spot-waiting.webp",
+  notFound: "/illustrations/zr-spot-notfound.webp",
+  private: "/illustrations/zr-spot-private.webp",
+  success: "/illustrations/zr-spot-success.webp",
 } as const;
 
 export type SpotKind = keyof typeof SPOTS;
 
 /**
- * A small pebble-on-water picture for empty, missing, private or done states.
+ * A small sculptural satin-ribbon picture for empty, missing, private or done states.
  * Decoration only: never inside a figure readout, risk warning or signing control.
  */
 export function Spot({
