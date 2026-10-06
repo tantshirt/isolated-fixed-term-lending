@@ -2,7 +2,7 @@
 
 import { Connection, PublicKey } from "@solana/web3.js";
 import { utils } from "@coral-xyz/anchor";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import idl from "@/idl/isolated_loan.json";
 import privateIdl from "@/idl/private_loan.json";
 import { PROGRAM_ID } from "@/lib/constants";
@@ -20,6 +20,7 @@ import {
   type LiveStatus,
 } from "@/lib/live-state";
 import { sharedRead } from "../shared-read";
+import { fetchOffersBy, fetchRequestsBy } from "@/lib/portfolio";
 import { useSigner } from "./signer-context";
 
 type Spec<T> = {
@@ -63,10 +64,17 @@ function useLiveAccounts<T>(spec: Spec<T>) {
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const specRef = useRef(spec);
   specRef.current = spec;
+  const loadedName = useRef(spec.name);
 
   useEffect(() => {
     const c = getConnection();
     const s = specRef.current;
+    // Another wallet's list must never show while this one loads.
+    if (loadedName.current !== s.name) {
+      loadedName.current = s.name;
+      setItems(null);
+      setError(null);
+    }
     let alive = true;
     let subscribed = false;
     let lastLoadOk: boolean | null = null;
@@ -126,7 +134,8 @@ function useLiveAccounts<T>(spec: Spec<T>) {
       stopBeat();
       if (subId !== null) void c.removeProgramAccountChangeListener(subId).catch(() => {});
     };
-  }, [refreshKey]);
+    // A new spec name (another wallet) is a new list.
+  }, [refreshKey, spec.name]);
 
   return { items, error, status, updatedAt };
 }
@@ -164,6 +173,50 @@ const CARD_SPEC: Spec<Card> = {
 };
 
 export const useLiveOffers = () => useLiveAccounts(OFFER_SPEC);
+
+/**
+ * Only the offers and requests `wallet` is part of, read with account filters and
+ * kept current by the same subscription as the full lists.
+ */
+export function useMyAccounts(wallet: string | null) {
+  const offerSpec = useMemo<Spec<Offer>>(
+    () => ({
+      ...OFFER_SPEC,
+      name: `mine-offers:${wallet ?? "none"}`,
+      load: async (c) => {
+        if (!wallet) return [];
+        const [l, b] = await Promise.all([fetchOffersBy(c, "lender", wallet), fetchOffersBy(c, "borrower", wallet)]);
+        return [...new Map([...l, ...b].map((o) => [o.publicKey, o])).values()];
+      },
+      decode: (c, key, data) => {
+        const o = OFFER_SPEC.decode(c, key, data);
+        return o && wallet && (o.lender === wallet || o.borrower === wallet) ? o : null;
+      },
+    }),
+    [wallet]
+  );
+  const requestSpec = useMemo<Spec<LoanRequest>>(
+    () => ({
+      ...REQUEST_SPEC,
+      name: `mine-requests:${wallet ?? "none"}`,
+      load: async (c) => (wallet ? fetchRequestsBy(c, "borrower", wallet) : []),
+      decode: (c, key, data) => {
+        const r = REQUEST_SPEC.decode(c, key, data);
+        return r && wallet && r.borrower === wallet ? r : null;
+      },
+    }),
+    [wallet]
+  );
+  const offers = useLiveAccounts(offerSpec);
+  const requests = useLiveAccounts(requestSpec);
+  return {
+    offers: offers.items,
+    requests: requests.items,
+    error: offers.error ?? requests.error,
+    status: offers.status,
+    loading: offers.items === null || requests.items === null,
+  };
+}
 export const useLiveRequests = () => useLiveAccounts(REQUEST_SPEC);
 export const useLiveCards = () => useLiveAccounts(CARD_SPEC);
 

@@ -1,0 +1,268 @@
+import type { Connection, GetProgramAccountsFilter, MemcmpFilter, PublicKey } from "@solana/web3.js";
+import { debt } from "./loan-math";
+import { debtOf, computeHealth, type PriceSnapshot } from "./offer-status";
+import { readOnlyProgram, supportedOfferMints, toOffer, type Offer } from "./offers";
+import type { OfferAccount, RequestAccount } from "./program";
+import { requestHref, toRequest, type LoanRequest } from "./requests";
+
+/** Byte offsets of the wallet fields, discriminator included (checked against the IDL). */
+export const OFFSETS = {
+  offerLender: 8,
+  offerBorrower: 40,
+  requestBorrower: 8,
+  requestLender: 151,
+} as const;
+
+export type Side = "lender" | "borrower";
+
+/** The account filter that keeps only `wallet`'s side of an offer or request. */
+export function walletFilter(kind: "offer" | "request", side: Side, wallet: string): MemcmpFilter {
+  const offset =
+    kind === "offer"
+      ? side === "lender"
+        ? OFFSETS.offerLender
+        : OFFSETS.offerBorrower
+      : side === "borrower"
+        ? OFFSETS.requestBorrower
+        : OFFSETS.requestLender;
+  return { memcmp: { offset, bytes: wallet } };
+}
+
+type Namespace<A> = {
+  all: (filters?: GetProgramAccountsFilter[]) => Promise<{ publicKey: PublicKey; account: A }[]>;
+};
+
+function namespaces(connection: Connection) {
+  const account = readOnlyProgram(connection).account as unknown as {
+    offer: Namespace<OfferAccount>;
+    loanRequest: Namespace<RequestAccount>;
+  };
+  return { offer: account.offer, request: account.loanRequest };
+}
+
+/** Offers where `wallet` is the lender or the borrower, without loading every account. */
+export async function fetchOffersBy(connection: Connection, side: Side, wallet: string): Promise<Offer[]> {
+  const rows = await namespaces(connection).offer.all([walletFilter("offer", side, wallet)]);
+  return rows.filter((r) => supportedOfferMints(r.account)).map((r) => toOffer(r.publicKey, r.account));
+}
+
+/** Requests where `wallet` is the borrower or the funding lender. */
+export async function fetchRequestsBy(connection: Connection, side: Side, wallet: string): Promise<LoanRequest[]> {
+  const rows = await namespaces(connection).request.all([walletFilter("request", side, wallet)]);
+  return rows.filter((r) => supportedOfferMints(r.account)).map((r) => toRequest(r.publicKey, r.account));
+}
+
+/** Both sides at once, deduplicated by account. */
+export async function fetchMine(connection: Connection, wallet: string): Promise<{ offers: Offer[]; requests: LoanRequest[] }> {
+  const [ol, ob, rb, rl] = await Promise.all([
+    fetchOffersBy(connection, "lender", wallet),
+    fetchOffersBy(connection, "borrower", wallet),
+    fetchRequestsBy(connection, "borrower", wallet),
+    fetchRequestsBy(connection, "lender", wallet),
+  ]);
+  const uniq = <T extends { publicKey: string }>(xs: T[]) => [...new Map(xs.map((x) => [x.publicKey, x])).values()];
+  return { offers: uniq([...ol, ...ob]), requests: uniq([...rb, ...rl]) };
+}
+
+/** Lower is more urgent. */
+export const URGENCY = {
+  pastDue: 0,
+  liquidatable: 1,
+  dueSoon: 2,
+  nearLine: 3,
+  running: 4,
+  open: 5,
+  settled: 6,
+} as const;
+
+export type Urgency = (typeof URGENCY)[keyof typeof URGENCY];
+
+export type PortfolioItem = {
+  key: string;
+  side: Side;
+  kind: "offer" | "loan" | "request";
+  urgency: Urgency;
+  /** What needs doing, in plain words. */
+  headline: string;
+  /** The button label on the row. */
+  action: string;
+  href: string;
+  /** Deadline, when the loan is running. */
+  dueTs: number | null;
+  counterparty: string | null;
+  principal: bigint;
+  /** Principal plus full-term interest. */
+  owed: bigint;
+  collateral: bigint;
+  ltvBps: number | null;
+  offer?: Offer;
+  request?: LoanRequest;
+};
+
+export type PortfolioTotals = {
+  lentOut: bigint;
+  owedToYou: bigint;
+  borrowed: bigint;
+  youOwe: bigint;
+  /** Earliest future deadline across running loans. */
+  nextDueTs: number | null;
+  /** Items at "near the line" urgency or more urgent. */
+  attention: number;
+};
+
+const DAY = 86_400;
+/** Health under this share of the distance to the line counts as near. */
+const NEAR_HEALTH_BPS = 1_500;
+
+export const offerHref = (o: Pick<Offer, "lender" | "offerId">) => `/devnet/offers/${o.lender}/${o.offerId}`;
+
+function offerItem(o: Offer, me: string, price: PriceSnapshot | null, now: number): PortfolioItem | null {
+  const side: Side | null = o.lender === me ? "lender" : o.borrower === me ? "borrower" : null;
+  if (!side) return null;
+  const base = {
+    key: o.publicKey,
+    side,
+    href: offerHref(o),
+    principal: o.principal,
+    owed: debtOf(o),
+    collateral: o.collateralAmount,
+    offer: o,
+  };
+  if (o.status === "open") {
+    // Only the lender has an open offer; a borrower appears once it is filled.
+    return {
+      ...base,
+      kind: "offer",
+      urgency: URGENCY.open,
+      headline: "Waiting for a borrower",
+      action: "Manage offer",
+      dueTs: null,
+      counterparty: null,
+      ltvBps: null,
+    };
+  }
+  if (o.status === "filled") {
+    const health = price ? computeHealth(o, price) : null;
+    const ltvBps = health?.currentLtvBps ?? null;
+    const past = now >= o.expiryTs;
+    const overLine = !past && !!price?.fresh && ltvBps !== null && ltvBps >= o.liquidationLtvBps;
+    const near = !past && health !== null && health.healthBps <= NEAR_HEALTH_BPS;
+    const soon = !past && o.expiryTs - now <= DAY;
+    const counterparty = side === "lender" ? o.borrower : o.lender;
+    const common = { ...base, kind: "loan" as const, dueTs: o.expiryTs, counterparty, ltvBps };
+    if (past)
+      return side === "lender"
+        ? { ...common, urgency: URGENCY.pastDue, headline: "Deadline passed. The collateral is yours to claim.", action: "Claim collateral" }
+        : { ...common, urgency: URGENCY.pastDue, headline: "Deadline passed. Repayment is closed.", action: "View loan" };
+    if (overLine)
+      return side === "lender"
+        ? { ...common, urgency: URGENCY.liquidatable, headline: "Past the liquidation line. Anyone can liquidate it now.", action: "View loan" }
+        : { ...common, urgency: URGENCY.liquidatable, headline: "Past the liquidation line. Repay now to keep your wSOL.", action: "Repay" };
+    if (soon)
+      return side === "lender"
+        ? { ...common, urgency: URGENCY.dueSoon, headline: "Due within a day.", action: "View loan" }
+        : { ...common, urgency: URGENCY.dueSoon, headline: "Due within a day. If you do not repay by then, the lender receives your wSOL.", action: "Repay" };
+    if (near)
+      return side === "lender"
+        ? { ...common, urgency: URGENCY.nearLine, headline: "Near the liquidation line.", action: "View loan" }
+        : { ...common, urgency: URGENCY.nearLine, headline: "Near the liquidation line. Repaying early ends the risk.", action: "Repay" };
+    return side === "lender"
+      ? { ...common, urgency: URGENCY.running, headline: "Running. You are repaid at or before the deadline.", action: "View loan" }
+      : { ...common, urgency: URGENCY.running, headline: "Running. Repay any time before the deadline.", action: "Repay" };
+  }
+  // Settled offers wait to be closed by the lender, which returns rent.
+  const word = { repaid: "Repaid", expired: "Expired", liquidated: "Liquidated", cancelled: "Cancelled" }[o.status];
+  return {
+    ...base,
+    kind: o.status === "cancelled" ? "offer" : "loan",
+    urgency: URGENCY.settled,
+    headline: side === "lender" ? `${word}. Close it to reclaim rent.` : `${word}.`,
+    action: side === "lender" ? "Close and reclaim rent" : "View loan",
+    dueTs: null,
+    counterparty: side === "lender" ? o.borrower : o.lender,
+    ltvBps: null,
+  };
+}
+
+function requestItem(r: LoanRequest, me: string): PortfolioItem | null {
+  // A funded request becomes a filled offer, which already appears as a loan.
+  if (r.borrower !== me || r.status === "funded") return null;
+  return {
+    key: r.publicKey,
+    side: "borrower",
+    kind: "request",
+    urgency: r.status === "open" ? URGENCY.open : URGENCY.settled,
+    headline: r.status === "open" ? "Waiting for a lender to fund it." : "Cancelled. Close it to get your rent back.",
+    action: r.status === "open" ? "Manage request" : "Close request",
+    href: requestHref(r),
+    dueTs: null,
+    counterparty: null,
+    principal: r.principal,
+    owed: debt(r.principal, r.interestBps),
+    collateral: r.collateralAmount,
+    ltvBps: null,
+    request: r,
+  };
+}
+
+/** Everything one wallet is part of, most urgent first, plus totals. */
+export function buildPortfolio(input: {
+  me: string;
+  offers: Offer[];
+  requests: LoanRequest[];
+  price: PriceSnapshot | null;
+  now: number;
+}): { items: PortfolioItem[]; totals: PortfolioTotals } {
+  const { me, offers, requests, price, now } = input;
+  const items = [
+    ...offers.map((o) => offerItem(o, me, price, now)),
+    ...requests.map((r) => requestItem(r, me)),
+  ]
+    .filter((x): x is PortfolioItem => x !== null)
+    .sort((a, b) => a.urgency - b.urgency || (a.dueTs ?? Infinity) - (b.dueTs ?? Infinity) || a.key.localeCompare(b.key));
+
+  const running = items.filter((i) => i.kind === "loan" && i.offer?.status === "filled");
+  const sum = (xs: PortfolioItem[], f: (i: PortfolioItem) => bigint) => xs.reduce((t, i) => t + f(i), 0n);
+  const lending = running.filter((i) => i.side === "lender");
+  const borrowing = running.filter((i) => i.side === "borrower");
+  const future = running.map((i) => i.dueTs!).filter((t) => t > now);
+  return {
+    items,
+    totals: {
+      lentOut: sum(lending, (i) => i.principal),
+      owedToYou: sum(lending, (i) => i.owed),
+      borrowed: sum(borrowing, (i) => i.principal),
+      youOwe: sum(borrowing, (i) => i.owed),
+      nextDueTs: future.length ? Math.min(...future) : null,
+      attention: items.filter((i) => i.urgency <= URGENCY.nearLine).length,
+    },
+  };
+}
+
+/** A calendar file for one deadline, so a borrower or lender gets a reminder. */
+export function deadlineIcs(item: Pick<PortfolioItem, "key" | "side" | "dueTs" | "owed">, url: string): string | null {
+  if (!item.dueTs) return null;
+  const stamp = (t: number) => new Date(t * 1000).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const usdc = (Number(item.owed) / 1e6).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const summary = item.side === "borrower" ? `ZenLo: repay ${usdc} USDC` : `ZenLo: loan due (${usdc} USDC owed to you)`;
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//ZenLo//My loans//EN",
+    "BEGIN:VEVENT",
+    `UID:${item.key}@zenlo`,
+    `DTSTAMP:${stamp(item.dueTs - DAY)}`,
+    `DTSTART:${stamp(item.dueTs - 3600)}`,
+    `DTEND:${stamp(item.dueTs)}`,
+    `SUMMARY:${summary}`,
+    `DESCRIPTION:The loan's last second is the end of this event. ${url}`,
+    `URL:${url}`,
+    "BEGIN:VALARM",
+    "TRIGGER:-PT23H",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${summary}`,
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}

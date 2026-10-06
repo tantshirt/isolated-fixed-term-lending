@@ -7,7 +7,18 @@ import { RequestStatusPill } from "./RequestStatusPill";
 import styles from "@/components/offers/OfferRow.module.css";
 
 /** One public borrower request. Same columns as an offer row, from the borrower's side. */
-export function RequestRow({ request: r, price }: { request: LoanRequest; price: PriceSnapshot | null }) {
+export function RequestRow({
+  request: r,
+  price,
+  me = null,
+}: {
+  request: LoanRequest;
+  price: PriceSnapshot | null;
+  /** The connected wallet, so open requests from others offer "Fund". */
+  me?: string | null;
+}) {
+  const fundable = r.status === "open" && !!me && r.borrower !== me;
+  const yours = !!me && r.borrower === me;
   const owed = debt(r.principal, r.interestBps);
   const ltv = price ? computeHealth(requestAsOffer(r), price).currentLtvBps : null;
   return (
@@ -31,7 +42,7 @@ export function RequestRow({ request: r, price }: { request: LoanRequest; price:
         </span>
       </span>
       <span className={styles.status}>
-        <RequestStatusPill status={r.status} />
+        {fundable ? <span className={styles.fund}>Fund this request</span> : yours ? <span className={styles.yours}>Your request</span> : <RequestStatusPill status={r.status} />}
         <svg className={styles.chevron} width="16" height="16" viewBox="0 0 16 16" aria-hidden>
           <path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

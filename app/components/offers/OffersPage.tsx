@@ -4,6 +4,8 @@ import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
 import { useMemo, useState } from "react";
 import { Spot } from "@/components/brand/Spot";
+import { WelcomeBack } from "@/components/portfolio/WelcomeBack";
+import { useSigner } from "@/lib/client/signer-context";
 import { Chips } from "@/components/ui/Chips";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useOffers, usePrice } from "@/lib/client/hooks";
@@ -11,12 +13,13 @@ import type { Offer } from "@/lib/offers";
 import { OfferRow } from "./OfferRow";
 import styles from "./OffersPage.module.css";
 
-type Filter = "open" | "filled" | "ended" | "all";
+type Filter = "open" | "filled" | "ended" | "mine" | "all";
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "open", label: "Open offers" },
   { value: "filled", label: "Waiting for repayment" },
   { value: "ended", label: "Ended" },
+  { value: "mine", label: "Mine" },
   { value: "all", label: "All" },
 ];
 
@@ -35,37 +38,42 @@ const STEPS = [
   },
 ];
 
-function matches(o: Offer, f: Filter) {
+function matches(o: Offer, f: Filter, me: string | null) {
   if (f === "all") return true;
+  if (f === "mine") return !!me && (o.lender === me || o.borrower === me);
   if (f === "ended") return !["open", "filled"].includes(o.status);
   return o.status === f;
 }
 
 export function OffersPage() {
   const { offers, error } = useOffers();
+  const me = useSigner().publicKey?.toBase58() ?? null;
   const { price } = usePrice();
   const [filter, setFilter] = useState<Filter>("open");
   const shown = useMemo(
-    () => (offers ?? []).filter((o) => matches(o, filter)),
-    [offers, filter]
+    () => (offers ?? []).filter((o) => matches(o, filter, me)),
+    [offers, filter, me]
   );
   const counts = useMemo(() => {
     const c: Record<Filter, number> = {
       open: 0,
       filled: 0,
       ended: 0,
+      mine: 0,
       all: offers?.length ?? 0,
     };
     for (const o of offers ?? []) {
+      if (matches(o, "mine", me)) c.mine++;
       if (o.status === "open") c.open++;
       else if (o.status === "filled") c.filled++;
       else c.ended++;
     }
     return c;
-  }, [offers]);
+  }, [offers, me]);
 
   return (
     <div className="page">
+      <WelcomeBack />
       <section className={styles.intro}>
         <div className={styles.titleRow}>
           <div>
@@ -110,7 +118,7 @@ export function OffersPage() {
           <Chips
             label="Show"
             hideLabel
-            options={FILTERS.map((f) => ({
+            options={FILTERS.filter((f) => f.value !== "mine" || me).map((f) => ({
               value: f.value,
               label: `${f.label}${offers ? ` ${counts[f.value]}` : ""}`,
             }))}

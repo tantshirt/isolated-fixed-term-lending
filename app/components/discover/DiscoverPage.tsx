@@ -134,7 +134,7 @@ export function DiscoverPage() {
           <Rows header={["Borrow", "Repays", "Term", "Collateral locked", "Status"]}>
             {applyFilters(items.filter((r) => r.status === "open"), requestFacts, filters).map((r) => ({
               key: r.publicKey,
-              node: <RequestRow request={r} price={price} />,
+              node: <RequestRow request={r} price={price} me={publicKey?.toBase58() ?? null} />,
             }))}
           </Rows>
         )}

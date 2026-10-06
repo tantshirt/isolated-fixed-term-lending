@@ -10,6 +10,7 @@ import { rpcFetch } from "@/lib/rpc-fetch";
 import { RPC_URL, WS_URL } from "@/lib/constants";
 import { SignerProvider } from "@/lib/client/signer-context";
 import { ToastProvider } from "@/lib/client/toast";
+import { WalletWatcher } from "./WalletWatcher";
 
 /**
  * Wallets register themselves through Wallet Standard (Phantom, Solflare, Backpack),
@@ -29,7 +30,10 @@ export function Providers({ children }: { children: ReactNode }) {
         <SignerProvider>
           <LazyMotion features={domMax} strict>
             <MotionConfig reducedMotion="user">
-              <ToastProvider>{children}</ToastProvider>
+              <ToastProvider>
+                <WalletWatcher />
+                {children}
+              </ToastProvider>
             </MotionConfig>
           </LazyMotion>
         </SignerProvider>

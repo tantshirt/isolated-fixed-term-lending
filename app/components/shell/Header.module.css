@@ -125,3 +125,18 @@
     bottom: 0;
   }
 }
+
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 0.375rem;
+  padding: 0 0.375rem;
+  border-radius: var(--radius-full);
+  background: var(--color-text-red);
+  color: var(--color-on-accent);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  vertical-align: 1px;
+}
