@@ -146,3 +146,21 @@ Coverage note: verified through a temporary preview harness (deleted before comm
 | List and status transitions are 0.2 s with no layout animation on rows | Nils | A 15-second refresh must not make the list shift. |
 
 Applied council findings: native button reset on the explainer, labelled row figures on phones, translated wallet errors on Ask to join, `num` only on figures, 44px link targets, 0.2 s transitions. Coverage note: Playwright at 390, 820 and 1440px on all Discover views, the request page and the wizard, signed out. Signed-in funding was not run in a browser; Devnet funding is proven by the smoke script (see [devnet.md](../docs/devnet.md)).
+
+## LegitShark rebrand kickoff (2026-10-06)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| The product is renamed LegitShark (`legitshark.sol` was unregistered on mainnet on 2026-10-06) | User / Kestrel / Ravi | A "wait, what?" name with an honest payoff. `loanshark.sol` and `sharky.sol` are taken, and sharky.fi is an existing Solana lending protocol, so "Sharky" cannot be the product name. |
+| The mascot is Sharky: flat head, one dorsal fin on the back, legs and no tail; public look is a cobalt polo, gold chain and white slacks (Miami, not a business suit), soft 3D | User / Indigo | One character carries the story: there are bad loan sharks; here every term is on the table. |
+| Sharky supersedes the cobalt satin and porcelain series (Phase 6 ruling) for all illustrations | User / Kestrel | Every asset is redrawn with Sharky. There is still no text and no logo inside generated images. |
+| Sharky never appears inside a figure readout, a risk warning, a signing control or a liquidation state; story art beside explanatory copy is allowed | Plumb / Fovea | He hands over the term sheet; he is never the term sheet. Humor stays out of money decisions. |
+| Mouth is a closed smirk or a grin with rounded teeth; never a jagged snarl, blood or menace | Kestrel / Sol | Humor without looking like a scam. |
+| The private chapter uses a PI variant: fedora, round glasses, trench coat, magnifying glass, noir posture, brand palette | User / Indigo | Private rooms read as a discreet investigation, not a dark-canvas theme. |
+| One hero entrance (≤ 250 ms rise and fade), then Sharky holds still; no idle loops | Nils | A fidgeting mascot next to an APR reads as a slot machine. The scroll story stays as it is. |
+| The landing hero states the joke once, then plain English | Fovea / Sol | A beginner must read "transparent fixed-term loan" within five seconds. |
+| Each use case gets its own pose showing a different job | Ravi / Wren | The use-case section was the weakest on the page; five waving Sharkys would be filler. |
+| The logo is the Inter wordmark "LegitShark" in code plus a Sharky-head mark | Kestrel | Generated images never contain text; the mark must read at 16 px. |
+| On-chain program name, crate, PDA seeds, package names and `--tenor-*` token names do not change | Hollis / Plumb | The rebrand is display-only; renaming seeds would break deployed Devnet accounts. |
+
+Phase 1 review (Kestrel / Indigo / Plumb / Fovea): the wordmark and 34 px head pass at 1440 and 390 px. The 19 poses hold identity, and the banker's-lamp green is accepted as a single prop. The IDL description stays "Lendspan" because on-chain metadata is out of scope. The 2K PNG originals stay local, and compact WebP masters are committed.

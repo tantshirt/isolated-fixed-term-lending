@@ -1,4 +1,4 @@
-// Lendspan's Hydra cranker (story 12.1). No hosted cranker fired on the Devnet
+// LegitShark's Hydra cranker (story 12.1). No hosted cranker fired on the Devnet
 // TEE (gate 8.6), so a Vercel Cron job triggers due `watch_loan` schedules.
 // Triggering is permissionless and every scheduled instruction is idempotent,
 // so retries and overlapping runs are harmless. The cranker holds no user keys
@@ -16,7 +16,7 @@ const WATCH = Buffer.from((idl.instructions.find((i) => i.name === "watch_loan")
 
 export type DueCrank = { crank: PublicKey; ix: TransactionInstruction; cuLimit: number; nextSlot: bigint; remaining: bigint };
 
-/** Parses a crank account; returns null unless it schedules Lendspan's `watch_loan`. */
+/** Parses a crank account; returns null unless it schedules LegitShark's `watch_loan`. */
 export function parseCrank(crank: PublicKey, data: Buffer): DueCrank | null {
   if (data.length < HEADER + 2) return null;
   const nextSlot = data.readBigUInt64LE(64);
@@ -50,7 +50,7 @@ export async function teeAs(kp: Keypair): Promise<Connection> {
   return new Connection(`${TEE_RPC}?token=${token}`, "confirmed");
 }
 
-/** Triggers every due Lendspan watch. Returns what happened per crank. */
+/** Triggers every due LegitShark watch. Returns what happened per crank. */
 export async function runCranker(er: Connection, kp: Keypair, max = 15) {
   const slot = BigInt(await er.getSlot());
   const accounts = await er.getProgramAccounts(HYDRA_EPHEMERAL);

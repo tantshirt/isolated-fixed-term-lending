@@ -150,7 +150,7 @@ export function OffersPage() {
             </p>
             <p className={styles.emptyBody}>
               {error
-                ? "Lendspan cannot reach the configured network. Retry the connection above."
+                ? "LegitShark cannot reach the configured network. Retry the connection above."
                 : "Lenders post offers here. Create one with test USDC, or return later for a new offer."}
             </p>
             <Link href="/devnet/create" className={styles.emptyLink}>

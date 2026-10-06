@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { RequestWizard } from "@/components/request/RequestWizard";
 
-export const metadata: Metadata = { title: "Request a loan · Lendspan" };
+export const metadata: Metadata = { title: "Request a loan · LegitShark" };
 
 export default function Page() {
   return (

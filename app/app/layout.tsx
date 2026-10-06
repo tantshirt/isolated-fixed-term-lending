@@ -8,7 +8,7 @@ const mono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
 });
 export const metadata: Metadata = {
-  title: { default: "Lendspan", template: "%s · Lendspan" },
+  title: { default: "LegitShark", template: "%s · LegitShark" },
   description:
     "Understand the terms. Explore fixed-term USDC loans backed by wSOL.",
 };

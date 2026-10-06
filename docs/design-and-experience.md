@@ -1,12 +1,30 @@
-# Lendspan design and experience
+# LegitShark design and experience
 
-The approved Lendspan redesign replaces Tenor. Product intent lives in [PRODUCT.md](../PRODUCT.md); financial rules in [research.md](research.md) and [architecture.md](architecture.md) remain authoritative. The [design council](../.design-council/README.md) records project-specific decisions and upstream provenance.
+LegitShark (renamed from Lendspan on 2026-10-06, which replaced Tenor) keeps the Lendspan tokens and adds Sharky, see Name and mascot. Product intent lives in [PRODUCT.md](../PRODUCT.md); financial rules in [research.md](research.md) and [architecture.md](architecture.md) remain authoritative. The [design council](../.design-council/README.md) records project-specific decisions and upstream provenance.
 
 ## Identity and type
 
-Lendspan's voice is direct, approachable and precise. Tagline: **Clear terms. One loan at a time.** Use Inter for headings, text, controls and financial values, with tabular numerals where values align or change. Reserve monospace for addresses or technical details. Body text starts at 16px; controls on phones do not shrink below 16px. Headings wrap naturally, with tracking no tighter than -0.04em.
+LegitShark's voice is direct, approachable and precise. Tagline: **Clear terms. One loan at a time.** Use Inter for headings, text, controls and financial values, with tabular numerals where values align or change. Reserve monospace for addresses or technical details. Body text starts at 16px; controls on phones do not shrink below 16px. Headings wrap naturally, with tracking no tighter than -0.04em.
 
 Light mode only: white surfaces, cool neutral layers, blue primary actions, distinct semantic success/warning/error states. Keep Astryx semantic tokens. Palette literals belong in the token block in `app/app/globals.css`; components consume tokens. The previous ivory/green/brass palette and requirement for mono financial figures are superseded.
+
+## Name and mascot
+
+The product is **LegitShark**: "Yes, a loan shark. A legit one." The name gets a laugh. Then the page proves the point, because both parties see every term before anything is signed.
+
+**Sharky** is the mascot, the good loan shark.
+
+- **Look:** soft 3D vinyl-toy finish, a cool grey shark with a white belly.
+  - **Anatomy:** flat-topped head with no fin on it, exactly one dorsal fin on his upper back, two legs, no tail.
+  - **Public outfit:** short-sleeve cobalt knit polo with white piping, thin gold chain, gold watch, white pleated slacks, white loafers, small dark gold-framed sunglasses. Miami nightlife, not a business suit. Reference: `app/public/illustrations/sharky-public.webp`.
+- **Face:** a closed smirk or a grin with rounded teeth. Never a snarl, blood or menace.
+- **PI variant (private rooms):** navy belted trench coat, wide-brim navy fedora with a cobalt band, round wire glasses, cobalt tie, magnifying glass and sealed envelope. The noir is in his posture, not in a dark canvas. Reference: `app/public/illustrations/sharky-pi.webp`.
+- **Where he appears:**
+  - He appears in heroes, story steps, use cases, empty states, wizard side panels and the error page.
+  - He never appears inside a figure readout, a risk warning, a signing control or a liquidation state. Story art beside explanatory copy is fine.
+- **Voice:** wry and precise, one line at most, like "Terms first. Handshake second." Numbers and risk copy stay in plain product language.
+- **Motion:** one entrance on the hero (at most 250 ms), then still. No idle loops.
+- **Prompts:** in `docs/brand/sharky-prompts.json`, following the GPT Image prompt guide. Every pose uses the matching approved sheet (public or PI) as its only identity reference.
 
 ## Information architecture
 

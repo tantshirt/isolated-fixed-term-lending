@@ -20,7 +20,7 @@
   {
     "name": "lendspan-private-room",
     "taskId": "not recorded (script failed after generation; original kept)",
-    "creditsConsumed": 10.0,
+    "creditsConsumed": 10,
     "model": "gpt-image-2-5-sunburst-text-to-image"
   },
   {
@@ -46,5 +46,167 @@
     "taskId": "d7ec014c597f7289ef30d24be2b838b6",
     "creditsConsumed": 10,
     "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "sharky-sheet-a",
+    "taskId": "5a79c8b7df4b2d8d182077c634741e16",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-sheet-b",
+    "taskId": "c36c09342d776f36107ff4c21247eb15",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-public-a",
+    "taskId": "f09875a5cbfe8b28cdea0ae7e45cf035",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-public-b",
+    "taskId": "4ba71b121b94c0a89391d4b2bd75686e",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-private",
+    "taskId": "8f7260409c073a88af6fe7a6e1dc7902",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-public",
+    "taskId": "19738540d8a3920c4dcf31ea0ceee231",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-pi",
+    "taskId": "d97513b746b052e585e057dfcc6d4f61",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-hero",
+    "taskId": "aa3a893f9aced3f8ada324827143c7c0",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-bad-sharks",
+    "taskId": "35dcc718b7073d18af16cea2b576e19b",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-collateral",
+    "taskId": "86332e0dc547e2b988baa23339af211c",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-return",
+    "taskId": "3fe10997e5fb69416f95b75f0ffac06f",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-private-room",
+    "taskId": "04a23452f95649c2a963492d001fc062",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-negotiate",
+    "taskId": "bbf008bc3ace7a8ea0c20080302a53d6",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-settle-quietly",
+    "taskId": "6f3c78a3a53e8df53b5e489dbc6798a8",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-borrow-private",
+    "taskId": "9edb4482379a83d3e188af46c899be7f",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-lend-invited",
+    "taskId": "418298d5ccb6c7f0b9b435124f946955",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-compare-offers",
+    "taskId": "834ab05fe524d8a7beb5be8499c6503c",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-liquidate",
+    "taskId": "457f47e517c78c4de46fb0f860d17723",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-learn",
+    "taskId": "2aeebf77302f654f024010736e4821fa",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-verify",
+    "taskId": "b88578e6cfcc58385782e3671558fe33",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-guide",
+    "taskId": "55d6ca37b35e484a04dab1f7df96e6ce",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-waiting",
+    "taskId": "879409d618a426019e369d4d93b5333d",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-clipboard",
+    "taskId": "75a238f77dc7621c016bdca1080dd469",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-confused",
+    "taskId": "fa91a93856f42db854230ee4544760f1",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-head",
+    "taskId": "96b11de851b2adc689152c1b10fdd489",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-head-pi",
+    "taskId": "d24b357d0fe8f57ef040a4a023c17412",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "sharky-clipboard",
+    "taskId": "014c8b279799131e418336d82d3b49b5",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
   }
 ]
