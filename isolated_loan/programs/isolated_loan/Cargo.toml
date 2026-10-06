@@ -18,6 +18,8 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 anchor-debug = []
 custom-heap = []
 custom-panic = []
+# Accept any USDC/wSOL mint for Surfpool walkthroughs. Never deploy this build.
+local-mints = ["loan-core/local-mints"]
 
 [dependencies]
 anchor-lang = "1.0.2"
@@ -26,6 +28,7 @@ pyth-solana-receiver-sdk = "2.0.0"
 loan-core = { path = "../../crates/loan-core" }
 
 [dev-dependencies]
+proptest = "1"
 litesvm = "0.10.0"
 solana-account = "3.4.0"
 solana-clock = "3.2.1"

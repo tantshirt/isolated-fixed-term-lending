@@ -5,7 +5,7 @@ Local Anchor program. No backend. One offer account is one loan. The formulas ar
 ## Stack
 
 - Rust program written with Anchor, tested with LiteSVM. Use the Anchor and Solana CLI versions that Anchor's own install docs pair together. Do not guess a combination.
-- Classic SPL Token for both vaults. Test mints: 6 decimals for the dollar mint, 9 for the wrapped-SOL mint. `create_offer` rejects any other decimals (`InvalidUsdcMint`, `InvalidWsolMint`) and rejects the same mint on both legs (`SameMint`).
+- Classic SPL Token for both vaults. Test mints: 6 decimals for the dollar mint, 9 for the wrapped-SOL mint. `create_offer` rejects any other decimals (`InvalidUsdcMint`, `InvalidWsolMint`) and rejects the same mint on both legs (`SameMint`). It then accepts only canonical Devnet USDC `4zMMC9…ncDU` and native wSOL `So111…112` (`MintNotAllowed`), because collateral is always priced as SOL/USD. `create_request` and the private `create_loan` apply the same pin. Only a `local-mints` build, used for Surfpool walkthroughs, accepts other mints; it is never deployed.
 - Version pairing in this repo: the program builds with `anchor-lang` 1.x; the TypeScript client still uses `@coral-xyz/anchor` 0.32, which reads the 1.x IDL. Upgrading the client is its own change.
 - Pyth pull price via `PriceUpdateV2` and `pyth-solana-receiver-sdk`. Receiver program `rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ`. Feed id `ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d`.
 - Clock sysvar for the deadline. Do not trust a client timestamp.
@@ -159,7 +159,7 @@ Instruction tests on LiteSVM:
 - After any settlement, the same instruction fails, and the other settlement instructions fail.
 - Vault balances are zero after each ending, and the closed accounts are gone.
 - Vault rent returns to the party that paid it. A loan whose LTV is past `65_535` bps can still be liquidated.
-- A mint with the wrong decimals, or the same mint twice, cannot create an offer.
+- A mint with the wrong decimals, the same mint twice, or any mint other than canonical USDC and wSOL cannot create an offer or a request.
 - Only the lender can close an offer, and only after it has ended.
 - A borrower can create and cancel a request; a stranger cannot cancel; cancel returns the wSOL.
 - Funding moves principal to the borrower and collateral into the offer vault, copies the terms, and leaves the lender's lamports changed only by the offer rent and the fee.
@@ -234,6 +234,8 @@ Known leakage: public deposits and withdrawals, opt-in discovery cards, and liqu
 ### Private protocol security release (2026-10-06, local)
 
 Deploy the matching private program, IDL and application together. `fund_quote` and `settle_ticket` now require the canonical loan anchor before the quote account and validate the exact quote layout and pool mints. Existing quote storage is unchanged. Legacy clients fail closed against the updated instruction account lists.
+
+A quote holds four ticket slots. `fund_quote` reuses refunded or paid slots, so tickets over a loan's life never exhaust them. `refund_ticket` is permissionless: anyone can push a dead ticket's refund to its owner's own USDC account, so a liquidator who never collects cannot keep a quote full. `schedule_watch` checks the price account's owner and feed before the crank stores it. See [security-audit.md](security-audit.md).
 
 AI workers require `claim_ai_request` before a maximum of two model attempts. The claim is permanent; uncertainty or process failure does not restart spending. Old program deployments reject the new claim instruction before model spending. Sponsored first draws use `request_first_scenario` with initialization-only semantics, so concurrent approvals for the same learner cannot repeatedly fund account rent. Normal self-funded repeat draws still use `request_scenario`.
 

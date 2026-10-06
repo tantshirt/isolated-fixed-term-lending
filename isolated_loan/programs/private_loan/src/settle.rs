@@ -137,6 +137,10 @@ pub fn init_liquidation_pool(ctx: Context<InitLiquidationPool>) -> Result<()> {
 pub fn schedule_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
     let a = &ctx.accounts;
     validate_pool_mints(&a.anchor, &a.pool)?;
+    // The crank keeps this account for its whole life, and `watch_loan` treats an
+    // oracle error as "no decision", so a wrong account here would mean the loan
+    // is never liquidated. Reject it now.
+    loan_core::oracle::check_sol_usd_account(&a.price_update).map_err(core_error)?;
     let t: LoanTerms = load(&a.terms.to_account_info())?;
     require!(t.status == STATUS_ACTIVE, PrivateLoanError::WrongStatus);
     let anchor = &a.anchor;
@@ -294,15 +298,23 @@ pub fn fund_quote(ctx: Context<FundQuote>, revision: u32) -> Result<()> {
         require!(d[q::VERSION] == 1 && d[q::STATE] == QUOTE_OPEN, PrivateLoanError::WrongStatus);
         require!(rd_u32(&d, q::REVISION) == revision, PrivateLoanError::StaleRevision);
         require!(rd_i64(&d, q::EXPIRES) >= Clock::get()?.unix_timestamp, PrivateLoanError::RequestExpired);
-        require!((d[q::COUNT] as usize) < MAX_TICKETS, PrivateLoanError::RoomFull);
         (rd_u64(&d, q::DEBT), rd_u64(&d, q::PAYOUT))
     };
+    // Slots past COUNT are empty; refunded or paid slots can be reused. Only four
+    // live tickets block a new one, and `refund_ticket` can free dead ones.
+    let slot = {
+        let d = info.try_borrow_data()?;
+        let count = d[q::COUNT] as usize;
+        (0..MAX_TICKETS).find(|&i| {
+            i >= count || matches!(d[q::TICKETS + i * q::T + q::T - 1], TICKET_REFUNDED | TICKET_PAID)
+        })
+    };
+    let Some(i) = slot else { return err!(PrivateLoanError::RoomFull) };
     let me = a.liquidator.key();
     require_keys_eq!(a.liquidator_usdc.key(), get_associated_token_address(&me, &a.pool.usdc_mint), PrivateLoanError::WrongTokenAccount);
     transfer(&a.token_program, &a.liquidator_usdc, &a.pool_usdc, &a.liquidator.to_account_info(), None, debt)?;
 
     let mut d = info.try_borrow_mut_data()?;
-    let i = d[q::COUNT] as usize;
     let o = q::TICKETS + i * q::T;
     d[o..o + 32].copy_from_slice(me.as_ref());
     d[o + 32..o + 40].copy_from_slice(&debt.to_le_bytes());
@@ -310,7 +322,7 @@ pub fn fund_quote(ctx: Context<FundQuote>, revision: u32) -> Result<()> {
     d[o + 44..o + 52].copy_from_slice(&payout.to_le_bytes());
     d[o + 52..o + 60].copy_from_slice(&0u64.to_le_bytes());
     d[o + q::T - 1] = TICKET_FUNDED;
-    d[q::COUNT] = (i + 1) as u8;
+    d[q::COUNT] = d[q::COUNT].max((i + 1) as u8);
     Ok(())
 }
 
@@ -360,6 +372,40 @@ pub fn settle_ticket(ctx: Context<SettleTicket>) -> Result<()> {
     }
     require!(!settled, PrivateLoanError::AlreadyAnswered);
     err!(PrivateLoanError::NotMember)
+}
+
+/// Anyone: refunds every ticket of `owner` that can no longer execute, to the
+/// owner's own USDC account. Frees slots so a griefer who never collects
+/// cannot keep a quote full.
+pub fn refund_ticket(ctx: Context<RefundTicket>) -> Result<()> {
+    let a = &ctx.accounts;
+    let info = a.quote.to_account_info();
+    validate_pool_mints(&a.anchor, &a.pool)?;
+    validate_quote(&info, false)?;
+    let owner = a.owner.key();
+    require_keys_eq!(a.owner_usdc.key(), get_associated_token_address(&owner, &a.pool.usdc_mint), PrivateLoanError::WrongTokenAccount);
+    let now = Clock::get()?.unix_timestamp;
+    let ps = pool_seeds(&a.pool.bump);
+
+    let mut d = info.try_borrow_mut_data()?;
+    let rev = rd_u32(&d, q::REVISION);
+    let in_play_quote = d[q::STATE] == QUOTE_OPEN && rd_i64(&d, q::EXPIRES) >= now;
+    let count = (d[q::COUNT] as usize).min(MAX_TICKETS);
+    let mut total: u64 = 0;
+    for i in 0..count {
+        let o = q::TICKETS + i * q::T;
+        if d[o..o + 32] != owner.to_bytes() || d[o + q::T - 1] != TICKET_FUNDED {
+            continue;
+        }
+        if in_play_quote && rd_u32(&d, o + 40) == rev {
+            continue;
+        }
+        total = total.checked_add(rd_u64(&d, o + 32)).ok_or(PrivateLoanError::MathOverflow)?;
+        d[o + q::T - 1] = TICKET_REFUNDED;
+    }
+    drop(d);
+    require!(total > 0, PrivateLoanError::NotMember);
+    transfer(&a.token_program, &a.pool_usdc, &a.owner_usdc, &a.pool.to_account_info(), Some(&ps), total)
 }
 
 // ------------------------------------------------------------------ accounts
@@ -423,7 +469,7 @@ pub struct ScheduleWatch<'info> {
     pub quote: UncheckedAccount<'info>,
     #[account(seeds = [LIQ_POOL_SEED], bump = pool.bump)]
     pub pool: Account<'info, LiquidationPool>,
-    /// CHECK: Canonical Pyth receiver account named in the schedule; checked when it runs.
+    /// CHECK: Canonical Pyth receiver account named in the schedule; owner and feed checked here, age when it runs.
     pub price_update: UncheckedAccount<'info>,
     /// CHECK: Crank PDA, checked by Hydra.
     #[account(mut)]
@@ -513,5 +559,25 @@ pub struct SettleTicket<'info> {
     /// CHECK: Pool wSOL ATA.
     #[account(mut, address = get_associated_token_address(&pool.key(), &pool.wsol_mint))]
     pub pool_wsol: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct RefundTicket<'info> {
+    /// CHECK: Ticket owner; refunds only go to this wallet's USDC ATA.
+    pub owner: UncheckedAccount<'info>,
+    #[account(seeds = [LOAN_SEED, anchor.loan_id.as_ref()], bump = anchor.bump)]
+    pub anchor: Account<'info, LoanAnchor>,
+    /// CHECK: Canonical quote for the typed loan anchor; layout checked in handler.
+    #[account(mut, seeds = [QUOTE_SEED, anchor.key().as_ref()], bump)]
+    pub quote: UncheckedAccount<'info>,
+    #[account(seeds = [LIQ_POOL_SEED], bump = pool.bump)]
+    pub pool: Account<'info, LiquidationPool>,
+    /// CHECK: Owner's USDC ATA; checked in the handler.
+    #[account(mut)]
+    pub owner_usdc: UncheckedAccount<'info>,
+    /// CHECK: Pool USDC ATA.
+    #[account(mut, address = get_associated_token_address(&pool.key(), &pool.usdc_mint))]
+    pub pool_usdc: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
 }

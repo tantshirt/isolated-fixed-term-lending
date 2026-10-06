@@ -1,4 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
+import { refuseBots } from "@/lib/server/bot-guard";
 import { sponsoredDraw } from "@/lib/server/lab-sponsor";
 import { LabRejected } from "@/lib/server/soar";
 
@@ -11,6 +12,8 @@ export async function GET() {
 
 /** Body: { wallet }. Returns a sponsor-signed first lab draw for the learner to review and sign. */
 export async function POST(request: Request) {
+  const refused = await refuseBots();
+  if (refused) return refused;
   try {
     const body = await request.json();
     return Response.json({ transaction: await sponsoredDraw(new PublicKey(String(body?.wallet))) });

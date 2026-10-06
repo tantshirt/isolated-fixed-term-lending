@@ -8,6 +8,7 @@ import { SoarProgram } from "@magicblock-labs/soar-sdk";
 import config from "../private/soar-config.json";
 import { scenarioFrom, type LabOutcome } from "../lab-scenario";
 import { PRIVATE_PROGRAM_ID } from "../private/room-codec";
+import { assertDevnet } from "../private/tx-validator";
 
 export class LabRejected extends Error {}
 
@@ -51,6 +52,8 @@ export async function registrationTx(user: PublicKey): Promise<string | null> {
 
 export async function unlock(user: PublicKey, answer: LabOutcome) {
   const kp = authority();
+  // The authority key signs only on Devnet, whatever RPC is configured.
+  await assertDevnet(conn());
   if (!kp) throw new LabRejected("Achievements are not configured on this deployment.");
   const s = await readScenario(user);
   if (!s?.ready) throw new LabRejected("Request a scenario and wait for its VRF result first.");

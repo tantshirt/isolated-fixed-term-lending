@@ -14,6 +14,7 @@ use isolated_loan::constants::{
 use isolated_loan::error::LoanError;
 use isolated_loan::state::{LoanRequest, Offer, OfferStatus, RequestStatus};
 use litesvm::LiteSVM;
+use loan_core::constants::{USDC_MINT, WSOL_MINT};
 use pyth_solana_receiver_sdk::price_update::{PriceFeedMessage, PriceUpdateV2, VerificationLevel};
 use solana_account::Account;
 use solana_clock::Clock;
@@ -72,8 +73,8 @@ impl Env {
             lender,
             borrower,
             stranger,
-            usdc_mint: Pubkey::new_unique(),
-            wsol_mint: Pubkey::new_unique(),
+            usdc_mint: USDC_MINT,
+            wsol_mint: WSOL_MINT,
             price: Pubkey::new_unique(),
         };
         env.set_time(START);
@@ -111,7 +112,17 @@ impl Env {
         data[32..64].copy_from_slice(owner.as_ref());
         data[64..72].copy_from_slice(&amount.to_le_bytes());
         data[108] = 1; // AccountState::Initialized
-        self.put(ata, TOKEN_PROGRAM, data);
+        let rent = self.svm.minimum_balance_for_rent_exemption(data.len());
+        let mut lamports = rent;
+        if mint == WSOL_MINT {
+            // Native account, as on Devnet: lamports back the token amount.
+            data[109] = 1;
+            data[113..121].copy_from_slice(&rent.to_le_bytes());
+            lamports += amount;
+        }
+        self.svm
+            .set_account(ata, Account { lamports, data, owner: TOKEN_PROGRAM, executable: false, rent_epoch: 0 })
+            .unwrap();
         ata
     }
 
@@ -148,6 +159,11 @@ impl Env {
             Some(a) => u64::from_le_bytes(a.data[64..72].try_into().unwrap()),
             None => 0,
         }
+    }
+
+    /// Rent of a token account. A native wSOL vault holds this plus its collateral.
+    fn token_rent(&self) -> u64 {
+        self.svm.minimum_balance_for_rent_exemption(165)
     }
 
     fn lamports(&self, key: Pubkey) -> u64 {
@@ -574,7 +590,7 @@ fn repay_and_claim_deadlines() {
     let mut env = Env::new();
     let offer = env.filled_offer(2);
     let wsol_vault = pda(&[WSOL_VAULT_SEED, offer.as_ref()]);
-    let vault_rent = env.lamports(wsol_vault);
+    let vault_rent = env.token_rent();
     env.set_time(START + DURATION);
     assert_err(env.repay(offer), LoanError::LoanExpired);
     // Measured after the failed repay, which still charged the borrower a fee.
@@ -621,7 +637,7 @@ fn liquidation_rules() {
 
     env.post_price(12_000_000_000, 12_000_000, START, SOL_USD_FEED_ID, PYTH_RECEIVER_PROGRAM_ID);
     let wsol_vault = pda(&[WSOL_VAULT_SEED, offer.as_ref()]);
-    let vault_rent = env.lamports(wsol_vault);
+    let vault_rent = env.token_rent();
     let borrower_before = env.lamports(env.borrower.pubkey());
     let lender_usdc = ata(env.lender.pubkey(), env.usdc_mint);
     let lender_before = env.balance(lender_usdc);
@@ -712,7 +728,7 @@ fn request_create_and_cancel() {
     assert!(env.cancel_request(request, &s).is_err(), "a stranger cannot cancel");
 
     let b = env.borrower.insecure_clone();
-    let vault_rent = env.lamports(vault);
+    let vault_rent = env.token_rent();
     let before = env.lamports(b.pubkey());
     env.cancel_request(request, &b).unwrap();
     assert_eq!(env.balance(b_wsol), 10_000_000_000);
@@ -721,6 +737,39 @@ fn request_create_and_cancel() {
     assert!(env.request(request).status == RequestStatus::Cancelled);
     // The vault is gone, so Anchor rejects the missing account before the status check.
     assert!(env.cancel_request(request, &b).is_err(), "second cancel fails");
+}
+
+/// Collateral is priced as SOL/USD, so only canonical USDC and wSOL are accepted,
+/// even when an impostor mint has the right decimals.
+#[test]
+fn impostor_mints_with_right_decimals_are_refused() {
+    let mut env = Env::new();
+    let lender = env.lender.insecure_clone();
+    let b = env.borrower.insecure_clone();
+
+    let fake_usdc = Pubkey::new_unique();
+    env.put_mint(fake_usdc, 6);
+    env.put_ata(fake_usdc, lender.pubkey(), 1_000_000_000);
+    env.put_ata(fake_usdc, b.pubkey(), 0);
+    let fake_wsol = Pubkey::new_unique();
+    env.put_mint(fake_wsol, 9);
+    env.put_ata(fake_wsol, b.pubkey(), COLLATERAL);
+
+    let usdc_before = env.balance(ata(lender.pubkey(), fake_usdc));
+    assert_err(env.create_with(&lender, 1, fake_usdc, env.wsol_mint).map(|_| ()), LoanError::MintNotAllowed);
+    assert_err(env.create_with(&lender, 2, env.usdc_mint, fake_wsol).map(|_| ()), LoanError::MintNotAllowed);
+    assert_eq!(env.balance(ata(lender.pubkey(), fake_usdc)), usdc_before, "no tokens moved");
+
+    let wsol_before = env.balance(ata(b.pubkey(), fake_wsol));
+    assert_err(
+        env.create_request_with(&b, 3, env.usdc_mint, fake_wsol, MAX_LTV).map(|_| ()),
+        LoanError::MintNotAllowed,
+    );
+    assert_err(
+        env.create_request_with(&b, 4, fake_usdc, env.wsol_mint, MAX_LTV).map(|_| ()),
+        LoanError::MintNotAllowed,
+    );
+    assert_eq!(env.balance(ata(b.pubkey(), fake_wsol)), wsol_before, "no collateral moved");
 }
 
 #[test]
@@ -886,7 +935,7 @@ fn funded_request_settles_through_existing_paths() {
     let mut env = Env::new();
     let offer = env.funded_request(1);
     let wsol_vault = pda(&[WSOL_VAULT_SEED, offer.as_ref()]);
-    let vault_rent = env.lamports(wsol_vault);
+    let vault_rent = env.token_rent();
     let borrower_before = env.lamports(env.borrower.pubkey());
     env.set_time(START + DURATION - 1);
     assert_err(env.claim(offer), LoanError::LoanNotExpired);

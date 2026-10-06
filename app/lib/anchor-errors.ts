@@ -28,6 +28,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   InvalidUsdcMint: "That USDC mint does not have 6 decimals.",
   InvalidWsolMint: "That wSOL mint does not have 9 decimals.",
   SameMint: "USDC and wSOL must be different tokens.",
+  MintNotAllowed: "Only Devnet USDC and wrapped SOL are accepted.",
   OfferNotSettled: "Only a settled offer can be closed.",
 };
 

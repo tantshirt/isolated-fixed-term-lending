@@ -9,6 +9,20 @@ pub struct OraclePrice {
     pub exponent: i32,
 }
 
+/// Checks that an account is a canonical Pyth Receiver SOL/USD update without
+/// checking its age. Used where an account is stored for later reads.
+pub fn check_sol_usd_account(price_update_account: &AccountInfo) -> CoreResult<()> {
+    if *price_update_account.owner != PYTH_RECEIVER_PROGRAM_ID {
+        return Err(CoreError::InvalidPriceOwner);
+    }
+    let price_update = PriceUpdateV2::try_deserialize(&mut &price_update_account.data.borrow()[..])
+        .map_err(|_| CoreError::InvalidPrice)?;
+    if price_update.price_message.feed_id != SOL_USD_FEED_ID {
+        return Err(CoreError::InvalidFeedId);
+    }
+    Ok(())
+}
+
 /// Reads SOL/USD from a canonical Pyth Receiver `PriceUpdateV2` account.
 /// The owner check is not optional: an account owned by any other program,
 /// including a price feed with a compatible layout, fails closed.
