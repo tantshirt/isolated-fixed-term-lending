@@ -8,6 +8,15 @@
 
 <p align="center"><a href="https://zenlo-loans.vercel.app">zenlo-loans.vercel.app</a></p>
 
+<p align="center">
+  <img src="docs/readme/hero.webp" alt="An example ZenLo offer: lend 100 USDC for 7 days, repay 105 USDC, secured by 1.1 wSOL" width="560">
+</p>
+
+<p align="center">
+  Private loans powered by
+  <a href="https://www.magicblock.xyz"><img src="app/public/brands/magicblock-black.svg" alt="MagicBlock" height="18" align="absmiddle"></a>
+</p>
+
 ZenLo makes fixed-term lending on Solana easier to understand. A lender offers USDC, a borrower locks wrapped SOL as collateral, and an on-chain program enforces the agreed repayment amount, deadline, and settlement rules.
 
 Start with a guided, wallet-free demo. Then explore the same loan lifecycle on Devnet with a connected wallet and test tokens.
@@ -18,9 +27,19 @@ Start with a guided, wallet-free demo. Then explore the same loan lifecycle on D
 
 ## How it works
 
+ZenLo runs the same loan two ways. **Public** loans keep every term on Solana, where anyone can read them. **Private** loans keep the room, the terms and the approvals inside MagicBlock's private rollup, where only the people in the deal can read them. Both use the same loan math and the same Pyth price checks.
+
+### Public loans
+
+![How a public ZenLo loan works: the lender posts an offer, the borrower accepts and locks wSOL, USDC goes out, and the loan ends by repayment, liquidation or expiry](docs/readme/flow-public.webp)
+
 **Set the terms → Lock collateral → Receive USDC → Repay and release collateral**
 
 For example, a lender can offer **100 USDC** for **seven days**, with **5% full-term interest** and **1.1 wSOL** in collateral. Once a borrower accepts, the clock starts. Repaying **105 USDC** before the deadline returns the collateral to the borrower. Early repayment carries the same full-term interest.
+
+| The exchange | Closing the loop |
+| --- | --- |
+| <img src="docs/readme/story-exchange.webp" alt="The lender's 100 USDC moves to the borrower while 1.1 wSOL moves into a locked vault"> | <img src="docs/readme/story-settle.webp" alt="105 USDC moves to the lender while the vault unlocks and returns 1.1 wSOL"> |
 
 Each offer has its own accounts and vaults. The lender can cancel before acceptance. After acceptance, the loan ends through one of three outcomes:
 
@@ -31,6 +50,26 @@ Each offer has its own accounts and vaults. The lender can cancel before accepta
 | Expiry | After the deadline, repayment stops and the lender can receive all collateral. Its value may be less than the debt. |
 
 The protocol assumes USDC is worth one dollar and uses Pyth SOL/USD prices for collateral checks. Interest is a cost for the full term, not an annual percentage rate. See [formulas, limits, and rounding](docs/research.md) for the exact rules.
+
+
+### Private loans
+
+![How a private ZenLo loan works: deposit on Solana, then a room, sealed offers, a jointly approved revision, funding and settlement inside the MagicBlock private rollup, then withdraw with only a receipt on Solana](docs/readme/flow-private.webp)
+
+A borrower opens a private room, invites lenders or publishes a request card that shows only the fields they choose, and compares sealed offers. Both sides approve the same revision before any funds move. Settlement follows the public rules, and a scheduled check handles expiry and liquidation quotes. Deposits, withdrawals, request cards and quote amounts stay public, and the app says so. The evidence for each step is in [MagicBlock evidence](docs/magicblock-evidence.md).
+
+| Public request | Private request card |
+| --- | --- |
+| <img src="docs/readme/venue-public.webp" alt="A public request where amount, interest, term and collateral are readable by anyone"> | <img src="docs/readme/venue-private.webp" alt="A private request card where the borrower hides the interest and collateral"> |
+
+### Use cases
+
+| | | |
+| --- | --- | --- |
+| <img src="docs/readme/use-case-1.webp" alt="A private room whose loan amount is hidden on the public explorer"><br>**Borrow without showing your position.** Your loan size stays off the public explorer. | <img src="docs/readme/use-case-2.webp" alt="A loan revision approved by both lender and borrower"><br>**Lend to someone you invited.** Both of you approve the same revision, or nothing moves. | <img src="docs/readme/use-case-3.webp" alt="Three sealed offers with the cheapest marked best"><br>**Compare sealed offers.** Lenders bid blind. You pick the best terms. |
+| <img src="docs/readme/use-case-4.webp" alt="A liquidation quote with a countdown and a 5% incentive"><br>**Liquidate without seeing the loan.** Fund a short-lived quote and earn the 5% incentive. | <img src="docs/readme/use-case-5.webp" alt="The demo's three endings: repaid, liquidated and expired"><br>**Understand a loan first.** Run one loan to every ending in the wallet-free demo. | <img src="docs/readme/use-case-6.webp" alt="A list of Devnet transaction signatures marked verified"><br>**Check the claims.** Signatures and findings from the real Devnet, including what leaks. |
+
+Images are example screens from the app, built from the same components; the source for the two diagrams is [docs/readme/diagrams.html](docs/readme/diagrams.html).
 
 ## Quick start
 

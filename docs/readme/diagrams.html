@@ -1,0 +1,106 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{--ink:#0f1f4b;--ink2:#4a5a80;--blue:#245be8;--sky:#dfe9ff;--cloud:#f3f7ff;--line:#d9e3f5;--navy:#0f1f4b;--navyline:#2a3c75;--onnavy:#eef3ff;--onnavy2:#a9b8dc;--green:#1f8a5b;--greent:#e3f5ec;--red:#c2413a;--redt:#fbe7e5}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;font-family:Nunito,system-ui,sans-serif;color:var(--ink)}
+.d{width:1200px;padding:44px 48px 40px;background:radial-gradient(90% 80% at 100% 0%,var(--sky),transparent 60%),var(--cloud)}
+.d[data-navy]{background:radial-gradient(90% 80% at 100% 0%,#1d2f66,transparent 60%),var(--navy);color:var(--onnavy)}
+.eyebrow{margin:0;font-size:13px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+[data-navy] .eyebrow{color:#8fb0ff}
+h2{margin:6px 0 4px;font-size:34px;font-weight:900;letter-spacing:-.5px}
+.sub{margin:0 0 28px;color:var(--ink2);font-size:17px;font-weight:600}
+[data-navy] .sub{color:var(--onnavy2)}
+.zone{border-radius:24px;padding:20px 22px 22px;border:1.5px solid var(--line);background:#fff}
+.zone h3{margin:0 0 14px;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);display:flex;align-items:center;gap:10px}
+.zone h3 b{padding:3px 10px;border-radius:99px;background:var(--sky);color:var(--blue);font-size:11px}
+.row{display:flex;align-items:stretch;gap:0}
+.step{flex:1;min-width:0;border:1px solid var(--line);border-radius:16px;padding:14px 14px 13px;background:#fff;box-shadow:0 10px 20px -12px rgba(15,31,75,.25)}
+.step .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:900;margin-bottom:8px}
+.step strong{display:block;font-size:16px;font-weight:900;margin-bottom:4px}
+.step span{display:block;font-size:13.5px;line-height:1.4;color:var(--ink2);font-weight:600}
+.arrow{flex:none;width:30px;display:grid;place-items:center;color:var(--blue);font-weight:900;font-size:20px}
+.ends{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.end{border-radius:14px;padding:12px 14px;font-size:13.5px;font-weight:600;line-height:1.4;color:var(--ink2);background:var(--cloud);border:1px solid var(--line)}
+.end b{display:block;color:var(--ink);font-size:15px;font-weight:900;margin-bottom:2px}
+.end[data-t=g] b{color:var(--green)} .end[data-t=r] b{color:var(--red)}
+.who{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.tag{padding:6px 12px;border-radius:99px;background:var(--greent);color:var(--green);font-size:13px;font-weight:800}
+.tag[data-t=b]{background:var(--sky);color:var(--blue)}
+.mono{font-family:"IBM Plex Mono",monospace;font-size:12px}
+/* private */
+.stack{display:grid;gap:14px}
+.zone[data-sol]{background:#fff;color:var(--ink)}
+.zone[data-tee]{background:#17295e;border-color:#3a4f8f}
+.zone[data-tee] h3{color:var(--onnavy2)}
+.zone[data-tee] h3 b{background:#2a3c75;color:#cfdcff}
+.zone[data-tee] .step{background:#20346f;border-color:#3a4f8f;box-shadow:none}
+.zone[data-tee] .step strong{color:var(--onnavy)} .zone[data-tee] .step span{color:var(--onnavy2)}
+.zone[data-tee] .arrow{color:#8fb0ff}
+.zone[data-sol] h3{color:var(--ink2)}
+.bridge{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pipe{display:flex;align-items:center;justify-content:center;gap:10px;color:#8fb0ff;font-weight:900;font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+.pipe i{font-style:normal;font-size:18px}
+.mb{display:flex;align-items:center;gap:10px;margin-left:auto;font-size:12px;font-weight:800;color:var(--onnavy2);text-transform:none;letter-spacing:0}
+.mb img{height:18px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.legend .tag{background:#20346f;color:#cfdcff}
+.legend .tag[data-t=p]{background:#e3f5ec;color:var(--green)}
+</style>
+
+<section class="d" id="public">
+  <p class="eyebrow">Public loan · on Solana</p>
+  <h2>Every term on chain, enforced by the program.</h2>
+  <p class="sub">One isolated offer per loan. Anyone can read it; only the program can move the funds.</p>
+  <div class="zone">
+    <h3>Solana · <span class="mono">isolated_loan</span> <b>Readable by anyone</b></h3>
+    <div class="row">
+      <div class="step"><span class="n">1</span><strong>Lender posts an offer</strong><span>100 USDC moves into the offer's own vault, with the term, interest and collateral fixed.</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">2</span><strong>Borrower accepts</strong><span>The program checks a fresh Pyth SOL price, then locks 1.1 wSOL as collateral.</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">3</span><strong>USDC goes out</strong><span>The borrower receives 100 USDC and the 7-day clock starts.</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">4</span><strong>The loan ends one of three ways</strong><span>Each one pays out from the same vaults, by the same rules.</span></div>
+    </div>
+    <div class="ends">
+      <div class="end" data-t="g"><b>Repaid</b>105 USDC to the lender; all 1.1 wSOL back to the borrower.</div>
+      <div class="end" data-t="r"><b>Liquidated</b>Past the line before the deadline: a liquidator repays the debt and earns a capped 5% incentive.</div>
+      <div class="end"><b>Expired</b>No repayment by the deadline: the lender claims the collateral.</div>
+    </div>
+  </div>
+  <div class="who"><span class="tag">Amount, rate, term and collateral are public</span><span class="tag" data-t="b">Lender can cancel before acceptance</span></div>
+</section>
+
+<section class="d" id="private" data-navy>
+  <p class="eyebrow">Private loan · MagicBlock private rollup</p>
+  <h2>Same rules. Only the people in the deal can read it.</h2>
+  <p class="sub">Terms, messages and approvals live inside a hardware-protected rollup (Intel TDX). Only balances and an opaque receipt reach Solana.</p>
+  <div class="stack">
+    <div class="zone" data-sol>
+      <h3>Solana <b>Public</b></h3>
+      <div class="row">
+        <div class="step"><span class="n">1</span><strong>Deposit into a private balance</strong><span>USDC or wSOL moves into the rollup. The deposit amount is visible.</span></div>
+        <div class="arrow"></div>
+        <div class="step"><span class="n">7</span><strong>Withdraw and receipt</strong><span>Balances settle back. A hash of the final terms is posted; the terms are not.</span></div>
+      </div>
+    </div>
+    <div class="bridge"><div class="pipe"><i>↓</i> delegate</div><div class="pipe"><i>↑</i> commit balances only</div></div>
+    <div class="zone" data-tee>
+      <h3>MagicBlock private rollup <b>Members only</b><span class="mb">Powered by <img src="../../app/public/brands/magicblock-white.svg" alt="MagicBlock"></span></h3>
+      <div class="row">
+        <div class="step"><span class="n">2</span><strong>Room and invites</strong><span>Only invited wallets can read the room. A link alone opens nothing.</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><span class="n">3</span><strong>Request card and sealed offers</strong><span>Each lender sees only their own proposal.</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><span class="n">4</span><strong>Both approve one revision</strong><span>Any edit starts a new revision; nothing moves until both sign it.</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><span class="n">5</span><strong>Fund and accept</strong><span>The same Pyth check and loan math run inside the rollup.</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><span class="n">6</span><strong>Settle on schedule</strong><span>Repay, or let the scheduled check expire or quote a liquidation.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><span class="tag" data-t="p">Public: deposits, withdrawals, request cards, quote amounts, receipts</span><span class="tag">Private: members, messages, terms, approvals, balances</span></div>
+</section>

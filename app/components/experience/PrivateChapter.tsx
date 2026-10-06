@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion as m, useReducedMotion } from "motion/react";
+import { PoweredByMagicBlock } from "@/components/brand/PoweredByMagicBlock";
 import s from "./Landing.module.css";
 import { PRIVATE_SCENES } from "./vignettes/Scenes";
 
@@ -69,6 +70,7 @@ export function PrivateChapter() {
         <Link className={s.textLink} href="/devnet/private/proof">
           See what is proven on Devnet
         </Link>
+        <PoweredByMagicBlock />
       </div>
       <p className={s.note}>Devnet only, with test assets. Deposits, withdrawals, and request cards are public; we list exactly what leaks.</p>
     </section>

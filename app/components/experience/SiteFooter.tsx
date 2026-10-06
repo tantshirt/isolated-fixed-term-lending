@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PoweredByMagicBlock } from "@/components/brand/PoweredByMagicBlock";
 import { Wordmark } from "@/components/brand/Wordmark";
 import s from "./Landing.module.css";
 
@@ -15,6 +16,7 @@ export function SiteFooter() {
         <Wordmark />
         <p>Clear terms. Zero drama.</p>
         <p className={s.note}>Built on Solana and MagicBlock. Devnet only, with test assets. Nothing here is a guaranteed return.</p>
+        <PoweredByMagicBlock />
       </div>
       {COLUMNS.map((c) => (
         <nav key={c.title} aria-label={c.title} className={s.footerCol}>
