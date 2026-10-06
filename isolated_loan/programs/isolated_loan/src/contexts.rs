@@ -4,6 +4,7 @@ use crate::state::{LoanRequest, Offer, OfferStatus, RequestStatus};
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use loan_core::constants::mints_allowed;
 
 #[derive(Accounts)]
 #[instruction(offer_id: u64)]
@@ -25,6 +26,7 @@ pub struct CreateOffer<'info> {
     #[account(
         constraint = wsol_mint.decimals == 9 @ LoanError::InvalidWsolMint,
         constraint = wsol_mint.key() != usdc_mint.key() @ LoanError::SameMint,
+        constraint = mints_allowed(&usdc_mint.key(), &wsol_mint.key()) @ LoanError::MintNotAllowed,
     )]
     pub wsol_mint: Account<'info, Mint>,
 
@@ -333,6 +335,7 @@ pub struct CreateRequest<'info> {
     #[account(
         constraint = wsol_mint.decimals == 9 @ LoanError::InvalidWsolMint,
         constraint = wsol_mint.key() != usdc_mint.key() @ LoanError::SameMint,
+        constraint = mints_allowed(&usdc_mint.key(), &wsol_mint.key()) @ LoanError::MintNotAllowed,
     )]
     pub wsol_mint: Box<Account<'info, Mint>>,
 

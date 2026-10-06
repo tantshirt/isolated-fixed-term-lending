@@ -24,9 +24,11 @@ The optional `PYTH_HERMES_API_KEY` and `PYTH_HERMES_URL` stay on the server. `/a
 
 The primary agent must verify the concrete cluster, program key, binary and payer balance before deploying. These commands are the reproducible procedure, not evidence that deployment occurred:
 
+Always deploy the default build. A `local-mints` build accepts any mint and must never reach Devnet. `npm run test:litesvm` rebuilds without it and fails if mints are not pinned, so run it right before deploying.
+
 ```sh
 cd isolated_loan
-NO_DNA=1 anchor build
+NO_DNA=1 npm run test:litesvm
 solana program show --url devnet CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef
 solana balance --url devnet
 # After target/resources verification, using the already-configured CLI signer:

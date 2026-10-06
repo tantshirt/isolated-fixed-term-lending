@@ -46,6 +46,8 @@ pub enum LoanError {
     OfferNotSettled,
     #[msg("Request must be funded or cancelled before it can be closed")]
     RequestNotSettled,
+    #[msg("Only canonical USDC and wrapped SOL are accepted")]
+    MintNotAllowed,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

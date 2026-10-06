@@ -268,6 +268,11 @@ pub mod private_loan {
         settle::settle_ticket(ctx)
     }
 
+    /// Ephemeral rollup. Anyone refunds a liquidator's dead tickets to their own USDC account.
+    pub fn refund_ticket(ctx: Context<RefundTicket>) -> Result<()> {
+        settle::refund_ticket(ctx)
+    }
+
     /// Ephemeral rollup. Commits the loan anchor with a post-commit action that
     /// writes the settlement receipt on Solana.
     pub fn publish_receipt(ctx: Context<PublishReceipt>) -> Result<()> {

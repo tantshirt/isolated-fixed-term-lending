@@ -1861,6 +1861,11 @@
       "code": 6021,
       "name": "RequestNotSettled",
       "msg": "Request must be funded or cancelled before it can be closed"
+    },
+    {
+      "code": 6022,
+      "name": "MintNotAllowed",
+      "msg": "Only canonical USDC and wrapped SOL are accepted"
     }
   ],
   "types": [
