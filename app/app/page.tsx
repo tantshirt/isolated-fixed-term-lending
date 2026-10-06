@@ -3,7 +3,8 @@ import { HeroArtwork, LoanStory } from "@/components/experience/LoanStory";
 import { PrivateChapter } from "@/components/experience/PrivateChapter";
 import { PublicHeader } from "@/components/experience/PublicHeader";
 import { SiteFooter } from "@/components/experience/SiteFooter";
-import { UseCaseTable } from "@/components/experience/UseCaseTable";
+import { SharkContrast } from "@/components/experience/SharkContrast";
+import { UseCaseCards } from "@/components/experience/UseCaseCards";
 import s from "@/components/experience/Experience.module.css";
 export default function Home() {
   return (
@@ -12,15 +13,16 @@ export default function Home() {
       <main className={s.page}>
         <section className={s.hero}>
           <div>
-            <p className={s.eyebrow}>Your terms. A clear path forward.</p>
+            <p className={s.eyebrow}>Fixed-term loans on Solana</p>
             <h1>
-              A loan you can
+              Yes, a loan shark.
               <br />
-              <span>see through.</span>
+              <span>A legit one.</span>
             </h1>
             <p className={s.lede}>
-              Lend USDC. Borrow against SOL. Know the cost, the collateral, and
-              the deadline before you commit.
+              Lend USDC. Borrow against SOL. The cost, the collateral, and the
+              deadline are on the table before anyone signs, and the program
+              holds both sides to them.
             </p>
             <div className={s.actions}>
               <Link className={s.primary} href="/demo">
@@ -36,6 +38,7 @@ export default function Home() {
           </div>
           <HeroArtwork />
         </section>
+        <SharkContrast />
         <LoanStory />
         <PrivateChapter />
         <section className={s.section}>
@@ -69,7 +72,7 @@ export default function Home() {
         </section>
         <section className={`${s.section} ${s.faq}`}>
           <div>
-            <p className={s.eyebrow}>A little more clarity</p>
+            <p className={s.eyebrow}>Ask Sharky</p>
             <h2>
               Good questions.
               <br />
@@ -77,6 +80,15 @@ export default function Home() {
             </h2>
           </div>
           <div>
+            <details>
+              <summary>Why is it called LegitShark?</summary>
+              <p>
+                Because the usual loan shark hides the terms, and we wanted the
+                opposite. Every LegitShark loan shows its amount, full-term
+                cost, collateral, and deadline to both sides before anyone
+                commits, and the program enforces them.
+              </p>
+            </details>
             <details>
               <summary>What is wSOL?</summary>
               <p>
@@ -119,7 +131,7 @@ export default function Home() {
             </details>
           </div>
         </section>
-        <UseCaseTable limit={4} />
+        <UseCaseCards />
         <SiteFooter />
       </main>
     </>

@@ -1,12 +1,14 @@
-// One source for the use-case table on the landing page and /use-cases.
-// Format follows chainpay-mcp-sdk's "Build with ChainPay" table: an intent, then where to start.
+// One source for the use-case cards on the landing page and /use-cases.
 export type UseCase = {
   intent: string;
   start: { label: string; href: string };
   who: string;
   problem: string;
   how: string;
-  image?: { src: string; alt: string };
+  /** One line for the card. */
+  hook: string;
+  venue: "public" | "private";
+  image: { src: string; alt: string };
 };
 
 export const USE_CASES: UseCase[] = [
@@ -16,7 +18,9 @@ export const USE_CASES: UseCase[] = [
     who: "A SOL holder who needs USDC for a week and does not want the size of their loan on a public explorer.",
     problem: "On a public lending protocol, every term, balance, and deadline is readable by anyone, including people waiting to liquidate you.",
     how: "Your room, the terms, and your private balance live inside a hardware-protected rollup. Only you and the lenders you invite can read them. Prices, interest, and settlement follow the same rules as a public LegitShark loan.",
-    image: { src: "/illustrations/lendspan-private-room.webp", alt: "Two white platforms inside a curved blue shell, open only at the front." },
+    hook: "Your loan size stays off the public explorer.",
+    venue: "private",
+    image: { src: "/illustrations/sharky-borrow-private.webp", alt: "Sharky in his detective trench coat and fedora strolls past with a sealed envelope tucked in his coat, winking." },
   },
   {
     intent: "Lend to someone I invited, on terms we both approve",
@@ -24,7 +28,9 @@ export const USE_CASES: UseCase[] = [
     who: "A lender who already knows the borrower, or met them through a request card.",
     problem: "Negotiating in public leaks your pricing; negotiating off-chain leaves nothing enforceable.",
     how: "You propose exact terms. Any edit creates a new revision, and both of you must approve the same revision before anything moves.",
-    image: { src: "/illustrations/lendspan-negotiate.webp", alt: "Two blank cards leaning toward each other, joined by one blue ribbon." },
+    hook: "Both of you approve the same revision, or nothing moves.",
+    venue: "private",
+    image: { src: "/illustrations/sharky-lend-invited.webp", alt: "Detective Sharky shakes hands across a small table holding two identical sealed envelopes." },
   },
   {
     intent: "Compare competing offers without lenders seeing each other",
@@ -32,7 +38,9 @@ export const USE_CASES: UseCase[] = [
     who: "A borrower who wants the best terms, not the first ones.",
     problem: "In an open order book, lenders undercut each other only after seeing every bid.",
     how: "Publish a card with only the fields you choose. Each lender's offer is readable only by that lender and you. Accept one, and the others are locked out and can cancel.",
-    image: { src: "/illustrations/lendspan-competing-offers.webp", alt: "Three small platforms separated by panels, each linked by a ribbon to one larger platform." },
+    hook: "Lenders bid blind. You pick the best terms.",
+    venue: "private",
+    image: { src: "/illustrations/sharky-compare-offers.webp", alt: "Detective Sharky studies three sealed envelopes, kept apart by blue dividers, through a magnifying glass." },
   },
   {
     intent: "Liquidate a loan that crossed its line, without seeing the loan",
@@ -40,7 +48,9 @@ export const USE_CASES: UseCase[] = [
     who: "A liquidator with USDC who wants the 5% incentive.",
     problem: "Liquidation usually requires reading every position, which is exactly what private loans hide.",
     how: "When a loan crosses its line, its automatic check posts a short-lived quote: the debt and the wSOL you receive. You fund it from a private balance; if it executes you collect, otherwise you get a refund.",
-    image: { src: "/illustrations/lendspan-open-liquidation.webp", alt: "A closed blue pavilion with one slot, and a white card outside linked to the slot." },
+    hook: "Fund a short-lived quote and earn the 5% incentive, without reading the loan.",
+    venue: "private",
+    image: { src: "/illustrations/sharky-liquidate.webp", alt: "Detective Sharky posts a sealed envelope into a locked blue box with his eyes politely closed." },
   },
   {
     intent: "Understand a loan before I commit",
@@ -48,6 +58,9 @@ export const USE_CASES: UseCase[] = [
     who: "Anyone new to collateralized lending.",
     problem: "Liquidation thresholds and full-term interest are easy to misread when real money is involved.",
     how: "The wallet-free demo walks one loan through repayment, liquidation, and expiry with the same integer math. Inside a private room, the copilot can explain your exact loan, showing you the text it will share first.",
+    hook: "Run one loan to every ending in the wallet-free demo.",
+    venue: "public",
+    image: { src: "/illustrations/sharky-learn.webp", alt: "Sharky in his blue polo points at a whiteboard sketch of two boxes joined by one arrow." },
   },
   {
     intent: "Check the claims for myself",
@@ -55,6 +68,9 @@ export const USE_CASES: UseCase[] = [
     who: "Judges, auditors, and developers.",
     problem: "Privacy claims are easy to make and hard to verify.",
     how: "Every capability was proven on the real Devnet TEE before it was used, with signatures and the findings that changed the design, including what does leak.",
+    hook: "Signatures and findings from the real Devnet, including what leaks.",
+    venue: "public",
+    image: { src: "/illustrations/sharky-verify.webp", alt: "Detective Sharky inspects a long receipt through a magnifying glass." },
   },
 ];
 
