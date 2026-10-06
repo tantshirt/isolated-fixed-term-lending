@@ -28,6 +28,7 @@ pyth-solana-receiver-sdk = "2.0.0"
 loan-core = { path = "../../crates/loan-core" }
 
 [dev-dependencies]
+proptest = "1"
 litesvm = "0.10.0"
 solana-account = "3.4.0"
 solana-clock = "3.2.1"

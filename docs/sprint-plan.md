@@ -116,3 +116,4 @@ The rebrand and the returning-user experience. Each phase ships as its own pull 
 
 - 2026-10-06 ZenLo phase 1: tokens, Nunito, pebble-and-wave mark, icons and share image, display name. Story 15.2 art ships with 15.3 in the landing pull request.
 - 2026-10-06 ZenLo complete: rebrand (15), My loans (16), rooms and invites without a program change (17), and a 12-check Devnet cycle (18).
+- 2026-10-06: Security audit ([report](security-audit.md)). Fixed S1, S2, S4 on chain and A1–A3 in the app. The fuzz part of story 7.2 is done (`npm run test:fuzz`, 2,000 cases by default, plus a 50,000-case run); 7.2 stays Open for the indexer. CI added in `.github/workflows/ci.yml`.

@@ -57,6 +57,32 @@ The same deployer wallet also holds `AI_ADMIN` in `private_loan/src/ai.rs:21`. I
 | S8 | `private_loan` has no undelegate path for loan or pool custody. | Parties use their own eSPL deposit and withdraw. The shared pool is covered by the S1 tests. |
 | — | Pyth age inside the rollup uses the rollup clock and cloned account. | Gate 8.5 showed 0 s clone lag; a lagging clone fails closed with `StalePrice`. |
 | — | A rollup outage can block repayment while expiry still runs. | Stated in `architecture.md`. |
+| I1 | A lender cannot liquidate their own loan from the same wallet: their USDC account would be both payer and payee, which Anchor refuses. Found by the fuzzer. | No funds at risk. The lender can liquidate from a second wallet or claim the collateral at expiry. |
+| I2 | A loan whose collateral is worth less than one USDC atom at the current price cannot be liquidated (`ZeroCollateralValue`). | Only reachable with dust-sized loans. The lender still claims at expiry. |
+| D1 | `npm audit` lists 25 high advisories in production dependencies, none with a usable fix: `bigint-buffer` (via `@solana/spl-token`), `toml` (via `@coral-xyz/anchor`), and `react-native`/`metro` (via the mobile wallet adapter). | No path in this app feeds attacker-sized buffers to `toBigIntLE` or parses TOML in the browser, and the mobile packages never run in the web build. CI fails on any critical advisory. |
+
+## Stress test (fuzzing)
+
+`npm run test:fuzz` in `isolated_loan/` runs two suites.
+
+- `crates/loan-core/tests/math_props.rs`: seven properties over the full integer range. Interest and seize round up, collateral value rounds down, LTV rounds up and saturates, the liquidator never takes more than the vault, accepted terms stay inside the caps, and nothing panics.
+- `programs/isolated_loan/tests/fuzz.rs`: random sequences of every public instruction by three wallets, with random terms, prices, confidence, price age and clock jumps. After every step it checks token conservation, that vaults match loan state, that statuses only move forward, the exact balance change of every wallet, and that allowed repay, claim, cancel and liquidation calls never fail.
+
+`FUZZ_CASES` sets the number of sequences (default 2,000). `FUZZ_SEED` replays a run.
+
+Long run on 2026-10-06, `FUZZ_CASES=50000`, seed `1791293429892911000`: passed in 14 minutes, with no invariant broken.
+
+| Instruction | Tried | Succeeded |
+| --- | ---: | ---: |
+| create offer / request | 343,657 | 290,311 |
+| accept / fund | 457,788 | 61,373 |
+| cancel offer / request | 114,609 | 56,534 |
+| repay | 172,043 | 28,976 |
+| claim at expiry | 114,914 | 4,235 |
+| liquidate | 171,724 | 2,683 |
+| close offer / request | 115,127 | 33,529 |
+
+Most refusals are deliberate: wrong signer, wrong state, stale or wide price, or collateral above the LTV cap. Every refusal was checked to move no tokens. The private program's settlement paths are covered by the attack tests in `programs/private_loan/tests/settle.rs`, not by this fuzzer.
 
 ## Upgrade keys
 
