@@ -3,53 +3,128 @@
   "network": "devnet",
   "programId": "CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef",
   "lender": "3dh3Bxu1hJzH3aHfwNAibRqTxyrPsUFyteiuGxycoohh",
-  "borrower": "EKUeGDv34G51hrRprk3y7EHvQe3fVxQJdkwdTVNDSGtf",
+  "borrower": "HobT29gw61RJiRJryKxwxKjF2sHMQYcCwAov23FX8FVy",
   "principalUsdc": "0.10",
-  "verifiedAt": "2026-10-05T17:21:58.111Z",
+  "verifiedAt": "2026-10-06T00:54:12.381Z",
   "receipts": [
     {
       "action": "fund-borrower",
-      "signature": "5sZungDNEz6XtKLdHCT8gNnmQv8MhxzicJJpRKRy2MM8NBjLwyMZgibvpFG5B6NUE7CfBXFxoFTCTRtFSAH5HzLw",
-      "url": "https://explorer.solana.com/tx/5sZungDNEz6XtKLdHCT8gNnmQv8MhxzicJJpRKRy2MM8NBjLwyMZgibvpFG5B6NUE7CfBXFxoFTCTRtFSAH5HzLw?cluster=devnet"
+      "signature": "5MQEmxEB3Ltsxa1XAcYr9fnavSnEweUfPZ6NAnnXLeJBHcfgvo73Ncj8Qf6XpNWzA4ZqMb6zYUvJjD1d1xbdyPqF",
+      "url": "https://explorer.solana.com/tx/5MQEmxEB3Ltsxa1XAcYr9fnavSnEweUfPZ6NAnnXLeJBHcfgvo73Ncj8Qf6XpNWzA4ZqMb6zYUvJjD1d1xbdyPqF?cluster=devnet"
     },
     {
       "action": "wrap-collateral",
-      "signature": "4dQx3PX4YvGBKACjEEZfHARVqGNqj9MgCZVSXCwYY98XukeMNRR8fVGBmQfhCiK5dFVvA17ug8pNsBDjBdQWkpaD",
-      "url": "https://explorer.solana.com/tx/4dQx3PX4YvGBKACjEEZfHARVqGNqj9MgCZVSXCwYY98XukeMNRR8fVGBmQfhCiK5dFVvA17ug8pNsBDjBdQWkpaD?cluster=devnet"
+      "signature": "3AqYCVMRtm95EHamk9nLqSD7ykDLtbrgcRqjpadHmHqtVXGijGBSigoxqSVx9ANriREs1Y7goR1th4HMPFx4brSK",
+      "url": "https://explorer.solana.com/tx/3AqYCVMRtm95EHamk9nLqSD7ykDLtbrgcRqjpadHmHqtVXGijGBSigoxqSVx9ANriREs1Y7goR1th4HMPFx4brSK?cluster=devnet"
     },
     {
       "action": "create-request",
-      "signature": "5uCm9jzGcyTpXFDFiXiLXycrsACgU1u2Da5FX3Ei9K5keaDrMojevyePmRBjLw1cFnGdm1JZ2BrN9Huu4tYdM2J6",
-      "url": "https://explorer.solana.com/tx/5uCm9jzGcyTpXFDFiXiLXycrsACgU1u2Da5FX3Ei9K5keaDrMojevyePmRBjLw1cFnGdm1JZ2BrN9Huu4tYdM2J6?cluster=devnet"
+      "signature": "4n6oA2wYTLYCQgbu2bBcDC4bcqoUtQQnha2aa9khHZ43saiNtxnKwqeBGvsMpWPTT29RZQv5A9nD7xMozbS8ttc",
+      "url": "https://explorer.solana.com/tx/4n6oA2wYTLYCQgbu2bBcDC4bcqoUtQQnha2aa9khHZ43saiNtxnKwqeBGvsMpWPTT29RZQv5A9nD7xMozbS8ttc?cluster=devnet"
     },
     {
       "action": "cancel-request",
-      "signature": "bCYeyHrd7ZFtu6874Jn3pkQRnmR6jk7byJFatHSnwiaoJpStWRDJRkm8t7rY9EX2gUnVBTZHJfjysEhgSFUJo45",
-      "url": "https://explorer.solana.com/tx/bCYeyHrd7ZFtu6874Jn3pkQRnmR6jk7byJFatHSnwiaoJpStWRDJRkm8t7rY9EX2gUnVBTZHJfjysEhgSFUJo45?cluster=devnet"
+      "signature": "43gD2tnJv3usNE9xMMb1s3hH8pbToDEHtWEkBAd9Bo3nuLjrZwt94cigD3wwgMYZV8EYP2uEbGyy3Ypdtu6LM4jn",
+      "url": "https://explorer.solana.com/tx/43gD2tnJv3usNE9xMMb1s3hH8pbToDEHtWEkBAd9Bo3nuLjrZwt94cigD3wwgMYZV8EYP2uEbGyy3Ypdtu6LM4jn?cluster=devnet"
     },
     {
       "action": "close-cancelled-request",
-      "signature": "258CjABsxVhMZL9tvdSgKpxXSDRu9uopJjuLJQbA2vWAzUokk7tN2QVjPteiNRNpkRgaJ9bgGLzP4xVuxWgL7wmq",
-      "url": "https://explorer.solana.com/tx/258CjABsxVhMZL9tvdSgKpxXSDRu9uopJjuLJQbA2vWAzUokk7tN2QVjPteiNRNpkRgaJ9bgGLzP4xVuxWgL7wmq?cluster=devnet"
+      "signature": "wSJXErzGmvFu9JLQEYVRTnozQN7htytaT3D56FZiQR6psDD47tzkqCgCtK93PidWTjdooUqpHUk5Vi2c9Q66PcJ",
+      "url": "https://explorer.solana.com/tx/wSJXErzGmvFu9JLQEYVRTnozQN7htytaT3D56FZiQR6psDD47tzkqCgCtK93PidWTjdooUqpHUk5Vi2c9Q66PcJ?cluster=devnet"
     },
     {
       "action": "create-request",
-      "signature": "28scJW77mmgdxjcJnTdyyNi98usLYL4ePdP6xQmnNoNNG2n92fk3oNRBHH8JgHYtrQP6ZKArMLMG35KyYXa1e6Nr",
-      "url": "https://explorer.solana.com/tx/28scJW77mmgdxjcJnTdyyNi98usLYL4ePdP6xQmnNoNNG2n92fk3oNRBHH8JgHYtrQP6ZKArMLMG35KyYXa1e6Nr?cluster=devnet"
+      "signature": "2YNE7hKDmdrRcHtKaroj6FbLRcVFKv1LTTvoKXCkJjoVsZPyz7wPTRLr7LnGxcXHmFcw3xnzx4QXbaL54rF6ShS7",
+      "url": "https://explorer.solana.com/tx/2YNE7hKDmdrRcHtKaroj6FbLRcVFKv1LTTvoKXCkJjoVsZPyz7wPTRLr7LnGxcXHmFcw3xnzx4QXbaL54rF6ShS7?cluster=devnet"
+    },
+    {
+      "action": "pyth-update",
+      "signature": "4kRXDaZiK72N6ZpYWdbVRhrwNJiVg8WfdJyjRQaoeUVcyKY6t6gejXruVHpM8GkNQ6fdqmf5Dnfw83WAJRriLuvK",
+      "url": "https://explorer.solana.com/tx/4kRXDaZiK72N6ZpYWdbVRhrwNJiVg8WfdJyjRQaoeUVcyKY6t6gejXruVHpM8GkNQ6fdqmf5Dnfw83WAJRriLuvK?cluster=devnet"
+    },
+    {
+      "action": "pyth-update",
+      "signature": "5ZbyW4SPYkoNfWQUPbWJXZc7fRX58QCsmWrnXxLzvRjqddiAoqpnBtFgMYNVu3CzcrpRLPvQh94suiaaT4Cciiv7",
+      "url": "https://explorer.solana.com/tx/5ZbyW4SPYkoNfWQUPbWJXZc7fRX58QCsmWrnXxLzvRjqddiAoqpnBtFgMYNVu3CzcrpRLPvQh94suiaaT4Cciiv7?cluster=devnet"
+    },
+    {
+      "action": "fund-request",
+      "signature": "5jBTtcruQEkzQm3WQoDkUWEsf5tpfyGrvtzsQrGRM4qVTdwZCWZhmoqVjfGy2Rq5xK2Y4TSAZDPjz8WeFdLqvkpg",
+      "url": "https://explorer.solana.com/tx/5jBTtcruQEkzQm3WQoDkUWEsf5tpfyGrvtzsQrGRM4qVTdwZCWZhmoqVjfGy2Rq5xK2Y4TSAZDPjz8WeFdLqvkpg?cluster=devnet"
+    },
+    {
+      "action": "repay",
+      "signature": "4AmMFRtcRaV22oRywyvaaJvLhkjqhoJshAR1n6DkhNQYokiDEnwHKHDHbCqknkF4SxjEe8RiwPRFA2sqhmB2XBxq",
+      "url": "https://explorer.solana.com/tx/4AmMFRtcRaV22oRywyvaaJvLhkjqhoJshAR1n6DkhNQYokiDEnwHKHDHbCqknkF4SxjEe8RiwPRFA2sqhmB2XBxq?cluster=devnet"
+    },
+    {
+      "action": "close-offer",
+      "signature": "2iq9MM3fHr5KSvYiCeiB4fK5m1PEQHXsKrrAvDgDsg787Gt3FujYhKykfiWJwawdee6CMVctFwcUP4WqT35NSUJg",
+      "url": "https://explorer.solana.com/tx/2iq9MM3fHr5KSvYiCeiB4fK5m1PEQHXsKrrAvDgDsg787Gt3FujYhKykfiWJwawdee6CMVctFwcUP4WqT35NSUJg?cluster=devnet"
+    },
+    {
+      "action": "close-funded-request",
+      "signature": "4siQjFdhqHczf8qH5U34xuMgq2SchfEW519ZAqhmj8goCSdKEZ1ocfxsJUN56K1m126HYvy6ZKCjoT8cKVnRf8G",
+      "url": "https://explorer.solana.com/tx/4siQjFdhqHczf8qH5U34xuMgq2SchfEW519ZAqhmj8goCSdKEZ1ocfxsJUN56K1m126HYvy6ZKCjoT8cKVnRf8G?cluster=devnet"
     },
     {
       "action": "cleanup-token-accounts",
-      "signature": "2uuUorQYHvdA6L7f9koZEABHQRUK1MSbtchsirTXEfWebuZgKJorMz1MQFaKJLg1LsUfxMWPh7r2yKcUq9JcQwP9",
-      "url": "https://explorer.solana.com/tx/2uuUorQYHvdA6L7f9koZEABHQRUK1MSbtchsirTXEfWebuZgKJorMz1MQFaKJLg1LsUfxMWPh7r2yKcUq9JcQwP9?cluster=devnet"
+      "signature": "2zYQyeK8BgdPHDCs9iWeALZKYa6hje3EZvE11ZCrpTCMVSGXxLVzNCANqsoK938gXgwoZjcPSaHKLgtZ9wc35U1T",
+      "url": "https://explorer.solana.com/tx/2zYQyeK8BgdPHDCs9iWeALZKYa6hje3EZvE11ZCrpTCMVSGXxLVzNCANqsoK938gXgwoZjcPSaHKLgtZ9wc35U1T?cluster=devnet"
     },
     {
       "action": "return-sol",
-      "signature": "34NaQ6vLpRLbsSoEEBMcD8BohWpUZgY48p5M9WbgmnhzekLBhaxtmxUoSqprnNyMpFiKCoR11nxRSsmnozYYW2NH",
-      "url": "https://explorer.solana.com/tx/34NaQ6vLpRLbsSoEEBMcD8BohWpUZgY48p5M9WbgmnhzekLBhaxtmxUoSqprnNyMpFiKCoR11nxRSsmnozYYW2NH?cluster=devnet"
+      "signature": "G6o4YntrfEmDYiRUWYeKw9yiEB4zCUyomfPvfQgukvFH7MLgRD3XgYUeJs1BARNHe95rRUUojqFaGnkeWQpm5xK",
+      "url": "https://explorer.solana.com/tx/G6o4YntrfEmDYiRUWYeKw9yiEB4zCUyomfPvfQgukvFH7MLgRD3XgYUeJs1BARNHe95rRUUojqFaGnkeWQpm5xK?cluster=devnet"
     }
   ],
-  "limitations": [
-    "Funding was not exercised on Devnet: public Hermes now returns 401 without PYTH_HERMES_API_KEY, and the sponsored SOL/USD account was about 5 minutes old, beyond the 60-second limit. Funding is covered by the LiteSVM suite.",
-    "The first run's cleanup returned the temporary borrower's SOL before cancelling its second request, so that request stays open on Devnet with about 0.0012 wSOL collateral and about 0.004 SOL of rent under a key that no longer exists. The script now cancels and closes its own open requests before returning SOL."
-  ]
+  "earlierRun": {
+    "borrower": "EKUeGDv34G51hrRprk3y7EHvQe3fVxQJdkwdTVNDSGtf",
+    "verifiedAt": "2026-10-05T17:21:58.111Z",
+    "receipts": [
+      {
+        "action": "fund-borrower",
+        "signature": "5sZungDNEz6XtKLdHCT8gNnmQv8MhxzicJJpRKRy2MM8NBjLwyMZgibvpFG5B6NUE7CfBXFxoFTCTRtFSAH5HzLw",
+        "url": "https://explorer.solana.com/tx/5sZungDNEz6XtKLdHCT8gNnmQv8MhxzicJJpRKRy2MM8NBjLwyMZgibvpFG5B6NUE7CfBXFxoFTCTRtFSAH5HzLw?cluster=devnet"
+      },
+      {
+        "action": "wrap-collateral",
+        "signature": "4dQx3PX4YvGBKACjEEZfHARVqGNqj9MgCZVSXCwYY98XukeMNRR8fVGBmQfhCiK5dFVvA17ug8pNsBDjBdQWkpaD",
+        "url": "https://explorer.solana.com/tx/4dQx3PX4YvGBKACjEEZfHARVqGNqj9MgCZVSXCwYY98XukeMNRR8fVGBmQfhCiK5dFVvA17ug8pNsBDjBdQWkpaD?cluster=devnet"
+      },
+      {
+        "action": "create-request",
+        "signature": "5uCm9jzGcyTpXFDFiXiLXycrsACgU1u2Da5FX3Ei9K5keaDrMojevyePmRBjLw1cFnGdm1JZ2BrN9Huu4tYdM2J6",
+        "url": "https://explorer.solana.com/tx/5uCm9jzGcyTpXFDFiXiLXycrsACgU1u2Da5FX3Ei9K5keaDrMojevyePmRBjLw1cFnGdm1JZ2BrN9Huu4tYdM2J6?cluster=devnet"
+      },
+      {
+        "action": "cancel-request",
+        "signature": "bCYeyHrd7ZFtu6874Jn3pkQRnmR6jk7byJFatHSnwiaoJpStWRDJRkm8t7rY9EX2gUnVBTZHJfjysEhgSFUJo45",
+        "url": "https://explorer.solana.com/tx/bCYeyHrd7ZFtu6874Jn3pkQRnmR6jk7byJFatHSnwiaoJpStWRDJRkm8t7rY9EX2gUnVBTZHJfjysEhgSFUJo45?cluster=devnet"
+      },
+      {
+        "action": "close-cancelled-request",
+        "signature": "258CjABsxVhMZL9tvdSgKpxXSDRu9uopJjuLJQbA2vWAzUokk7tN2QVjPteiNRNpkRgaJ9bgGLzP4xVuxWgL7wmq",
+        "url": "https://explorer.solana.com/tx/258CjABsxVhMZL9tvdSgKpxXSDRu9uopJjuLJQbA2vWAzUokk7tN2QVjPteiNRNpkRgaJ9bgGLzP4xVuxWgL7wmq?cluster=devnet"
+      },
+      {
+        "action": "create-request",
+        "signature": "28scJW77mmgdxjcJnTdyyNi98usLYL4ePdP6xQmnNoNNG2n92fk3oNRBHH8JgHYtrQP6ZKArMLMG35KyYXa1e6Nr",
+        "url": "https://explorer.solana.com/tx/28scJW77mmgdxjcJnTdyyNi98usLYL4ePdP6xQmnNoNNG2n92fk3oNRBHH8JgHYtrQP6ZKArMLMG35KyYXa1e6Nr?cluster=devnet"
+      },
+      {
+        "action": "cleanup-token-accounts",
+        "signature": "2uuUorQYHvdA6L7f9koZEABHQRUK1MSbtchsirTXEfWebuZgKJorMz1MQFaKJLg1LsUfxMWPh7r2yKcUq9JcQwP9",
+        "url": "https://explorer.solana.com/tx/2uuUorQYHvdA6L7f9koZEABHQRUK1MSbtchsirTXEfWebuZgKJorMz1MQFaKJLg1LsUfxMWPh7r2yKcUq9JcQwP9?cluster=devnet"
+      },
+      {
+        "action": "return-sol",
+        "signature": "34NaQ6vLpRLbsSoEEBMcD8BohWpUZgY48p5M9WbgmnhzekLBhaxtmxUoSqprnNyMpFiKCoR11nxRSsmnozYYW2NH",
+        "url": "https://explorer.solana.com/tx/34NaQ6vLpRLbsSoEEBMcD8BohWpUZgY48p5M9WbgmnhzekLBhaxtmxUoSqprnNyMpFiKCoR11nxRSsmnozYYW2NH?cluster=devnet"
+      }
+    ],
+    "limitations": [
+      "The first run's cleanup returned the temporary borrower's SOL before cancelling its second request, so that request stays open on Devnet with about 0.0012 wSOL collateral and about 0.004 SOL of rent under a key that no longer exists. The script now cancels and closes its own open requests before returning SOL."
+    ]
+  }
 }
