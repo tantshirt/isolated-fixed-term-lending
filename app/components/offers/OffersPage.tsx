@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
 import { useMemo, useState } from "react";
-import { LogoMark } from "@/components/brand/LogoMark";
+import { Sharky } from "@/components/brand/Sharky";
 import { Chips } from "@/components/ui/Chips";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useOffers, usePrice } from "@/lib/client/hooks";
@@ -144,7 +144,7 @@ export function OffersPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <LogoMark size={48} progress={0.08} />
+            <Sharky pose={error ? "confused" : "waiting"} size={120} />
             <p className={styles.emptyTitle}>
               {filter === "open" ? "No open offers" : "Nothing here yet"}
             </p>

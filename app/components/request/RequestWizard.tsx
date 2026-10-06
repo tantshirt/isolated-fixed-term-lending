@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
+import { SharkyTip } from "@/components/brand/SharkyTip";
 import { OfferPreview } from "@/components/create/OfferPreview";
 import { StepAmount } from "@/components/create/StepAmount";
 import { StepReview } from "@/components/create/StepReview";
@@ -33,6 +34,13 @@ const STEPS = [
   { title: "Rate and term", question: "What will you pay, and for how long?" },
   { title: "Collateral", question: "How much wSOL will you lock?" },
   { title: "Review", question: "Check the terms, then post your request." },
+] as const;
+
+const TIPS = [
+  "Ask for what you need. You repay it plus the full-term interest.",
+  "Repaying early still costs the full-term interest.",
+  "Collateral is what the lender keeps if you never repay.",
+  "Lenders read exactly this before they fund.",
 ] as const;
 
 type Posted = { href: string; principal: bigint; collateral: bigint };
@@ -326,6 +334,7 @@ function PublicWizard() {
       </div>
       <aside className={styles.aside} aria-label="Lender's view of this request">
         <OfferPreview draft={draft} owed={owed} price={price} live={Boolean(posted)} perspective="borrower" />
+        {step > 0 && <SharkyTip>{posted ? "Posted. Lenders can fund it from Discover." : TIPS[step - 1]}</SharkyTip>}
       </aside>
     </div>
   );

@@ -160,14 +160,44 @@
   gap: 0.25rem;
 }
 
-.lock {
-  display: grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  background: var(--color-accent-muted);
-  color: var(--color-text-accent);
+.guide {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  max-width: 44rem;
+}
+
+.guideArt {
+  flex: none;
+  width: 96px;
+  height: 96px;
+}
+
+.bubble {
+  position: relative;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  box-shadow: var(--shadow-low);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+/* The bubble's tail points at Sharky. */
+.bubble::before {
+  content: "";
+  position: absolute;
+  bottom: 14px;
+  left: -7px;
+  width: 12px;
+  height: 12px;
+  border-bottom: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  background: inherit;
+  transform: rotate(45deg);
 }
 
 .mine {

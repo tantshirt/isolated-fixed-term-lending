@@ -175,3 +175,16 @@ Phase 1 review (Kestrel / Indigo / Plumb / Fovea): the wordmark and 34 px head p
 | The private chapter becomes "Sharky's case files", with the PI poses shown uncropped | Indigo | The noir framing marks the private side; contain-fit keeps the wide room scene whole. |
 | Use cases change from a table to six cards: image, Public/Private tag, intent, one-line hook, start link | Ravi / Wren | The user called the use cases weak; each card shows a different job. |
 | On phones, contrast cells carry visually hidden "Other sharks:" / "Sharky:" labels | Fovea | Column headers are hidden on phones. |
+
+## LegitShark phase 3: app surfaces (2026-10-06)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Discover's venue explanation is spoken by Sharky in a speech bubble: the guide pose in public, the PI head in private | Sol / Fovea | Same facts, now carried by the character; `aria-live="polite"` announces changes when a chip is switched. |
+| Empty lists show waiting Sharky; network errors, not-found pages and the error boundary show confused Sharky; "private lenders stay unlisted" shows the PI | Wren / Kestrel | Mascots replace the progress ring in states that have no progress. |
+| The wizards get one Sharky tip per step under the preview, never inside it, with no figures | Plumb | The preview is a figure readout, so Sharky sits beside it. |
+| `LogoMark` stays the progress ring and transaction spinner | Hollis | It carries state, not brand. |
+| Private home shows PI Sharky in "Sharky's office" | Indigo | Marks the private side without a dark canvas. |
+| The `lendspan-*` abstract WebPs are removed from `public/` | Kestrel | No page uses them. |
+
+Open item (low): the "Request unavailable" network state on request detail is still text-only.

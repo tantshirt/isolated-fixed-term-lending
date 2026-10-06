@@ -11,6 +11,7 @@ import { BalancePanel } from "./BalancePanel";
 import { ReceiptList } from "./ReceiptList";
 import { RoomList } from "./RoomList";
 import { TeeCard } from "./TeeCard";
+import { Sharky } from "@/components/brand/Sharky";
 import styles from "./private.module.css";
 
 const STEPS = [
@@ -87,8 +88,9 @@ export function PrivateHome() {
 
   return (
     <div className="page">
-      <header className={styles.hero}>
-        <p className={styles.eyebrow}>Devnet · Private rollup</p>
+      <header className={`${styles.hero} ${styles.heroArt}`}>
+        <Sharky pose="detective" size={112} className={styles.detective} />
+        <p className={styles.eyebrow}>Devnet · Private rollup · Sharky&rsquo;s office</p>
         <h1 className={styles.title}>Lend and borrow without showing everyone the deal.</h1>
         <p className={styles.lede}>
           Terms, conversations, and balances stay inside a hardware-protected rollup that only the people in the deal

@@ -20,6 +20,7 @@ import {
 } from "@/lib/offer-validation";
 import { SubmissionError, signatureUrl } from "@/lib/transaction-lifecycle";
 import { DevnetLoanService } from "@/lib/devnet-loan-service";
+import { SharkyTip } from "@/components/brand/SharkyTip";
 import { OfferPreview } from "./OfferPreview";
 import { StepAmount } from "./StepAmount";
 import { StepReview } from "./StepReview";
@@ -36,6 +37,13 @@ const STEPS = [
   },
   { title: "Collateral", question: "How much wSOL secures the loan?" },
   { title: "Review", question: "Check the terms, then lock your USDC." },
+] as const;
+
+const TIPS = [
+  "Lend only what you can leave locked for the whole term.",
+  "The interest is the cost of the whole term, not a yearly rate.",
+  "Collateral is what you keep if the borrower never repays.",
+  "This preview is exactly what borrowers will read.",
 ] as const;
 
 type Created = {
@@ -351,6 +359,9 @@ export function CreateWizard() {
           price={price}
           live={Boolean(created)}
         />
+        <SharkyTip>
+          {created ? "Posted. Every term is on chain now." : TIPS[step - 1]}
+        </SharkyTip>
       </aside>
     </div>
   );

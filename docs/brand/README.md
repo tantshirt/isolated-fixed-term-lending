@@ -28,7 +28,7 @@ The script reads `KIE_API_KEY` from gitignored `app/.env.local`, caps a run at 1
 
 ## LegitShark and Sharky (6 October 2026)
 
-Lendspan became **LegitShark** and the abstract series is being replaced by **Sharky**, the mascot (see [design-and-experience.md](../design-and-experience.md#name-and-mascot) and the 2026-10-06 rulings). The `lendspan-*` images above stay until the landing and app phases stop using them.
+Lendspan became **LegitShark** and the abstract series is being replaced by **Sharky**, the mascot (see [design-and-experience.md](../design-and-experience.md#name-and-mascot) and the 2026-10-06 rulings). The `lendspan-*` WebPs above were removed from `app/public/illustrations/` once no page used them; their originals stay in `originals/` as history.
 
 Sharky is made in two steps, both with `app/scripts/generate-art.mjs` and the prompts in [sharky-prompts.json](sharky-prompts.json).
 
