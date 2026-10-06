@@ -174,13 +174,6 @@
 }
 .art {
   margin: 1.5rem 0;
-  overflow: hidden;
-  border-radius: 28px;
-}
-.art img {
-  display: block;
-  width: 100%;
-  height: auto;
 }
 .note {
   padding-top: 1rem;

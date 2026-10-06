@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { UseCaseVisual } from "./vignettes/Scenes";
 import { USE_CASES } from "./use-cases";
 import s from "./Landing.module.css";
 
@@ -35,13 +35,7 @@ export function UseCaseCards({
         {cases.map((u) => (
           <li key={u.intent} className={s.caseCard}>
             <div className={s.caseArt}>
-              <Image
-                src={u.image.src}
-                alt={u.image.alt}
-                width={1200}
-                height={900}
-                sizes="(max-width: 640px) 92vw, (max-width: 1000px) 45vw, 360px"
-              />
+              <UseCaseVisual scene={u.scene} />
             </div>
             <p className={s.caseTag} data-venue={u.venue}>
               {u.venue === "private" ? "Private" : "Public"}

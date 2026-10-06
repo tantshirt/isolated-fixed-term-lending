@@ -1,0 +1,77 @@
+.spot {
+  display: block;
+  flex: none;
+}
+
+.tile {
+  fill: var(--color-cloud);
+  stroke: var(--color-border);
+}
+
+.row {
+  fill: var(--color-background-card);
+  stroke: var(--color-border);
+}
+
+.coin {
+  fill: var(--color-accent);
+}
+
+.line {
+  fill: var(--color-text-primary);
+  opacity: 0.8;
+}
+
+.lineSoft {
+  fill: var(--color-text-secondary);
+  opacity: 0.4;
+}
+
+.ghost {
+  fill: none;
+  stroke: var(--color-border-emphasized);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+.badge {
+  fill: var(--color-accent);
+  stroke: var(--color-background-card);
+  stroke-width: 3;
+}
+
+.glyph {
+  fill: none;
+  stroke: var(--color-on-accent);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.redact {
+  fill: var(--color-on-navy-muted);
+  opacity: 0.6;
+}
+
+/* Private states sit on navy, like the private panels. */
+.spot[data-tone="navy"] .tile {
+  fill: var(--color-navy);
+  stroke: var(--color-navy-line);
+}
+
+.spot[data-tone="navy"] .row {
+  fill: var(--color-navy-line);
+  stroke: var(--color-on-navy-muted);
+}
+
+.spot[data-tone="navy"] .line {
+  fill: var(--color-on-navy);
+}
+
+.spot[data-tone="navy"] .ghost {
+  stroke: var(--color-on-navy-muted);
+}
+
+.spot[data-tone="navy"] .badge {
+  stroke: var(--color-navy);
+}

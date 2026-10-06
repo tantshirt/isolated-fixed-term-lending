@@ -146,13 +146,6 @@
   min-width: 0;
 }
 
-.heroArt img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 32px;
-}
-
 /* Promises */
 
 .promises {
@@ -377,12 +370,8 @@
 }
 
 .ctaArt {
-  position: relative;
-  min-height: 280px;
-}
-
-.ctaArt img {
-  object-fit: cover;
+  min-width: 0;
+  align-self: center;
 }
 
 @media (max-width: 900px) {

@@ -12,8 +12,9 @@ import { InvitesPanel } from "./InvitesPanel";
 import { ReceiptList } from "./ReceiptList";
 import { RoomList } from "./RoomList";
 import { TeeCard } from "./TeeCard";
-import Image from "next/image";
 import styles from "./private.module.css";
+import { PrivateVenueScene } from "@/components/experience/vignettes/Scenes";
+import { PoweredByMagicBlock } from "@/components/brand/PoweredByMagicBlock";
 
 const STEPS = [
   {
@@ -97,17 +98,11 @@ export function PrivateHome() {
             Terms, conversations, and balances stay inside a hardware-protected rollup that only the people in the deal
             can read. Prices, interest, and settlement follow the same rules as every ZenLo loan.
           </p>
+          <PoweredByMagicBlock tone="navy" />
         </div>
-        <Image
-          className={styles.heroImage}
-          src="/illustrations/zr-venue-private.webp"
-          alt=""
-          aria-hidden
-          width={1600}
-          height={1200}
-          priority
-          sizes="(max-width: 760px) 92vw, 40vw"
-        />
+        <div className={styles.heroImage}>
+          <PrivateVenueScene />
+        </div>
       </header>
 
       {ready && <InvitesPanel er={er} wallet={signer?.publicKey ?? null} />}

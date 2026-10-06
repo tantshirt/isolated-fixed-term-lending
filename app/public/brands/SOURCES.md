@@ -10,3 +10,4 @@ Downloaded on 2026-10-05 and hosted locally so icons do not depend on third-part
 - Jupiter: [official site icon](https://jup.ag/favicon.svg), linked by [Jupiter Wallet](https://jup.ag/wallet).
 
 Wallets discovered at runtime may provide their own Wallet Standard icon. Catalog assets identify the four requested brands even when an extension is not installed. Actual availability and Devnet/signing support determine connectability.
+- MagicBlock: the full logo (wizard-hat icon and wordmark) from the header of [magicblock.xyz](https://www.magicblock.xyz), downloaded on 2026-10-06. The [MagicBlock press kit](https://www.magicblock.xyz/brand-asset-page) supplies black and white versions; `magicblock-white.svg` is the original file and `magicblock-black.svg` changes only the fill to black. Use the full logo, with clear space at least the height of the icon.

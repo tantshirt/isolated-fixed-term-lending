@@ -1,4 +1,6 @@
 // One source for the use-case cards on the landing page and /use-cases.
+import type { UseCaseScene } from "./vignettes/Scenes";
+
 export type UseCase = {
   intent: string;
   start: { label: string; href: string };
@@ -8,7 +10,8 @@ export type UseCase = {
   /** One line for the card. */
   hook: string;
   venue: "public" | "private";
-  image: { src: string; alt: string };
+  /** Product vignette drawn beside the card. */
+  scene: UseCaseScene;
 };
 
 export const USE_CASES: UseCase[] = [
@@ -20,7 +23,7 @@ export const USE_CASES: UseCase[] = [
     how: "Your room, the terms, and your private balance live inside a hardware-protected rollup. Only you and the lenders you invite can read them. Prices, interest, and settlement follow the same rules as a public ZenLo loan.",
     hook: "Your loan size stays off the public explorer.",
     venue: "private",
-    image: { src: "/illustrations/zr-uc-private-borrow.webp", alt: "A blue satin ribbon passes behind a protective navy fold." },
+    scene: "private-borrow",
   },
   {
     intent: "Lend to someone I invited, on terms we both approve",
@@ -30,7 +33,7 @@ export const USE_CASES: UseCase[] = [
     how: "You propose exact terms. Any edit creates a new revision, and both of you must approve the same revision before anything moves.",
     hook: "Both of you approve the same revision, or nothing moves.",
     venue: "private",
-    image: { src: "/illustrations/zr-uc-invited-lend.webp", alt: "Two blue and white ribbon arches share a small connecting fold." },
+    scene: "invited-lend",
   },
   {
     intent: "Compare competing offers without lenders seeing each other",
@@ -40,7 +43,7 @@ export const USE_CASES: UseCase[] = [
     how: "Publish a card with only the fields you choose. Each lender's offer is readable only by that lender and you. Accept one, and the others are locked out and can cancel.",
     hook: "Lenders bid blind. You pick the best terms.",
     venue: "private",
-    image: { src: "/illustrations/zr-uc-blind-bids.webp", alt: "Three separate satin panels conceal their interiors from each other." },
+    scene: "blind-bids",
   },
   {
     intent: "Liquidate a loan that crossed its line, without seeing the loan",
@@ -50,7 +53,7 @@ export const USE_CASES: UseCase[] = [
     how: "When a loan crosses its line, its automatic check posts a short-lived quote: the debt and the wSOL you receive. You fund it from a private balance; if it executes you collect, otherwise you get a refund.",
     hook: "Fund a short-lived quote and earn the 5% incentive, without reading the loan.",
     venue: "private",
-    image: { src: "/illustrations/zr-uc-liquidate.webp", alt: "A blue satin fold bends downward beside a stable white platform." },
+    scene: "liquidate",
   },
   {
     intent: "Understand a loan before I commit",
@@ -60,7 +63,7 @@ export const USE_CASES: UseCase[] = [
     how: "The wallet-free demo walks one loan through repayment, liquidation, and expiry with the same integer math. Inside a private room, the copilot can explain your exact loan, showing you the text it will share first.",
     hook: "Run one loan to every ending in the wallet-free demo.",
     venue: "public",
-    image: { src: "/illustrations/zr-uc-learn.webp", alt: "A blue ribbon opens into three orderly steps." },
+    scene: "learn",
   },
   {
     intent: "Check the claims for myself",
@@ -70,7 +73,7 @@ export const USE_CASES: UseCase[] = [
     how: "Every capability was proven on the real Devnet TEE before it was used, with signatures and the findings that changed the design, including what does leak.",
     hook: "Signatures and findings from the real Devnet, including what leaks.",
     venue: "public",
-    image: { src: "/illustrations/zr-uc-verify.webp", alt: "A white satin loop frames a clearly lit blue fold." },
+    scene: "verify",
   },
 ];
 

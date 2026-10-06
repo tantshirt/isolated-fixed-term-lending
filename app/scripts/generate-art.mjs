@@ -28,6 +28,9 @@ const receiptsFile = new URL("../../docs/brand/generation-receipts.json", import
 const receipts = JSON.parse(readFileSync(receiptsFile, "utf8"));
 mkdirSync(new URL("../../docs/brand/originals/", import.meta.url), { recursive: true });
 
+const pendingFile = new URL("../../docs/brand/originals/pending.json", import.meta.url);
+const pending = existsSync(pendingFile) ? JSON.parse(readFileSync(pendingFile, "utf8")) : {};
+
 let spent = 0;
 const uploaded = new Map();
 // Kie keeps uploads for 24 hours; one upload per reference per run.
@@ -66,6 +69,9 @@ for (const p of prompts) {
   }
   const refs = p.references?.length ? await Promise.all(p.references.map(upload)) : null;
   const model = refs ? EDIT_MODEL : MODEL;
+  // A task that outlived the last run is polled again instead of paid for twice.
+  let taskId = pending[p.name];
+  if (!taskId) {
   const input = { prompt: p.prompt, aspect_ratio: p.aspect_ratio, resolution: "2K", background: p.background ?? "opaque" };
   if (refs) input.input_urls = refs;
   const create = await (
@@ -76,9 +82,12 @@ for (const p of prompts) {
     })
   ).json();
   if (create.code !== 200) throw new Error(`${p.name}: ${create.msg}`);
-  const taskId = create.data.taskId;
+  taskId = create.data.taskId;
+  pending[p.name] = taskId;
+  writeFileSync(pendingFile, JSON.stringify(pending, null, 2) + "\n");
+  }
   let info;
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 225; i++) {
     await new Promise((r) => setTimeout(r, 4000));
     info = (await (await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, { headers: auth })).json()).data;
     if (info.state === "success" || info.state === "fail") break;
@@ -87,6 +96,8 @@ for (const p of prompts) {
   const url = JSON.parse(info.resultJson).resultUrls[0];
   const png = Buffer.from(await (await fetch(url)).arrayBuffer());
   writeFileSync(original, png);
+  delete pending[p.name];
+  writeFileSync(pendingFile, JSON.stringify(pending, null, 2) + "\n");
   await webp(p, png);
   spent += info.creditsConsumed ?? 10;
   receipts.push({ name: p.name, taskId, creditsConsumed: info.creditsConsumed, model });

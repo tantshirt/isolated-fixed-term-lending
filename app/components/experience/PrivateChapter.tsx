@@ -1,31 +1,34 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion as m, useReducedMotion } from "motion/react";
+import { PoweredByMagicBlock } from "@/components/brand/PoweredByMagicBlock";
 import s from "./Landing.module.css";
+import { PRIVATE_SCENES } from "./vignettes/Scenes";
+
+function PrivateScene({ scene }: { scene: keyof typeof PRIVATE_SCENES }) {
+  const Scene = PRIVATE_SCENES[scene];
+  return <Scene />;
+}
 
 const STEPS = [
   {
     n: "1",
     title: "Meet in a private room",
     body: "Invite a lender, or publish a card and choose who joins. A link alone opens nothing.",
-    image: "/illustrations/zr-private-room.webp",
-    alt: "A navy satin arch shelters separate blue and white folds.",
+    scene: "room" as const,
   },
   {
     n: "2",
     title: "Agree on exact terms",
     body: "Offers stay between one lender and you. Both sides approve the same revision; any edit starts over.",
-    image: "/illustrations/zr-private-agree.webp",
-    alt: "Blue and white satin edges align in a shared fold.",
+    scene: "agree" as const,
   },
   {
     n: "3",
     title: "Settle with only balances public",
     body: "Repay, expire, or liquidate with the usual rules. The terms never reach Solana.",
-    image: "/illustrations/zr-private-settle.webp",
-    alt: "A white satin strip emerges from a navy loop.",
+    scene: "settle" as const,
   },
 ];
 
@@ -52,7 +55,7 @@ export function PrivateChapter() {
             transition={{ duration: 0.4, delay: reduced ? 0 : i * 0.08, ease: [0.2, 0, 0, 1] }}
           >
             <div className={s.privateArt}>
-              <Image src={step.image} alt={step.alt} width={1200} height={900} sizes="(max-width: 800px) 90vw, 30vw" />
+              <PrivateScene scene={step.scene} />
             </div>
             <span className={s.stepNo}>{step.n}</span>
             <h3>{step.title}</h3>
@@ -67,6 +70,7 @@ export function PrivateChapter() {
         <Link className={s.textLink} href="/devnet/private/proof">
           See what is proven on Devnet
         </Link>
+        <PoweredByMagicBlock />
       </div>
       <p className={s.note}>Devnet only, with test assets. Deposits, withdrawals, and request cards are public; we list exactly what leaks.</p>
     </section>

@@ -1,12 +1,12 @@
 # ZenLo brand and artwork
 
-The current brand is **ZenLo** (6 October 2026): the existing pebble-and-wave mark in [zenlo/mark.svg](zenlo/mark.svg), Nunito, navy and blue on white. The approved experience refinement replaces active pebble illustrations with precisely folded blue-and-white satin ribbons. The small mark and favicon are unchanged.
+The current brand is **ZenLo** (6 October 2026): the existing pebble-and-wave mark in [zenlo/mark.svg](zenlo/mark.svg), Nunito, navy and blue on white. The small mark and favicon are unchanged.
 
-The production ribbon manifest is [zenlo-ribbon-prompts.json](zenlo-ribbon-prompts.json). `app/scripts/generate-art.mjs` uses the user-selected Kie GPT Image 2.5 Sunburst integration and its existing 100-credit per-run cap. The hero was generated and inspected first; every subsequent scene uses `app/public/illustrations/zr-hero.webp` as its sole material, palette and lighting reference. Fresh semantic filenames avoid the generator’s original-file cache. Generation receipts remain in [generation-receipts.json](generation-receipts.json); 2K source originals remain local and gitignored, with optimized WebP assets served by the app.
+**Product vignettes replace generated art (6 October 2026).** Every illustration slot now shows a staged, non-interactive piece of the real interface, drawn in code from the design tokens: an offer card, the money moving between borrower, lender and vault, a private room, a liquidation quote, and so on. They live in `app/components/experience/vignettes/` and each carries an "Example" badge. Empty, missing, private and done states use `components/brand/Spot.tsx`, a small outline of ZenLo's own list rows with one badge glyph. No raster artwork is served.
 
-The 18 successful generations consumed **180 credits**, approximately **$0.90** at the integration’s recorded 2K pricing, across runs of 10, 90 and 80 credits. The served WebP set totals 1,403,328 bytes; all 18 source originals are retained locally.
+Why: the user rejected the satin ribbons and then three sample directions (frosted glass, technical line art, stone with brushed metal; [zenlo-style-test.json](zenlo-style-test.json), about 40 credits including one timed-out task). They wanted no people and no sculpted objects, and asked for the real product, polished and composed so each picture makes sense.
 
-The coordinated set contains one hero, two loan-story scenes, three private scenes, six use-case scenes, two venue images and four small shared spots. The settlement scene is intentionally reused for the final landing invitation; the private venue image also serves Private’s entrance. No generated typography or financial figures appear in artwork.
+The ribbon set it replaced ([zenlo-ribbon-prompts.json](zenlo-ribbon-prompts.json), 18 images, 180 credits) is kept only as history; its WebP files were removed from `app/public/illustrations/`. `app/scripts/generate-art.mjs` now records a pending Kie task in the gitignored `originals/pending.json`, so a run that times out resumes that task instead of paying again.
 
 The sections below are the history of earlier brands.
 

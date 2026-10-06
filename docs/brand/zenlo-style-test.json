@@ -1,0 +1,20 @@
+[
+  {
+    "name": "zt-glass",
+    "aspect_ratio": "4:3",
+    "prompt": "Hero illustration for ZenLo, a calm, transparent fixed-term lending app; it must feel premium and trustworthy. TYPE: premium editorial 3D still life. SUBJECT: two clear frosted-glass slabs of different heights stand apart on a pale surface, joined by one thin horizontal bar of solid cobalt-blue glass resting across both, like a quiet bridge. STYLE: refined optical glass with soft frosting, polished bevelled edges, subtle blue caustics; palette porcelain white, cool sky blue, cobalt blue, deep navy shadow. COMPOSITION: centered, slightly elevated three-quarter view, generous negative space, 15 percent clear margins. BACKGROUND: seamless white to pale cool-blue gradient. LIGHTING: soft directional studio key light from upper left, crisp light refraction, gentle contact shadows. CONSTRAINTS: no people, no hands, no faces, no text, no numbers, no logos, no coins, no pebbles, no ribbons, no watermarks, no signature, no collage.",
+    "width": 1600
+  },
+  {
+    "name": "zt-line",
+    "aspect_ratio": "4:3",
+    "prompt": "Hero illustration for ZenLo, a calm, transparent fixed-term lending app; it must feel premium and trustworthy. TYPE: refined editorial technical line illustration. SUBJECT: two simple architectural pillars stand apart, joined by one elegant arched bridge span; the span alone is filled in solid cobalt blue, everything else is drawn in fine navy lines. STYLE: precise single-weight navy hairlines, isometric drafting precision, minimal hatching, one flat cobalt-blue accent, porcelain-white paper; in the spirit of premium fintech brand illustration. COMPOSITION: isometric view, centered, generous negative space, 15 percent clear margins. BACKGROUND: flat off-white with a very faint cool-blue tint. LIGHTING: flat, no gradients. CONSTRAINTS: no people, no hands, no faces, no text, no numbers, no labels, no logos, no coins, no pebbles, no ribbons, no watermarks, no signature, no collage.",
+    "width": 1600
+  },
+  {
+    "name": "zt-stone",
+    "aspect_ratio": "4:3",
+    "prompt": "Hero illustration for ZenLo, a calm, transparent fixed-term lending app; it must feel premium and trustworthy. TYPE: premium studio product photograph, private-bank editorial. SUBJECT: two rectangular plinths of matte white travertine stand apart, joined by one slim brushed-steel beam with a cobalt-blue anodized finish resting across their tops, forming a minimal bridge. STYLE: architectural still life, fine stone grain, satin brushed metal, quiet luxury; palette porcelain white, warm-cool grey stone, cobalt blue, navy shadow. COMPOSITION: centered, low three-quarter view, generous negative space, 15 percent clear margins. BACKGROUND: seamless pale cool-blue studio sweep. LIGHTING: soft directional key light from upper left, long gentle shadows, subtle specular highlights on the steel. CONSTRAINTS: no people, no hands, no faces, no text, no numbers, no logos, no coins, no pebbles, no ribbons, no watermarks, no signature, no collage.",
+    "width": 1600
+  }
+]
