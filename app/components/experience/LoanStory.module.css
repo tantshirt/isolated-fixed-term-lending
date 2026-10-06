@@ -1,88 +1,3 @@
-.heroArtwork {
-  min-width: 0;
-  overflow: hidden;
-}
-.stage {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  padding-top: 1.5rem;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 50% 38%, var(--color-background-surface) 0 30%, transparent 62%),
-    var(--color-accent-muted);
-}
-
-.sharky {
-  width: min(78%, 380px);
-}
-
-.sharky img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.termSheet {
-  position: absolute;
-  bottom: 1.25rem;
-  left: 1.25rem;
-  display: grid;
-  gap: 0.35rem;
-  min-width: 13.5rem;
-  margin: 0;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-container);
-  background: var(--color-background-surface);
-  box-shadow: var(--shadow-med);
-  font-size: 0.875rem;
-}
-
-.termSheetTitle {
-  margin-bottom: 0.2rem;
-  color: var(--color-text-accent);
-  font-size: 0.6875rem;
-  font-weight: 650;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.termSheet dl {
-  display: grid;
-  gap: 0.35rem;
-  margin: 0;
-}
-
-.termSheet dl div {
-  display: flex;
-  justify-content: space-between;
-  gap: 1.25rem;
-}
-
-.termSheet dt {
-  color: var(--color-text-secondary);
-}
-
-.termSheet dd {
-  margin: 0;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-.heroCaption {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 0;
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-}
-.heroCaption a {
-  color: var(--color-accent);
-  font-weight: 600;
-  white-space: nowrap;
-}
 .story {
   padding: clamp(4rem, 9vw, 8rem) 0;
   scroll-margin-top: 5rem;
@@ -97,9 +12,10 @@
 .caption {
   grid-column: 1 / -1;
   color: var(--color-accent);
-  font-weight: 600;
+  font-weight: 800;
 }
 .intro h2 {
+  font-weight: 900;
   font-size: clamp(2.4rem, 5vw, 4.5rem);
   line-height: 1.05;
   letter-spacing: -0.035em;
@@ -123,14 +39,15 @@
   padding: 1.75rem;
   background: var(--color-background-surface);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 28px;
+  box-shadow: var(--shadow-med);
 }
 .trackerHeading {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  font-weight: 600;
+  font-weight: 800;
 }
 .example {
   font-size: 0.75rem;
@@ -155,7 +72,7 @@
 }
 .trackSteps a[aria-current] {
   color: var(--color-accent);
-  font-weight: 600;
+  font-weight: 800;
 }
 .stepNumber,
 .chapterLabel span {
@@ -213,7 +130,7 @@
 }
 .terms dd {
   margin: 0;
-  font-weight: 600;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 .storyLink {
@@ -222,7 +139,7 @@
   align-items: center;
   min-height: 44px;
   margin-top: 0.75rem;
-  font-weight: 600;
+  font-weight: 800;
   font-size: 0.875rem;
   color: var(--color-accent);
 }
@@ -238,10 +155,11 @@
   align-items: center;
   gap: 0.75rem;
   color: var(--color-accent);
-  font-weight: 600;
+  font-weight: 800;
   margin-bottom: 1.25rem;
 }
 .chapter h3 {
+  font-weight: 900;
   font-size: clamp(1.9rem, 3.3vw, 3rem);
   letter-spacing: -0.03em;
   line-height: 1.14;
@@ -257,12 +175,12 @@
 .art {
   margin: 1.5rem 0;
   overflow: hidden;
+  border-radius: 28px;
 }
 .art img {
   display: block;
   width: 100%;
   height: auto;
-  mix-blend-mode: multiply;
 }
 .note {
   padding-top: 1rem;
@@ -329,19 +247,6 @@
   }
   .chapter {
     padding-bottom: 4rem;
-  }
-  .heroCaption {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .sharky {
-    width: min(70%, 300px);
-    margin-bottom: 9.5rem;
-  }
-  .termSheet {
-    right: 1rem;
-    left: 1rem;
-    bottom: 1rem;
   }
   .art {
     max-width: 460px;

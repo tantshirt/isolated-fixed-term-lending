@@ -394,5 +394,65 @@
     "taskId": "bd7dc6fa8cfb013f3840dda9df9597f2",
     "creditsConsumed": 10,
     "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-story-offer",
+    "taskId": "6d65dd647c1da5445f2807774deb3e88",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-story-exchange",
+    "taskId": "1d114eaf9dbbe9aa19fdcb991c20064f",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-story-settle",
+    "taskId": "84384196bbe9e72fda471e88ec610d75",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-private-room",
+    "taskId": "69930f2bb32a6f64463b1f6d8a9b8a6c",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-private-agree",
+    "taskId": "a1eee60e1c85ef4784a238237330f11a",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-private-settle",
+    "taskId": "267fc2a80f336b2054de62c4c5b50a9e",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-spot-waiting",
+    "taskId": "4df3865807f79b90b77edefb463b26b9",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-spot-notfound",
+    "taskId": "4e5fc8a8387aa20bd1cb19c4c5e09048",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-spot-private",
+    "taskId": "456c509535b3769270fac9f435e554ef",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-spot-success",
+    "taskId": "391b41e1c32aa10a0acdf7832ee345e3",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
   }
 ]

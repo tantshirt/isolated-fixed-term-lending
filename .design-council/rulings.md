@@ -207,3 +207,17 @@ The user retired LegitShark and Sharky and chose **ZenLo** from a naming board, 
 | Navy panels mark private features | Sol / Fovea | Private must look different from public without a dark canvas; navy keeps contrast high. |
 | Art is soft clay pebbles and shapes on calm water, generated from the approved stack image as the only style reference | Wren / Ravi | One reference keeps sixteen images consistent. Figures, risk and signing controls stay in HTML, never beside art. |
 | The rename is display-only | Hollis / Plumb | Programs, IDLs, seeds, storage keys and `--tenor-*` names stay, so no deployed account or saved state breaks. |
+
+## ZenLo rebrand, phase 2: landing and use cases (2026-10-06)
+
+Reviewed `/` at 1440 and 390 px and `/use-cases` at 1440 px against the approved canvas.
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| The hero is copy plus the balanced pebble stack; the example term sheet leaves the hero | Ravi / Plumb | The figures live in the story tracker and the endings. Art never sits beside figures. |
+| "Most loans hide the ending. Ours prints it first." replaces the shark contrast: a muted card of usual-loan habits beside a blue card of ZenLo mechanics | Sol / Kestrel | Same four mechanics as before, without the shark joke the name no longer makes. |
+| The scroll story keeps its tracker, ids and figures; chapters 2 and 3 use the new exchange and settle art | Nils / Hollis | The user asked to keep the story and workflow; `landing-check.mjs` still passes unchanged. |
+| The landing shows three use cases (two private, one public) and a "See all 6 use cases" button | User / Wren | The user found six cards on the landing too much; a snippet sends people to the full page. |
+| `/use-cases` gets All, Private and Public filters and two-column cards with the hook in blue | Ravi / Fovea | Filtering is the fastest way to find your job; `aria-pressed` and `aria-live` announce the change. |
+| Private steps and tags use navy | Indigo | Navy marks private everywhere, matching the canvas. |
+| On phones the header keeps only "Try the demo" | Fovea | Two pills wrapped onto two lines at 390 px; the hero repeats "Use Devnet". |

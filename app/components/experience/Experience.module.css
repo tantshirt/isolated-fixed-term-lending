@@ -1,13 +1,15 @@
+.headerBar {
+  background: var(--color-background-surface);
+}
 .header {
-  height: 88px;
+  min-height: 84px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  max-width: 1248px;
+  max-width: 1240px;
   margin: auto;
-  padding: 0 40px;
-  border-bottom: 1px solid var(--color-border);
+  padding: 0 24px;
 }
 .brand {
   font-size: 24px;
@@ -30,9 +32,32 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: 24px;
-  font-size: 14px;
-  font-weight: 550;
+  gap: 8px 22px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.nav a:hover {
+  color: var(--color-accent);
+}
+.navSolid,
+.navSoft {
+  justify-content: center;
+  white-space: nowrap;
+  padding: 0 20px;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+}
+.navSolid {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.nav .navSolid:hover {
+  background: var(--tenor-green-hover);
+  color: var(--color-on-accent);
+}
+.navSoft {
+  background: var(--color-cloud);
+  color: var(--tenor-green-pressed);
 }
 .nav a {
   min-height: 44px;
@@ -85,13 +110,13 @@
 .primary,
 .secondary {
   min-height: 48px;
-  padding: 12px 20px;
-  border-radius: 9px;
+  padding: 12px 22px;
+  border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 800;
+  font-size: 15px;
   border: 1px solid var(--color-border);
   text-align: center;
   transition: background 0.2s, transform 0.2s;

@@ -84,8 +84,8 @@ The rebrand and the returning-user experience. Each phase ships as its own pull 
 | Order | Story | Status |
 | --- | --- | --- |
 | 1 | [15.1 Brand foundation](stories.md) | Done |
-| 2 | [15.2 Abstract art set](stories.md) | Open |
-| 3 | [15.3 Landing and use cases](stories.md) | Open |
+| 2 | [15.2 Abstract art set](stories.md) | Done |
+| 3 | [15.3 Landing and use cases](stories.md) | Done |
 | 4 | [15.4 App restyle without Sharky](stories.md) | Open |
 | 5 | [16.1 Per-wallet reads](stories.md) | Open |
 | 6 | [16.2 My loans page](stories.md) | Open |

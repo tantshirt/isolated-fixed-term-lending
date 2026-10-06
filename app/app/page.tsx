@@ -1,137 +1,253 @@
+import Image from "next/image";
 import Link from "next/link";
-import { HeroArtwork, LoanStory } from "@/components/experience/LoanStory";
+import { LoanStory } from "@/components/experience/LoanStory";
 import { PrivateChapter } from "@/components/experience/PrivateChapter";
 import { PublicHeader } from "@/components/experience/PublicHeader";
 import { SiteFooter } from "@/components/experience/SiteFooter";
-import { SharkContrast } from "@/components/experience/SharkContrast";
 import { UseCaseCards } from "@/components/experience/UseCaseCards";
-import s from "@/components/experience/Experience.module.css";
+import h from "@/components/experience/Home.module.css";
+
+const PROMISES = [
+  { title: "One fixed cost", body: "5% means 5 USDC on 100. Not an annual rate, not a surprise." },
+  { title: "Collateral held by code", body: "Your wSOL sits in the program’s vault for this one loan, not in a person’s wallet." },
+  { title: "A deadline you can read", body: "The exact end time is shown before you sign, then counts down for both sides." },
+];
+
+const USUAL = [
+  "The rate moves after you sign.",
+  "Fees show up at the end.",
+  "Someone else decides when it’s over.",
+  "Your collateral goes into a pool with everyone else’s.",
+];
+
+const OURS = [
+  "One cost for the whole term, fixed at signing.",
+  "Both sides see every number before committing.",
+  "The program enforces the deadline, for both of you. Nobody can move it, including us.",
+  "One loan, one vault. Nothing is pooled.",
+];
+
+const FAQ = [
+  {
+    q: "Is the interest an annual rate?",
+    a: "No. It is the fixed cost for the entire term. A 100 USDC loan at 5% costs 5 USDC, even if you repay early.",
+  },
+  {
+    q: "What is wSOL?",
+    a: "Wrapped SOL is SOL held in a token account so the lending program can hold it as collateral. On Devnet, wrapping is a separate action you approve in your wallet.",
+  },
+  {
+    q: "Does the demo use real money?",
+    a: "No. It runs entirely in your browser with simulated balances, prices, and time. Devnet is a separate experience using a real wallet and test tokens.",
+  },
+  {
+    q: "Who can see a private loan?",
+    a: "Only the lender and borrower can read its terms, inside a hardware-protected MagicBlock rollup. Solana sees deposits, withdrawals, and final balances, never the terms or the conversation.",
+  },
+  {
+    q: "Can I change a loan after it starts?",
+    a: "No. The terms are fixed. A lender may cancel an offer before acceptance. After acceptance, the loan ends through repayment, liquidation, or expiry.",
+  },
+  {
+    q: "Do I need an account?",
+    a: "No sign-up. On Devnet your wallet is your account: connect once and ZenLo remembers it, so your loans are waiting under My loans next time.",
+  },
+];
+
 export default function Home() {
   return (
     <>
       <PublicHeader />
-      <main className={s.page}>
-        <section className={s.hero}>
-          <div>
-            <p className={s.eyebrow}>Fixed-term loans on Solana</p>
-            <h1>
-              Yes, a loan shark.
-              <br />
-              <span>A legit one.</span>
-            </h1>
-            <p className={s.lede}>
-              Lend USDC. Borrow against SOL. The cost, the collateral, and the
-              deadline are on the table before anyone signs, and the program
-              holds both sides to them.
-            </p>
-            <div className={s.actions}>
-              <Link className={s.primary} href="/demo">
-                Try the demo <span aria-hidden>&nbsp;→</span>
-              </Link>
-              <Link className={s.secondary} href="/devnet">
-                Use Devnet ↗
-              </Link>
-            </div>
-            <p className={s.muted}>
-              No wallet needed for the demo. No real funds at risk.
-            </p>
-          </div>
-          <HeroArtwork />
-        </section>
-        <SharkContrast />
-        <LoanStory />
-        <PrivateChapter />
-        <section className={s.section}>
-          <div className={s.risk}>
-            <div>
-              <p className={s.eyebrow}>Clear terms include the risks</p>
-              <h2>
-                Every loan has
-                <br />
-                more than one ending.
-              </h2>
-              <Link className={s.primary} href="/demo">
-                Explore all three outcomes →
-              </Link>
-            </div>
-            <div>
-              <h3>The price can change the outcome.</h3>
-              <p className={s.lede}>
-                At the liquidation threshold, a liquidator can pay the debt and
-                receive collateral plus a 5% incentive, capped by the collateral
-                available. Any remainder goes back to the borrower.
+      <main className={h.page}>
+        <section className={h.hero} aria-labelledby="hero-h">
+          <div className={`${h.wrap} ${h.heroGrid}`}>
+            <div className={h.heroCopy}>
+              <p className={h.eyebrow}>Fixed-term loans on Solana</p>
+              <h1 id="hero-h">Clear terms. Zero drama.</h1>
+              <p className={h.lede}>
+                Lend USDC. Borrow against SOL. The cost, the collateral, and the
+                deadline are on the table before anyone signs, and the program
+                holds both sides to them.
               </p>
-              <h3>The clock matters, too.</h3>
-              <p className={s.lede}>
-                Repayment stops. The lender can receive all the collateral. Its
-                value may be less than the debt. Neither side has a guaranteed
-                return.
-              </p>
+              <div className={h.actions}>
+                <Link className={`${h.btn} ${h.solid} ${h.large}`} href="/demo">
+                  Try the demo <span aria-hidden>→</span>
+                </Link>
+                <Link className={`${h.btn} ${h.soft} ${h.large}`} href="/devnet">
+                  Use Devnet
+                </Link>
+              </div>
+              <p className={h.fine}>No wallet needed for the demo. No real funds at risk.</p>
+            </div>
+            <div className={h.heroArt}>
+              <Image
+                src="/illustrations/zl-hero-opt-stack.webp"
+                alt="Three pebbles, blue, sky blue and white, balanced on calm water."
+                width={1600}
+                height={1200}
+                priority
+                sizes="(max-width: 900px) 92vw, 46vw"
+              />
             </div>
           </div>
         </section>
-        <section className={`${s.section} ${s.faq}`}>
-          <div>
-            <p className={s.eyebrow}>Ask Sharky</p>
-            <h2>
-              Good questions.
-              <br />
-              Straight answers.
+
+        <div className={h.wrap}>
+          <ul className={h.promises} aria-label="What every loan promises">
+            {PROMISES.map((p) => (
+              <li key={p.title} className={h.promise}>
+                <strong>{p.title}</strong>
+                <span>{p.body}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <section className={`${h.wrap} ${h.section}`} aria-labelledby="contrast-h">
+          <div className={h.sectionHead}>
+            <p className={h.eyebrow}>Why ZenLo</p>
+            <h2 id="contrast-h" className={h.h2}>
+              Most loans hide the ending. Ours prints it first.
             </h2>
           </div>
-          <div>
-            <details>
-              <summary>Why is it called LegitShark?</summary>
-              <p>
-                Because the usual loan shark hides the terms, and we wanted the
-                opposite. Every LegitShark loan shows its amount, full-term
-                cost, collateral, and deadline to both sides before anyone
-                commits, and the program enforces them.
-              </p>
-            </details>
-            <details>
-              <summary>What is wSOL?</summary>
-              <p>
-                Wrapped SOL is SOL held in a token account so the lending
-                program can move it as collateral. On Devnet, wrapping is a
-                separate action you approve in your wallet.
-              </p>
-            </details>
-            <details>
-              <summary>Is the interest an annual rate?</summary>
-              <p>
-                No. It is the fixed cost for the entire term. A 100 USDC loan at
-                5% costs 5 USDC, even if you repay early.
-              </p>
-            </details>
-            <details>
-              <summary>Does the demo use real money?</summary>
-              <p>
-                No. It runs entirely in your browser with simulated balances,
-                prices, and time. Devnet is a separate experience using a real
-                wallet and test tokens.
-              </p>
-            </details>
-            <details>
-              <summary>Who can see a private loan?</summary>
-              <p>
-                Only the lender and borrower can read its terms, inside a
-                hardware-protected MagicBlock rollup. Solana sees deposits,
-                withdrawals, and final balances, never the terms or the
-                conversation.
-              </p>
-            </details>
-            <details>
-              <summary>Can I change a loan after it starts?</summary>
-              <p>
-                No. The terms are fixed. A lender may cancel an offer before
-                acceptance. After acceptance, the loan ends through repayment,
-                liquidation, or expiry.
-              </p>
-            </details>
+          <div className={h.contrastGrid}>
+            <div className={`${h.contrastCard} ${h.usual}`}>
+              <h3>The usual loan</h3>
+              <ul>
+                {USUAL.map((t) => (
+                  <li key={t}>
+                    <span className={h.dot} aria-hidden>
+                      ✕
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className={`${h.contrastCard} ${h.ours}`}>
+              <h3>A ZenLo loan</h3>
+              <ul>
+                {OURS.map((t) => (
+                  <li key={t}>
+                    <span className={h.dot} aria-hidden>
+                      ✓
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </section>
-        <UseCaseCards />
+
+        <div className={h.wrap}>
+          <LoanStory />
+        </div>
+
+        <section className={`${h.section} ${h.tinted}`} aria-labelledby="endings-h">
+          <div className={h.wrap}>
+            <div className={h.sectionHead}>
+              <p className={h.eyebrow}>Clear terms include the risks</p>
+              <h2 id="endings-h" className={h.h2}>
+                Every loan has three possible endings.
+              </h2>
+              <p className={h.lede}>
+                All three are written down before you sign. Neither side has a
+                guaranteed return.
+              </p>
+            </div>
+            <div className={h.endings}>
+              <article className={h.ending}>
+                <span className={`${h.pill} ${h.repaid}`}>Repaid</span>
+                <h3>You pay back on time.</h3>
+                <p>
+                  The borrower repays 105 USDC before the deadline and gets all
+                  1.1 wSOL back. The lender receives the 105.
+                </p>
+              </article>
+              <article className={h.ending}>
+                <span className={`${h.pill} ${h.liquidated}`}>Liquidated</span>
+                <h3>The price drops too far.</h3>
+                <p>
+                  At the liquidation threshold, a liquidator can pay the debt and
+                  receive collateral plus a 5% incentive, capped by the
+                  collateral available. Any remainder goes back to the borrower.
+                </p>
+              </article>
+              <article className={h.ending}>
+                <span className={`${h.pill} ${h.expired}`}>Expired</span>
+                <h3>The clock runs out.</h3>
+                <p>
+                  If you do not repay by then, the lender receives your wSOL. Its
+                  value may be less than the debt.
+                </p>
+              </article>
+            </div>
+            <Link className={`${h.btn} ${h.solid}`} href="/demo">
+              Play all three endings in the demo <span aria-hidden>→</span>
+            </Link>
+          </div>
+        </section>
+
+        <div className={h.wrap}>
+          <PrivateChapter />
+        </div>
+
+        <div className={h.tinted}>
+          <div className={h.wrap}>
+            <UseCaseCards featured={[0, 2, 4]} anchors />
+          </div>
+        </div>
+
+        <section className={`${h.wrap} ${h.section}`} id="faq" aria-labelledby="faq-h">
+          <div className={h.faq}>
+            <div>
+              <p className={h.eyebrow}>FAQ</p>
+              <h2 id="faq-h" className={h.h2}>
+                Good questions. Straight answers.
+              </h2>
+            </div>
+            <div className={h.faqList}>
+              {FAQ.map((f, i) => (
+                <details key={f.q} open={i === 0}>
+                  <summary>
+                    {f.q}
+                    <span className={h.plus} aria-hidden>
+                      +
+                    </span>
+                  </summary>
+                  <p>{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <div className={h.wrap}>
+          <section className={h.cta} aria-labelledby="cta-h">
+            <div className={h.ctaCopy}>
+              <h2 id="cta-h" className={h.h2}>
+                See a whole loan in two minutes.
+              </h2>
+              <p className={h.lede}>
+                Set terms, borrow, watch the clock, settle. No wallet, no
+                sign-up.
+              </p>
+              <Link className={`${h.btn} ${h.solid} ${h.large}`} href="/demo">
+                Try the demo <span aria-hidden>→</span>
+              </Link>
+            </div>
+            <div className={h.ctaArt}>
+              <Image
+                src="/illustrations/zl-band-drop.webp"
+                alt=""
+                fill
+                sizes="(max-width: 900px) 92vw, 46vw"
+              />
+            </div>
+          </section>
+        </div>
+
         <SiteFooter />
       </main>
     </>
