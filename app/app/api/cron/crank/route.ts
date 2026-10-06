@@ -1,13 +1,20 @@
+import { timingSafeEqual } from "node:crypto";
 import { crankerKey, runCranker, teeAs } from "@/lib/server/cranker";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+function sameSecret(given: string | null, expected: string): boolean {
+  const a = Buffer.from(given ?? "");
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 /** Vercel Cron, every minute. Vercel sends `Authorization: Bearer $CRON_SECRET`. */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret || !sameSecret(request.headers.get("authorization"), `Bearer ${secret}`)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const kp = crankerKey();

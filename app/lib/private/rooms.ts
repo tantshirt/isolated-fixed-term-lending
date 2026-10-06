@@ -21,7 +21,7 @@ import {
   type RoomMessage,
   type RoomState,
 } from "./room-codec";
-import { validateTransaction } from "./tx-validator";
+import { assertDevnet, validateTransaction } from "./tx-validator";
 
 const EPHEMERAL_VAULT_ID = new PublicKey("MagicVau1t999999999999999999999999999999999");
 const SESSION_SECONDS = 3600;
@@ -122,6 +122,7 @@ export async function openRoom(base: Connection, er: Connection, signer: LoanSig
   );
   tx.feePayer = signer.publicKey;
   validateTransaction(tx, { feePayer: signer.publicKey });
+  await assertDevnet(base);
   const { blockhash, lastValidBlockHeight } = await base.getLatestBlockhash();
   tx.recentBlockhash = blockhash;
   const signed = await signer.signTransaction(tx);

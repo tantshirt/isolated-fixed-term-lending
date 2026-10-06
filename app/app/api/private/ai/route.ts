@@ -1,4 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
+import { refuseBots } from "@/lib/server/bot-guard";
 import { AiRejected, AiUnavailable, aiModel, answerRequest } from "@/lib/server/ai-worker";
 
 export const runtime = "nodejs";
@@ -13,6 +14,8 @@ export async function GET() {
 
 /** Body: { room, requestId (hex), excerpt }. The excerpt must hash to the on-chain approval. */
 export async function POST(request: Request) {
+  const refused = await refuseBots();
+  if (refused) return refused;
   try {
     const body = await request.json();
     if (typeof body?.excerpt !== "string" || body.excerpt.length > 4000) throw new AiRejected("Invalid excerpt.");
