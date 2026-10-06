@@ -100,7 +100,7 @@
   padding: 0 0.625rem;
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 800;
   background: var(--color-background-muted);
   color: var(--color-text-secondary);
 }
@@ -136,7 +136,7 @@
   margin-left: -0.625rem;
   border-radius: 8px;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--color-text-accent);
 }
 
@@ -186,7 +186,7 @@
   line-height: 1.55;
 }
 
-/* The bubble's tail points at Sharky. */
+/* The bubble's tail points at the spot picture. */
 .bubble::before {
   content: "";
   position: absolute;
@@ -208,7 +208,7 @@
 
 .mineTitle {
   font-size: var(--text-lg);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .grid {

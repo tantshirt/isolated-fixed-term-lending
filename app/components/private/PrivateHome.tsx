@@ -11,7 +11,7 @@ import { BalancePanel } from "./BalancePanel";
 import { ReceiptList } from "./ReceiptList";
 import { RoomList } from "./RoomList";
 import { TeeCard } from "./TeeCard";
-import { Sharky } from "@/components/brand/Sharky";
+import Image from "next/image";
 import styles from "./private.module.css";
 
 const STEPS = [
@@ -88,14 +88,25 @@ export function PrivateHome() {
 
   return (
     <div className="page">
-      <header className={`${styles.hero} ${styles.heroArt}`}>
-        <Sharky pose="detective" size={112} className={styles.detective} />
-        <p className={styles.eyebrow}>Devnet · Private rollup · Sharky&rsquo;s office</p>
-        <h1 className={styles.title}>Lend and borrow without showing everyone the deal.</h1>
-        <p className={styles.lede}>
-          Terms, conversations, and balances stay inside a hardware-protected rollup that only the people in the deal
-          can read. Prices, interest, and settlement follow the same rules as every ZenLo loan.
-        </p>
+      <header className={styles.heroArt}>
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>Devnet · Private rollup</p>
+          <h1 className={styles.title}>Lend and borrow without showing everyone the deal.</h1>
+          <p className={styles.lede}>
+            Terms, conversations, and balances stay inside a hardware-protected rollup that only the people in the deal
+            can read. Prices, interest, and settlement follow the same rules as every ZenLo loan.
+          </p>
+        </div>
+        <Image
+          className={styles.heroImage}
+          src="/illustrations/zl-hero-opt-pair.webp"
+          alt=""
+          aria-hidden
+          width={1600}
+          height={1200}
+          priority
+          sizes="(max-width: 760px) 92vw, 40vw"
+        />
       </header>
 
       <div className={wiz.layout}>

@@ -221,3 +221,16 @@ Reviewed `/` at 1440 and 390 px and `/use-cases` at 1440 px against the approved
 | `/use-cases` gets All, Private and Public filters and two-column cards with the hook in blue | Ravi / Fovea | Filtering is the fastest way to find your job; `aria-pressed` and `aria-live` announce the change. |
 | Private steps and tags use navy | Indigo | Navy marks private everywhere, matching the canvas. |
 | On phones the header keeps only "Try the demo" | Fovea | Two pills wrapped onto two lines at 390 px; the hero repeats "Use Devnet". |
+
+## ZenLo rebrand, phase 3: app without Sharky (2026-10-06)
+
+Reviewed Discover, Offers, the create wizard, the request venue choice, a closed offer, private home and the demo at 1440 px.
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| `Sharky` and `SharkyTip` are deleted; `Spot` (waiting, notFound, private, success) and a plain `Tip` callout replace them | Kestrel / Plumb | Same placements the old rulings allowed (empty, missing and error states, beside wizard summaries), never inside readouts. |
+| The create and request wizard summary is a navy card | Indigo / Fovea | Matches the canvas "Borrower's view"; tokens are remapped inside the card so every figure keeps its contrast. |
+| Private home opens on a navy hero with the two-pebble image | Indigo / Sol | Private reads as private at a glance without a dark canvas. |
+| The request venue choice shows two image cards; Private is navy | Ravi / Wren | The choice is visual and matches the landing's private chapter. |
+| Buttons, chips and the app nav are pills; containers are 20–24px; Nunito weights move to 800 | Hollis / Indigo | One shape language across landing and app, done in tokens and modules, not per page. |
+| Error copy is "That page didn't load." | Sol | Plain words, no mascot joke. |

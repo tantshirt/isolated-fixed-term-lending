@@ -6,7 +6,7 @@
 
 .label {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--color-text-secondary);
 }
 
@@ -47,13 +47,13 @@
 }
 
 .unit {
-  font-weight: 600;
+  font-weight: 800;
   color: var(--color-text-secondary);
 }
 
 .xl .control {
   padding: 1rem 1.25rem;
-  border-radius: 12px;
+  border-radius: 20px;
 }
 
 .xl .input {

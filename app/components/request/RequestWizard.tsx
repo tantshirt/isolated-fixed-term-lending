@@ -1,11 +1,12 @@
 "use client";
 
 import { AnimatePresence, m } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
-import { SharkyTip } from "@/components/brand/SharkyTip";
+import { Tip } from "@/components/brand/Tip";
 import { OfferPreview } from "@/components/create/OfferPreview";
 import { StepAmount } from "@/components/create/StepAmount";
 import { StepReview } from "@/components/create/StepReview";
@@ -63,6 +64,7 @@ function ChooseVenue() {
       </p>
       <div className={own.options}>
         <Link href={`${BASE}?venue=public`} className={own.option}>
+          <Image className={own.optionArt} src="/illustrations/zl-hero-opt-cards.webp" alt="" aria-hidden width={1200} height={900} sizes="(max-width: 760px) 92vw, 40vw" />
           <span className={own.optionTag}>Public</span>
           <span className={own.optionTitle}>Post it on chain</span>
           <span className={own.optionBody}>
@@ -71,7 +73,8 @@ function ChooseVenue() {
           </span>
           <span className={own.optionCta}>Continue in public →</span>
         </Link>
-        <Link href="/devnet/private" className={own.option}>
+        <Link href="/devnet/private" className={own.option} data-private>
+          <Image className={own.optionArt} src="/illustrations/zl-hero-opt-pair.webp" alt="" aria-hidden width={1200} height={900} sizes="(max-width: 760px) 92vw, 40vw" />
           <span className={own.optionTag} data-private>
             Private
           </span>
@@ -334,7 +337,7 @@ function PublicWizard() {
       </div>
       <aside className={styles.aside} aria-label="Lender's view of this request">
         <OfferPreview draft={draft} owed={owed} price={price} live={Boolean(posted)} perspective="borrower" />
-        {step > 0 && <SharkyTip>{posted ? "Posted. Lenders can fund it from Discover." : TIPS[step - 1]}</SharkyTip>}
+        {step > 0 && <Tip>{posted ? "Posted. Lenders can fund it from Discover." : TIPS[step - 1]}</Tip>}
       </aside>
     </div>
   );

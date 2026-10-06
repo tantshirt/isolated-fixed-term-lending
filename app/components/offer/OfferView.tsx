@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
-import { Sharky } from "@/components/brand/Sharky";
+import { Spot } from "@/components/brand/Spot";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
@@ -72,7 +72,7 @@ function Loaded({ offerKey }: { offerKey: string }) {
   if (error)
     return (
       <section role="alert" className={styles.missing}>
-        <Sharky pose="confused" size={120} />
+        <Spot kind="notFound" size={120} />
         <h1 className={styles.title}>Offer unavailable</h1>
         <p className={styles.sentence}>Could not read this offer from the network. Its state is unknown.</p>
         <button type="button" className={styles.back} onClick={reload}>
@@ -353,7 +353,7 @@ function Loading() {
 function Missing({ title, body }: { title: string; body?: string }) {
   return (
     <div className={styles.missing}>
-      <Sharky pose="confused" size={120} />
+      <Spot kind="notFound" size={120} />
       <h1 className={styles.title}>{title}</h1>
       {body && <p className={styles.sentence}>{body}</p>}
       <Link href="/devnet" className={styles.back}>

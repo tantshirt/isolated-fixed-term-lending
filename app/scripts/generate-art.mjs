@@ -1,6 +1,6 @@
 // Generates ZenLo illustrations with Kie GPT Image 2.5 (Sunburst).
 // Prompts follow ~/Desktop/VIDEOS/manticore/brand/prompt-craft/gpt-image.md.
-// Usage: node scripts/generate-art.mjs ../docs/brand/sharky-prompts.json [name ...]
+// Usage: node scripts/generate-art.mjs ../docs/brand/zenlo-prompts.json [name ...]
 // An entry with `references` (repo-relative image paths) is uploaded to Kie
 // and generated image-to-image; `background` may be "transparent".
 // Reads KIE_API_KEY from .env.local; never prints it. Stops above MAX_CREDITS.
