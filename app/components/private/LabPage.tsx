@@ -179,7 +179,7 @@ export function LabPage() {
             {correct && record !== "done" && (
               <p className={styles.hint}>
                 Optional. Adds &ldquo;Read the line&rdquo; to a public SOAR profile tied to this wallet. It is a badge only: no rate, limit, or
-                priority anywhere in LegitShark depends on it.
+                priority anywhere in ZenLo depends on it.
               </p>
             )}
             {record === "done" && <p className={styles.ok}>Recorded on SOAR for <span className={styles.mono}>{signer.publicKey.toBase58().slice(0, 4)}…{signer.publicKey.toBase58().slice(-4)}</span>.</p>}

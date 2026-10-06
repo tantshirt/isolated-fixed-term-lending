@@ -1,11 +1,11 @@
-# Adapted from RUDDR's Design Council for the approved Lendspan experience.
+# Adapted from RUDDR's Design Council for the approved ZenLo experience.
 [workflow]
 party_mode = "auto"
 persistent_facts = [
   "file:PRODUCT.md",
   "file:docs/design-and-experience.md",
   "file:.design-council/rulings.md",
-  "The user's approved Lendspan direction outranks inherited council preferences. Familiar Inter typography, light white/blue surfaces, explicit simulation versus Devnet, no sign-in. Never weaken financial or oracle rules for presentation."
+  "The user's approved ZenLo direction outranks inherited council preferences. Nunito typography, white/cool-blue surfaces with navy ink, pebble-and-wave mark, abstract pebble-and-water art and no mascot, explicit simulation versus Devnet, a remembered wallet instead of sign-up. Never weaken financial or oracle rules for presentation."
 ]
 
 [[workflow.party_members]]

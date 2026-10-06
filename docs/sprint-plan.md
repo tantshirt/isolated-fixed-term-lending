@@ -77,6 +77,24 @@ Borrower-posted public requests and a top-level Discover page. Each story ships 
 | 3 | [14.3 Discover page](stories.md) | Done |
 | 4 | [14.4 Request a loan](stories.md) | Done |
 
+## ZenLo lane
+
+The rebrand and the returning-user experience. Each phase ships as its own pull request after a design council pass.
+
+| Order | Story | Status |
+| --- | --- | --- |
+| 1 | [15.1 Brand foundation](stories.md) | Done |
+| 2 | [15.2 Abstract art set](stories.md) | Open |
+| 3 | [15.3 Landing and use cases](stories.md) | Open |
+| 4 | [15.4 App restyle without Sharky](stories.md) | Open |
+| 5 | [16.1 Per-wallet reads](stories.md) | Open |
+| 6 | [16.2 My loans page](stories.md) | Open |
+| 7 | [16.3 Returning wallets](stories.md) | Open |
+| 8 | [17.1 Finding your rooms](stories.md) | Open |
+| 9 | [17.2 Owners and requests to join](stories.md) | Open |
+| 10 | [17.3 Loans and bids that stay visible](stories.md) | Open |
+| 11 | [18.1 Both sides, end to end](stories.md) | Open |
+
 ## Notes
 
 - Program and UI live under `isolated_loan/` and `app/`. Outcome scripts: `npm run script:repay|liquidate|expire` in `isolated_loan/`.
@@ -95,3 +113,5 @@ Borrower-posted public requests and a top-level Discover page. Each story ships 
 - 2026-10-06: Story 14.1 done. `LoanRequest` is a separate account, so existing Devnet offers keep deserializing; funding creates a normal filled `Offer`. The program grows from 368,160 to 476,952 bytes, so the Devnet upgrade needs `solana program extend` by about 109 KB first.
 - 2026-10-06: Program upgraded on Devnet with the request instructions ([upgrade](https://explorer.solana.com/tx/3K5WSc7vQ6mPGEbohBxWxqsRmHcSkv5HZhtGVZCLBtxbtAFa1dqoz711ZUguWhtfE2jof2PkpohcuGppWrewsVJo?cluster=devnet)); program data extended by 110,000 bytes first. Story 14.2 done: `lib/requests.ts`, request senders in `lib/transactions.ts`, `lib/request-service.ts`, and `lib/client/live.ts` (account subscriptions with a slot heartbeat, polling fallback). Create, cancel and close were proven on Devnet ([evidence](devnet-request-evidence.json)); funding waits on a Hermes API key because public Hermes now returns 401.
 - 2026-10-06: Epic 14 done (14.1–14.4). Discover at `/devnet/discover` with live public requests, offers and private cards; request wizard at `/devnet/discover/request`; council rulings in `.design-council/rulings.md`. Devnet funding proven the same day once `PYTH_HERMES_API_KEY` was set ([evidence](devnet-request-evidence.json)); the key must also be set in the deployment environment.
+
+- 2026-10-06 ZenLo phase 1: tokens, Nunito, pebble-and-wave mark, icons and share image, display name. Story 15.2 art ships with 15.3 in the landing pull request.

@@ -1,4 +1,10 @@
-# Lendspan landing-page artwork
+# ZenLo brand and artwork
+
+The current brand is **ZenLo** (6 October 2026): the pebble-and-wave mark in [zenlo/mark.svg](zenlo/mark.svg), Nunito, navy and blue on white, and abstract pebble-and-water art. Concept rounds are recorded in `zenlo-concepts*.json`; the production set is [zenlo-prompts.json](zenlo-prompts.json), generated with `app/scripts/generate-art.mjs` using `app/public/illustrations/zl-hero-opt-stack.webp` as the only style reference. Exploration (mascots, names, purple) cost about $1.30; the production set of 16 images cost 160 credits, about $0.80. 2K originals stay local (gitignored); the site serves WebP.
+
+The sections below are the history of earlier brands.
+
+## Lendspan landing-page artwork
 
 Generated through Kie with `gpt-image-2-5-sunburst-text-to-image` on 5 October 2026. The user approved abstract financial illustrations in Lendspan blue, one example loan as the story, and a $5 spending cap.
 

@@ -1,10 +1,10 @@
-# Lendspan Design Council
+# ZenLo Design Council
 
 Adapted from the RUDDR Design Council at the user's request. The shared roster is `_bmad/custom/bmad-party-mode.toml`. Summon with `bmad-party-mode --party design-council`.
 
 Sally leads nine specialists: Nils (motion), Wren (references), Sol (story), Ravi (composition), Plumb (mechanics), Indigo (visual consistency), Fovea (comprehension/accessibility), Kestrel (identity), and Hollis (implementation).
 
-The user's approved Lendspan brief wins over every inherited style rule. The council evaluates real source and screenshots; it does not manufacture research or impose repeated approval gates on already authorized work.
+The user's approved ZenLo brief wins over every inherited style rule. The council evaluates real source and screenshots; it does not manufacture research or impose repeated approval gates on already authorized work.
 
 ## Reproduce the source library
 

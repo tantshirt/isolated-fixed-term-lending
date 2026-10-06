@@ -208,5 +208,191 @@
     "taskId": "014c8b279799131e418336d82d3b49b5",
     "creditsConsumed": 10,
     "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "boo-a-classic",
+    "taskId": "c320f3e999dc023c38b1de1fdc8353ea",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "boo-b-wisp",
+    "taskId": "dfd20d35a883a2e165478d41be324fd0",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "boo-c-sheet",
+    "taskId": "56988d7c74e4255ab4ceb1b6c121ee12",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "boo-d-blob",
+    "taskId": "0bd3ec941c36771e75aa8dc68260e71b",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "boo-e-halo",
+    "taskId": "b98d8e1135140b572034bc59b58e5c77",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "boo-f-geo",
+    "taskId": "965fe59bb5259ad6163df28aeec40135",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "boo-logo-marks",
+    "taskId": "68fed326f30e850b582d32c1dda76e75",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "boo-wordmark",
+    "taskId": "d1c3f2e8e5ff81fcfcfd7b7dea652f7f",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "boo-hero-mood",
+    "taskId": "72c15dd25c7fbf946bb7ced8add0d5ad",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zl-marks-a",
+    "taskId": "78406d86c263bc2953cd19d6773ceaef",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zl-marks-b",
+    "taskId": "ec7dc638c1d5c0fa8fbfeacfcbcc1cbc",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zl-hero-balance",
+    "taskId": "9fa0687a8597d31774ac4428fde2ac43",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zl-hero-ripples",
+    "taskId": "990e0b61bb809f936494ff41e9a95e07",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zl-shapes-playful",
+    "taskId": "101f4307cf5421da8b50041d76009fc4",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zl-two-sides",
+    "taskId": "13658ae31f82746782e44e419b4805ae",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zl-pattern",
+    "taskId": "a4ddeaaaac8540009720ab98d1de0f21",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zl-hero-mood",
+    "taskId": "d976c0c82bc728ad2a195cbcdc2b0525",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zl-hero-shapes-ripples",
+    "taskId": "d967bc19e549d69b262aa489df33f2f6",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-band-drop",
+    "taskId": "d25445874a1a2b8703da68e9e1ed579b",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-empty-pebble",
+    "taskId": "cc359d28fbfae104a0c65ce502103f80",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-hero-mood-v2",
+    "taskId": "6a60ab2116c6ef8ebf214f580bd4b5d7",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-hero-opt-stack",
+    "taskId": "33ef2d25c0b284357bd04b50cf1d4e57",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-hero-opt-logo",
+    "taskId": "76816a0483352c939391dcc72c8ec4af",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-hero-opt-pair",
+    "taskId": "103665cea3bc4bc2594476fcec01254f",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-hero-opt-cards",
+    "taskId": "b57f9ffaf71b4d4bead5c5ac65e9d2ac",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-uc-private-borrow",
+    "taskId": "3ba4859f48d73029f8a93bc463bc5ee3",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-uc-invited-lend",
+    "taskId": "7600bc8baa45e6fb5e6aa23f1ed77510",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-uc-blind-bids",
+    "taskId": "44953b44a958a2eee4d2d00b5a22bff8",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-uc-liquidate",
+    "taskId": "f796cfd28050f3621e977bd2b098ffc2",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-uc-learn",
+    "taskId": "b4f07e07e28d4ead7a67663f37bbd54c",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zl-uc-verify",
+    "taskId": "bd7dc6fa8cfb013f3840dda9df9597f2",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-image-to-image"
   }
 ]

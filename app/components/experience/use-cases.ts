@@ -17,7 +17,7 @@ export const USE_CASES: UseCase[] = [
     start: { label: "Open a private room", href: "/devnet/private" },
     who: "A SOL holder who needs USDC for a week and does not want the size of their loan on a public explorer.",
     problem: "On a public lending protocol, every term, balance, and deadline is readable by anyone, including people waiting to liquidate you.",
-    how: "Your room, the terms, and your private balance live inside a hardware-protected rollup. Only you and the lenders you invite can read them. Prices, interest, and settlement follow the same rules as a public LegitShark loan.",
+    how: "Your room, the terms, and your private balance live inside a hardware-protected rollup. Only you and the lenders you invite can read them. Prices, interest, and settlement follow the same rules as a public ZenLo loan.",
     hook: "Your loan size stays off the public explorer.",
     venue: "private",
     image: { src: "/illustrations/sharky-borrow-private.webp", alt: "Sharky in his detective trench coat and fedora strolls past with a sealed envelope tucked in his coat, winking." },

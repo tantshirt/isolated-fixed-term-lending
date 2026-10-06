@@ -14,7 +14,7 @@ const ERROR_MESSAGES: Record<string, string> = {
     "You cannot borrow from your own offer. Switch to another wallet.",
   BorrowerCannotLiquidate:
     "A borrower cannot liquidate their own loan. Repay it instead.",
-  InvalidTerms: "Those terms are outside LegitShark’s limits.",
+  InvalidTerms: "Those terms are outside ZenLo’s limits.",
   LoanExpired:
     "The deadline has passed. The lender can now claim the collateral.",
   LoanNotExpired: "The deadline has not passed yet.",
@@ -46,7 +46,7 @@ const WALLET_MESSAGES: [RegExp, string][] = [
   ],
   [
     /failed to fetch|network|ECONNREFUSED/i,
-    "LegitShark cannot reach the configured network. Check your connection and retry.",
+    "ZenLo cannot reach the configured network. Check your connection and retry.",
   ],
 ];
 

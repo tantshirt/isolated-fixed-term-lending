@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="app/app/icon.png" alt="LegitShark logo, Sharky the shark" width="64" height="64">
+  <img src="app/app/icon.png" alt="ZenLo logo, a pebble crossed by a wave" width="64" height="64">
 </p>
 
-<h1 align="center">LegitShark</h1>
+<h1 align="center">ZenLo</h1>
 
-<p align="center"><strong>Clear terms. One loan at a time.</strong></p>
+<p align="center"><strong>Clear terms. Zero drama.</strong></p>
 
-LegitShark makes fixed-term lending on Solana easier to understand. A lender offers USDC, a borrower locks wrapped SOL as collateral, and an on-chain program enforces the agreed repayment amount, deadline, and settlement rules.
+ZenLo makes fixed-term lending on Solana easier to understand. A lender offers USDC, a borrower locks wrapped SOL as collateral, and an on-chain program enforces the agreed repayment amount, deadline, and settlement rules.
 
 Start with a guided, wallet-free demo. Then explore the same loan lifecycle on Devnet with a connected wallet and test tokens.
 

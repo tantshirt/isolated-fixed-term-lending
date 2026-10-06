@@ -1,16 +1,16 @@
 @import "@astryxdesign/theme-neutral/theme.css";
 
-/* LegitShark light palette. Legacy variable names keep existing components compatible.
+/* ZenLo light palette: white and cool blue, navy ink. Legacy --tenor-* names keep existing components compatible.
    Components consume semantic tokens; palette literals are contained here. */
 html[data-astryx-theme="neutral"] {
   /* Palette */
-  --tenor-ivory: #f8faff;
+  --tenor-ivory: #f6f9ff;
   --tenor-surface: #ffffff;
-  --tenor-sunk: #eef2f8;
-  --tenor-line: #dfe5ef;
+  --tenor-sunk: #eef3ff;
+  --tenor-line: #dbe4f6;
   --tenor-line-strong: #bac6da;
-  --tenor-ink: #14213b;
-  --tenor-ink-2: #526079;
+  --tenor-ink: #0f1f4b;
+  --tenor-ink-2: #55627f;
   --tenor-ink-3: #64718a;
   --tenor-ink-4: #8592a7;
   --tenor-green: #245be8;
@@ -28,8 +28,14 @@ html[data-astryx-theme="neutral"] {
   --tenor-healthy-tint: #e1efe6;
   --tenor-risk: #b4432f;
   --tenor-risk-tint: #f7e4de;
+  --tenor-navy: #0f1f4b;
+  --tenor-navy-line: #2a3c74;
+  --tenor-cloud: #eaf0ff;
+  --tenor-sky: #a9c4ff;
+  --tenor-on-navy: #ffffff;
+  --tenor-on-navy-muted: #cfdcff;
 
-  /* Astryx semantic tokens → LegitShark */
+  /* Astryx semantic tokens → ZenLo */
   --color-background-body: var(--tenor-ivory);
   --color-background-surface: var(--tenor-surface);
   --color-background-card: var(--tenor-surface);
@@ -61,10 +67,16 @@ html[data-astryx-theme="neutral"] {
   --color-on-panel: var(--tenor-ink);
   --color-on-panel-muted: var(--tenor-on-green-muted);
   --color-on-panel-brass: var(--tenor-brass-bright);
+  --color-navy: var(--tenor-navy);
+  --color-navy-line: var(--tenor-navy-line);
+  --color-on-navy: var(--tenor-on-navy);
+  --color-on-navy-muted: var(--tenor-on-navy-muted);
+  --color-cloud: var(--tenor-cloud);
+  --color-sky: var(--tenor-sky);
 
   --color-legacy-overlay-1: rgb(255 255 255 / 0.08);
   --color-legacy-overlay-2: rgb(180 67 47 / 0.35);
-  --color-legacy-overlay-3: rgb(20 32 27 / 0.04);
+  --color-legacy-overlay-3: rgb(15 31 75 / 0.04);
   --color-legacy-overlay-4: rgb(246 242 234 / 0.6);
   --color-legacy-overlay-5: rgb(13 51 40 / 0.85);
   --color-legacy-overlay-6: rgb(246 242 234 / 0.86);
@@ -75,9 +87,9 @@ html[data-astryx-theme="neutral"] {
   --color-legacy-overlay-11: rgb(246 242 234 / 0.06);
 
   /* Type */
-  --font-family-body: var(--font-inter), Inter, ui-sans-serif, system-ui,
+  --font-family-body: var(--font-nunito), Nunito, ui-rounded, system-ui,
     sans-serif;
-  --font-family-heading: var(--font-inter), Inter, ui-sans-serif, system-ui,
+  --font-family-heading: var(--font-nunito), Nunito, ui-rounded, system-ui,
     sans-serif;
   --font-family-code: var(--font-plex-mono), "IBM Plex Mono", ui-monospace,
     SFMono-Regular, Menlo, monospace;
@@ -91,15 +103,15 @@ html[data-astryx-theme="neutral"] {
   --text-3xl: 2.75rem;
 
   /* Shape and depth */
-  --radius-element: 10px;
-  --radius-container: 14px;
+  --radius-element: 14px;
+  --radius-container: 24px;
   --radius-full: 999px;
-  --shadow-low: 0 1px 2px rgb(20 32 27 / 0.06), 0 1px 1px rgb(20 32 27 / 0.04);
-  --shadow-med: 0 4px 8px -2px rgb(20 32 27 / 0.1),
-    0 2px 4px -2px rgb(20 32 27 / 0.06);
-  --shadow-high: 0 12px 24px -8px rgb(20 32 27 / 0.22),
-    0 4px 8px -4px rgb(20 32 27 / 0.1);
-  --ring-brass: 0 0 0 3px rgb(201 164 92 / 0.45);
+  --shadow-low: 0 1px 2px rgb(15 31 75 / 0.06), 0 1px 1px rgb(15 31 75 / 0.04);
+  --shadow-med: 0 4px 8px -2px rgb(15 31 75 / 0.1),
+    0 2px 4px -2px rgb(15 31 75 / 0.06);
+  --shadow-high: 0 12px 24px -8px rgb(15 31 75 / 0.22),
+    0 4px 8px -4px rgb(15 31 75 / 0.1);
+  --ring-brass: 0 0 0 3px rgb(36 91 232 / 0.35);
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -160,8 +172,9 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-family: var(--font-family-heading);
+  font-weight: 800;
+  letter-spacing: -0.025em;
   text-wrap: balance;
 }
 
@@ -177,10 +190,10 @@ p {
 }
 
 ::selection {
-  background: var(--tenor-brass-tint);
+  background: var(--tenor-cloud);
 }
 
-/* Financial figures use Inter with aligned digits. */
+/* Financial figures use Nunito with aligned (tabular) digits. */
 .num {
   font-family: var(--font-family-body);
   font-variant-numeric: tabular-nums;

@@ -1,0 +1,42 @@
+[
+ {
+  "name": "zl-hero-shapes-ripples",
+  "aspect_ratio": "4:3",
+  "width": 1600,
+  "references": [
+   "app/public/illustrations/zl-shapes-playful.webp",
+   "app/public/illustrations/zl-hero-ripples.webp"
+  ],
+  "prompt": "OBJECTIVE: Landing-page hero art for ZenLo, a calm, transparent lending app on Solana, combining a playful shape kit with calm water ripples. TYPE: Abstract brand illustration. STYLE: match uploaded image 1 exactly for the shape style: soft matte clay-like rounded 3D shapes with gentle two-tone blue gradients, soft shadows, joyful but calm, friendly premium crypto brand. Use uploaded image 2 for the ripple style: clean concentric rings in sky blue and ZenLo blue. SUBJECT: exactly 6 soft rounded shapes (a pill, a sphere, a half-moon, a squircle, a ring, a smooth pebble) floating calmly in a loose balanced arc above a still white water surface; the lowest shape, the smooth pebble, just touches the surface and sends out exactly four clean concentric ripple rings; faint soft reflections under the shapes. COMPOSITION: subject on the right 55%, 10% margins, calm empty white space on the left for a headline. BACKGROUND: white fading to cloud blue near the water. LIGHTING: soft diffuse from upper left. PALETTE: white #FFFFFF, cloud blue #EAF0FF, sky blue #A9C4FF, ZenLo blue #245BE8, deep navy #0F1F4B. Blue and white only. CONSTRAINTS: no text anywhere unless quoted, no letters, no numbers, no watermark, no characters, no faces, no ghosts, no mascots, no animals, no purple or violet, no currency signs. ASPECT: 4:3."
+ },
+ {
+  "name": "zl-band-drop",
+  "aspect_ratio": "16:9",
+  "width": 1600,
+  "references": [
+   "app/public/illustrations/zl-shapes-playful.webp"
+  ],
+  "prompt": "OBJECTIVE: Wide section band for the ZenLo landing page. TYPE: Abstract brand illustration. STYLE: match uploaded image 1 exactly for the shape style: soft matte clay-like rounded 3D shapes with gentle two-tone blue gradients, soft shadows, joyful but calm, friendly premium crypto brand. SUBJECT: a single soft blue pill shape resting on still water at the right third, with exactly five clean concentric ripple rings spreading from it in sky blue and ZenLo blue, plus one tiny sphere floating above it. COMPOSITION: left 60% calm empty white space. BACKGROUND: white with a faint cloud-blue horizon. LIGHTING: soft diffuse. PALETTE: white #FFFFFF, cloud blue #EAF0FF, sky blue #A9C4FF, ZenLo blue #245BE8, deep navy #0F1F4B. Blue and white only. CONSTRAINTS: no text anywhere unless quoted, no letters, no numbers, no watermark, no characters, no faces, no ghosts, no mascots, no animals, no purple or violet, no currency signs. ASPECT: 16:9."
+ },
+ {
+  "name": "zl-empty-pebble",
+  "aspect_ratio": "1:1",
+  "width": 800,
+  "references": [
+   "app/public/illustrations/zl-shapes-playful.webp"
+  ],
+  "background": "transparent",
+  "prompt": "OBJECTIVE: Small empty-state illustration for the ZenLo app (shown when a list has nothing in it yet). TYPE: Spot illustration. STYLE: match uploaded image 1 exactly for the shape style: soft matte clay-like rounded 3D shapes with gentle two-tone blue gradients, soft shadows, joyful but calm, friendly premium crypto brand. SUBJECT: one smooth ZenLo-blue pebble with a soft sky-blue sphere resting on top of it, sitting on exactly three thin flat concentric ripple rings. COMPOSITION: centred, 15% margins. BACKGROUND: fully transparent, soft contact shadow only. LIGHTING: soft from upper left. PALETTE: white #FFFFFF, cloud blue #EAF0FF, sky blue #A9C4FF, ZenLo blue #245BE8, deep navy #0F1F4B. Blue and white only. CONSTRAINTS: no text anywhere unless quoted, no letters, no numbers, no watermark, no characters, no faces, no ghosts, no mascots, no animals, no purple or violet, no currency signs. ASPECT: 1:1."
+ },
+ {
+  "name": "zl-hero-mood-v2",
+  "aspect_ratio": "3:2",
+  "width": 1600,
+  "references": [
+   "app/public/illustrations/zl-hero-mood.webp",
+   "docs/brand/zenlo/mark-512.png",
+   "app/public/illustrations/zl-hero-shapes-ripples.webp"
+  ],
+  "prompt": "OBJECTIVE: Revised landing-page hero mockup for ZenLo. TYPE: Website hero UI mockup, desktop. REFERENCES: uploaded image 1 is the layout to keep (headline left, art right, nav on top, two pill buttons); uploaded image 2 is the exact logo mark to place at the top left, a blue rounded square with a white pebble crossed by a wave, reproduce it faithfully; uploaded image 3 is the hero art to place on the right side, keep its shapes and ripples. TEXT: next to the logo the word \"ZenLo\" with capital Z and capital L; headline reading exactly \"Clear terms. Zero drama.\" on two lines; subline reading exactly \"Fixed-term USDC loans on Solana. Both sides see every term first.\"; buttons reading exactly \"Try the demo\" (solid ZenLo blue pill) and \"Use Devnet\" (soft cloud-blue pill); top-right nav pill reading exactly \"Try the demo\". TYPOGRAPHY: all text in a fully rounded, very heavy friendly sans-serif like Nunito Black, deep navy headline. STYLE: friendly premium crypto brand, white page with soft cloud-blue glow at the bottom, generous whitespace. PALETTE: white #FFFFFF, cloud blue #EAF0FF, sky blue #A9C4FF, ZenLo blue #245BE8, deep navy #0F1F4B. Blue and white only. CONSTRAINTS: render only the quoted text, spelled exactly, no other words, no browser chrome, no characters, no purple, no watermark. ASPECT: 3:2."
+ }
+]

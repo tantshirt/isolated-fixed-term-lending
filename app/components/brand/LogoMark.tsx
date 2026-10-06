@@ -15,7 +15,7 @@ const R = 13;
 const C = 2 * Math.PI * R;
 
 /**
- * LegitShark's progress ring (the brand logo is Sharky's head in Wordmark): a ring (the term) crowned by a brass arc, with a stem that makes the
+ * ZenLo's progress ring (the brand logo is the pebble Mark in Wordmark): a ring (the term) crowned by a brass arc, with a stem that makes the
  * pair read as a T. The arc length is live: it carries progress wherever the mark appears.
  */
 export function LogoMark({

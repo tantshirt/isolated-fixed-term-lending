@@ -194,3 +194,16 @@ Open item (low): the "Request unavailable" network state on request detail is st
 The full council reviewed `/`, `/use-cases`, Discover (all four side/venue views), both wizards, private home, not-found and error states, and `/demo` at 1440 and 390 px. The only open item, text-only "unavailable" states, is fixed.
 - **Accepted as is:** `/demo` keeps no mascot. It is a figures-first simulation, and Plumb's rule keeps Sharky out of readouts.
 - **Not covered:** a signed-in wallet run after the rebrand. Wallet code was not touched.
+
+## ZenLo rebrand, phase 1: foundation (2026-10-06)
+
+The user retired LegitShark and Sharky and chose **ZenLo** from a naming board, then picked the mark, type and art direction on a brand board and approved the design canvas (https://claude.ai/artifact/5gGPGh4BdF71k8b8vCzapD). This section supersedes the LegitShark rulings above wherever they mention Sharky, the shark name or Inter.
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| No mascot; the mark is a pebble crossed by a wave | User / Kestrel | The user rejected mascots (shark, ghost, animals) as off-brand or too close to Phantom. One abstract mark reads at 16px and doubles as the favicon. |
+| Nunito replaces Inter, with heavy 800–900 headings | User / Indigo | The user chose "Font 4" for a rounded, friendly-premium feel, closest to the Phantom-like vibe they asked for in blue. |
+| Navy `#0f1f4b` becomes ink; cloud and sky tints join the palette; radii grow to 14/24px | Indigo / Hollis | Matches the approved canvas while keeping the existing blue and every semantic token name. |
+| Navy panels mark private features | Sol / Fovea | Private must look different from public without a dark canvas; navy keeps contrast high. |
+| Art is soft clay pebbles and shapes on calm water, generated from the approved stack image as the only style reference | Wren / Ravi | One reference keeps sixteen images consistent. Figures, risk and signing controls stay in HTML, never beside art. |
+| The rename is display-only | Hollis / Plumb | Programs, IDLs, seeds, storage keys and `--tenor-*` names stay, so no deployed account or saved state breaks. |
