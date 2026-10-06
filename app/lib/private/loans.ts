@@ -195,9 +195,14 @@ export async function fundLoan(base: Connection, er: Connection, signer: LoanSig
   return sendEr(er, signer, p.methods.fundLoan(revision).accountsPartial(lenderAccounts(signer.publicKey, anchor)), `Lock USDC (revision ${revision})`, revision);
 }
 
-export async function cancelLoan(base: Connection, er: Connection, signer: LoanSigner, anchor: PublicKey) {
+export async function cancelLoan(base: Connection, er: Connection, signer: LoanSigner, anchor: PublicKey, funded = true) {
   const p = programFor(base, signer);
-  return sendEr(er, signer, p.methods.cancelLoan().accountsPartial(lenderAccounts(signer.publicKey, anchor)), "Cancel offer");
+  const accounts = lenderAccounts(signer.publicKey, anchor);
+  // An unfunded proposal moves no tokens, and a lender with no private balance has no
+  // USDC account in the rollup, which the ER rejects as writable. The handler only reads
+  // the lender's account when funded, so a draft passes the loan's own (delegated) one.
+  if (!funded) accounts.lenderUsdc = accounts.loanUsdc;
+  return sendEr(er, signer, p.methods.cancelLoan().accountsPartial(accounts), "Cancel offer");
 }
 
 export async function acceptLoan(base: Connection, er: Connection, signer: LoanSigner, anchor: PublicKey, t: LoanTerms, room: PublicKey) {

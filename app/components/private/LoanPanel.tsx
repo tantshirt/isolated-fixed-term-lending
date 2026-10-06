@@ -245,7 +245,7 @@ function LoanCard({ id, signer, base, er, room, onChange }: Ctx & { id: string }
           </Button>
         )}
         {isLender && (t.status === "draft" || t.status === "funded") && (
-          <Button variant="secondary" onClick={() => act("cancel", () => cancelLoan(base, er, signer, anchor))} loading={busy === "cancel"}>
+          <Button variant="secondary" onClick={() => act("cancel", () => cancelLoan(base, er, signer, anchor, t.status === "funded"))} loading={busy === "cancel"}>
             Cancel offer
           </Button>
         )}

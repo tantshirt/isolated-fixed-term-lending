@@ -93,7 +93,7 @@ The rebrand and the returning-user experience. Each phase ships as its own pull 
 | 8 | [17.1 Finding your rooms](stories.md) | Done |
 | 9 | [17.2 Owners and requests to join](stories.md) | Done |
 | 10 | [17.3 Loans and bids that stay visible](stories.md) | Done |
-| 11 | [18.1 Both sides, end to end](stories.md) | Open |
+| 11 | [18.1 Both sides, end to end](stories.md) | Done |
 
 ## Notes
 
@@ -115,3 +115,4 @@ The rebrand and the returning-user experience. Each phase ships as its own pull 
 - 2026-10-06: Epic 14 done (14.1–14.4). Discover at `/devnet/discover` with live public requests, offers and private cards; request wizard at `/devnet/discover/request`; council rulings in `.design-council/rulings.md`. Devnet funding proven the same day once `PYTH_HERMES_API_KEY` was set ([evidence](devnet-request-evidence.json)); the key must also be set in the deployment environment.
 
 - 2026-10-06 ZenLo phase 1: tokens, Nunito, pebble-and-wave mark, icons and share image, display name. Story 15.2 art ships with 15.3 in the landing pull request.
+- 2026-10-06 ZenLo complete: rebrand (15), My loans (16), rooms and invites without a program change (17), and a 12-check Devnet cycle (18).
