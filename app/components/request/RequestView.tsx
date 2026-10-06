@@ -48,9 +48,12 @@ function Loaded({ requestKey }: { requestKey: string }) {
 
   if (error && request === undefined)
     return (
-      <section role="alert">
-        <h1>Request unavailable</h1>
-        <p>Could not read this request from Devnet. Its state is unknown; this page retries by itself.</p>
+      <section role="alert" className={styles.missing}>
+        <Sharky pose="confused" size={120} />
+        <h1 className={styles.title}>Request unavailable</h1>
+        <p className={styles.sentence}>
+          Could not read this request from Devnet. Its state is unknown; this page retries by itself.
+        </p>
       </section>
     );
   if (request === undefined) return <Loading />;

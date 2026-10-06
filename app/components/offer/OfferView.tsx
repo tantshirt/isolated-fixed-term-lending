@@ -71,10 +71,13 @@ function Loaded({ offerKey }: { offerKey: string }) {
 
   if (error)
     return (
-      <section role="alert">
-        <h1>Offer unavailable</h1>
-        <p>Could not read this offer from the network. Its state is unknown.</p>
-        <button onClick={reload}>Retry</button>
+      <section role="alert" className={styles.missing}>
+        <Sharky pose="confused" size={120} />
+        <h1 className={styles.title}>Offer unavailable</h1>
+        <p className={styles.sentence}>Could not read this offer from the network. Its state is unknown.</p>
+        <button type="button" className={styles.back} onClick={reload}>
+          Retry
+        </button>
       </section>
     );
   if (offer === undefined) return <Loading />;
