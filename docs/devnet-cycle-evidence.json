@@ -1,0 +1,114 @@
+{
+  "story": "18.1",
+  "network": "devnet",
+  "programId": "CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef",
+  "lender": "3dh3Bxu1hJzH3aHfwNAibRqTxyrPsUFyteiuGxycoohh",
+  "borrower": "BNi7NrKsHjSgndUL9catj5iXaieiwGA4ABA8z2ioJQw7",
+  "verifiedAt": "2026-10-06T05:13:21.135Z",
+  "checks": [
+    "A: the lender's My loans lists the 1-hour loan as lender, due within a day",
+    "A: the borrower's My loans lists the same loan with Repay",
+    "A: totals agree across both sides",
+    "A: the offer is repaid",
+    "B: the borrower's My loans shows the open request",
+    "B: past the deadline, the lender's My loans puts the loan first with Claim collateral",
+    "B: the loan is expired",
+    "C: the owner opened a room",
+    "C: the invitee finds the room by listing, with the lender role",
+    "C: the room lists the loan for its borrower without reading the thread",
+    "C: the bid appears in the invitee's private bids as proposed",
+    "C: the cancelled bid reads as settled"
+  ],
+  "receipts": [
+    {
+      "step": "fund-borrower",
+      "signature": "3DJFaNJmgfqrbkjt6o3mbza5MgTBwrRgEZQ3sNtd8jYCk5u6cVtHC2vJsUoGhbPJ7sPdfk2nv99ZUEmj9cUm8Kqe",
+      "url": "https://explorer.solana.com/tx/3DJFaNJmgfqrbkjt6o3mbza5MgTBwrRgEZQ3sNtd8jYCk5u6cVtHC2vJsUoGhbPJ7sPdfk2nv99ZUEmj9cUm8Kqe?cluster=devnet"
+    },
+    {
+      "step": "wrap-collateral",
+      "signature": "3Ru4po4g747WTChyPB5eR3KwB9f3puouMZ6zDsun5kMgtpgBFbP3JyZTWAYK1jQ5poUNrjA8DLEZU3bnM7LqXPyu",
+      "url": "https://explorer.solana.com/tx/3Ru4po4g747WTChyPB5eR3KwB9f3puouMZ6zDsun5kMgtpgBFbP3JyZTWAYK1jQ5poUNrjA8DLEZU3bnM7LqXPyu?cluster=devnet"
+    },
+    {
+      "step": "A create-offer",
+      "signature": "2jHg1DgE5ARWfKnBR5wg7qX3ieDiLRiDCfw19DqNZdCXbn9ZBPxH8WPkhd5jY6Tdf1B6iQWuX52oPRemu69m6Ndj",
+      "url": "https://explorer.solana.com/tx/2jHg1DgE5ARWfKnBR5wg7qX3ieDiLRiDCfw19DqNZdCXbn9ZBPxH8WPkhd5jY6Tdf1B6iQWuX52oPRemu69m6Ndj?cluster=devnet"
+    },
+    {
+      "step": "pyth-update",
+      "signature": "hn3jTsCe2c6fJDjYmPpKELv4QRJFhps5aFcqe1KRi21F6W4H6c9tzCPa4KAtvQ93ZWDkhYLyrMndp7cAQ32fGsY",
+      "url": "https://explorer.solana.com/tx/hn3jTsCe2c6fJDjYmPpKELv4QRJFhps5aFcqe1KRi21F6W4H6c9tzCPa4KAtvQ93ZWDkhYLyrMndp7cAQ32fGsY?cluster=devnet"
+    },
+    {
+      "step": "pyth-update",
+      "signature": "4ZPcMTwXwdYKvimonTL9jx5pF59RT63M5Kcfb9hLymMud8kM5BtytHTyzB2D6U2n5JEvFmHP19pBV1S4ZPSodURn",
+      "url": "https://explorer.solana.com/tx/4ZPcMTwXwdYKvimonTL9jx5pF59RT63M5Kcfb9hLymMud8kM5BtytHTyzB2D6U2n5JEvFmHP19pBV1S4ZPSodURn?cluster=devnet"
+    },
+    {
+      "step": "A accept-offer",
+      "signature": "3S9XuJoCwyMMqyqbEZBeE4SJZUsWjGGtEhXL2VQSPoGXDmhCyqQiujMEVijFBQSn3sLP8gVdPTR2QssFGMKqunu5",
+      "url": "https://explorer.solana.com/tx/3S9XuJoCwyMMqyqbEZBeE4SJZUsWjGGtEhXL2VQSPoGXDmhCyqQiujMEVijFBQSn3sLP8gVdPTR2QssFGMKqunu5?cluster=devnet"
+    },
+    {
+      "step": "A repay",
+      "signature": "4aKGNf2Xick4YoKKaMQ6vNgoqsPsJ2JZFPduYSmquskVHuzVsoiatxeFfgSJ7zD4c9ki54qFQRNoBqQ8thJjQuiS",
+      "url": "https://explorer.solana.com/tx/4aKGNf2Xick4YoKKaMQ6vNgoqsPsJ2JZFPduYSmquskVHuzVsoiatxeFfgSJ7zD4c9ki54qFQRNoBqQ8thJjQuiS?cluster=devnet"
+    },
+    {
+      "step": "A close-offer",
+      "signature": "5FU5jbUNK1F1TaG82aSZ6bWzYiDTVDWS5qAbEJrsBkaGXojvmwhsxjidvcuPUyMhiWuz88pGUDZ7No4cF5Vxxpbj",
+      "url": "https://explorer.solana.com/tx/5FU5jbUNK1F1TaG82aSZ6bWzYiDTVDWS5qAbEJrsBkaGXojvmwhsxjidvcuPUyMhiWuz88pGUDZ7No4cF5Vxxpbj?cluster=devnet"
+    },
+    {
+      "step": "wrap-collateral",
+      "signature": "5SHUN77dbgdFgTmUKy2XFtniBqSpiEnQuzpkUEMJJuZRc9duHwe2FdHdWEqYFZcG6A5KArSBLJTKxkdUWSXUMXsh",
+      "url": "https://explorer.solana.com/tx/5SHUN77dbgdFgTmUKy2XFtniBqSpiEnQuzpkUEMJJuZRc9duHwe2FdHdWEqYFZcG6A5KArSBLJTKxkdUWSXUMXsh?cluster=devnet"
+    },
+    {
+      "step": "B create-request",
+      "signature": "4H1dzPyMynu426gDYpSqfzpra8jVeEKqhzgf5h97vMnJHoBJh6C2KGaW4Mr9wt6eobgK5LxXsNu8j4D6Vbc3nuPs",
+      "url": "https://explorer.solana.com/tx/4H1dzPyMynu426gDYpSqfzpra8jVeEKqhzgf5h97vMnJHoBJh6C2KGaW4Mr9wt6eobgK5LxXsNu8j4D6Vbc3nuPs?cluster=devnet"
+    },
+    {
+      "step": "pyth-update",
+      "signature": "3XmrQQwjvNhYfp3YUusu9TBybbhfJHCdqdTRQHhWrVenCdoBbrsiJDSpGkqgavqiV792VKecS6KDNNK8gcdeDf4S",
+      "url": "https://explorer.solana.com/tx/3XmrQQwjvNhYfp3YUusu9TBybbhfJHCdqdTRQHhWrVenCdoBbrsiJDSpGkqgavqiV792VKecS6KDNNK8gcdeDf4S?cluster=devnet"
+    },
+    {
+      "step": "pyth-update",
+      "signature": "3yku5RRtrr5pHrS3xxGYVK6oWnhvjvuJ2F7ECSoHpLAMzYG1T4iaKHYH4rXpVUcYWoKLp1Vbj5436fjKM3ggaedr",
+      "url": "https://explorer.solana.com/tx/3yku5RRtrr5pHrS3xxGYVK6oWnhvjvuJ2F7ECSoHpLAMzYG1T4iaKHYH4rXpVUcYWoKLp1Vbj5436fjKM3ggaedr?cluster=devnet"
+    },
+    {
+      "step": "B fund-request",
+      "signature": "56CxREcg89TwmD3vzN99unbnQNAbrct6ATGhRh1ar2LV7N23hG8LTnVdAFyp9QXR9a93iBHBTUnrQTbtNzpKcG22",
+      "url": "https://explorer.solana.com/tx/56CxREcg89TwmD3vzN99unbnQNAbrct6ATGhRh1ar2LV7N23hG8LTnVdAFyp9QXR9a93iBHBTUnrQTbtNzpKcG22?cluster=devnet"
+    },
+    {
+      "step": "B claim-expired",
+      "signature": "4LVTgFePNpTGUJFB79ZvYujGM1PX99sAGdhPXcuXAYb82ZDDXGfxN9dGNfE3Scj3KgFQJWPKYu7dW8Mbkfzyj4z3",
+      "url": "https://explorer.solana.com/tx/4LVTgFePNpTGUJFB79ZvYujGM1PX99sAGdhPXcuXAYb82ZDDXGfxN9dGNfE3Scj3KgFQJWPKYu7dW8Mbkfzyj4z3?cluster=devnet"
+    },
+    {
+      "step": "B close-offer",
+      "signature": "LELdexpMUqrdWTAwLEtWPJikubRfEpZyZfYP7fY7s2HjWWkc43AR8jpi41iasgSY5hnpaRo2UStYUrXPg6LPg9w",
+      "url": "https://explorer.solana.com/tx/LELdexpMUqrdWTAwLEtWPJikubRfEpZyZfYP7fY7s2HjWWkc43AR8jpi41iasgSY5hnpaRo2UStYUrXPg6LPg9w?cluster=devnet"
+    },
+    {
+      "step": "B close-request",
+      "signature": "XXHn42YbYJa3Yop672iJNMmCnLiKVqEHjVbPvUqjPo6do72VuJLCTHwk8oPpUr2ZgZzBpFHz54hKWHu1CaMPymR",
+      "url": "https://explorer.solana.com/tx/XXHn42YbYJa3Yop672iJNMmCnLiKVqEHjVbPvUqjPo6do72VuJLCTHwk8oPpUr2ZgZzBpFHz54hKWHu1CaMPymR?cluster=devnet"
+    },
+    {
+      "step": "cleanup-token-accounts",
+      "signature": "3pXGmRzK1coDWZPbXepqGCatt4oM4AdC3ZXGyTK3PqWRkHn5fyfz4kqGkLgKZbnhFH152PFCBgiE73G3yYq5gXWh",
+      "url": "https://explorer.solana.com/tx/3pXGmRzK1coDWZPbXepqGCatt4oM4AdC3ZXGyTK3PqWRkHn5fyfz4kqGkLgKZbnhFH152PFCBgiE73G3yYq5gXWh?cluster=devnet"
+    },
+    {
+      "step": "return-sol",
+      "signature": "3do1tktWU7jg39i71iarw5GigBkkS61PSGPQRx14c8WqfKMY7VnSNypQRbyN8zMtBvWMrrn93xbci7vTCoW1K29Z",
+      "url": "https://explorer.solana.com/tx/3do1tktWU7jg39i71iarw5GigBkkS61PSGPQRx14c8WqfKMY7VnSNypQRbyN8zMtBvWMrrn93xbci7vTCoW1K29Z?cluster=devnet"
+    }
+  ]
+}

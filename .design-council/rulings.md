@@ -254,3 +254,11 @@ Reviewed Discover, Offers, the create wizard, the request venue choice, a closed
 | The owner picks Lender, Borrower or Viewer when letting someone in, and can dismiss requests | Plumb | The program supports all three roles; the old button only offered lender. |
 | Funded private bids say "waiting for the borrower" and explain how to cancel, never "lost" | Plumb / Hollis | Only the borrower can read which offer won; the interface does not claim what it cannot know. |
 | Rooms list by role (Owner, Lender, Borrower, Viewer) and come from the rollup, so they follow the wallet across devices | Indigo / Hollis | Local storage alone lost rooms on a new device. |
+
+## ZenLo final review (2026-10-06)
+
+The full council reviewed every route at 390, 768 and 1440 px (14 routes, no horizontal overflow, no page errors, no shark text), plus `/devnet/me` signed out, with a wallet, and with the private desk. A scripted Devnet run (`app/scripts/cycle-smoke.ts`, evidence in `docs/devnet-cycle-evidence.json`) passed 12 of 12 checks across a public offer, a public request that expired and was claimed, and a private room with an invitation found by listing and a bid that both sides can see.
+
+- **Fixed during review:** cancelling an unfunded private bid failed for a lender with no private balance (`InvalidWritableAccount`); drafts now pass the loan's own USDC account, which the program never reads for a draft.
+- **Accepted as is:** a lender cannot see that another offer won a room. Only the borrower can read the deal record, so funded bids explain how to cancel instead of claiming a result.
+- **Not covered:** a human wallet signing on a phone after the rebrand, and the AI copilot in a room. The code paths are unchanged.
