@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/experience/PublicHeader";
 import { SiteFooter } from "@/components/experience/SiteFooter";
-import { UseCaseTable } from "@/components/experience/UseCaseTable";
+import { UseCaseCards } from "@/components/experience/UseCaseCards";
 import { FEATURES, USE_CASES } from "@/components/experience/use-cases";
 import s from "@/components/experience/Experience.module.css";
 import u from "./UseCases.module.css";
@@ -20,20 +20,18 @@ export default function Page() {
       <main className={s.page}>
         <header className={u.hero}>
           <p className={u.eyebrow}>Use cases</p>
-          <h1>One loan, many reasons to make it.</h1>
+          <h1>Every case Sharky takes.</h1>
           <p className={u.lede}>
             LegitShark is a fixed-term USDC loan against wSOL. Use it in public, or in a private room where only the people in the deal can read it.
           </p>
         </header>
-        <UseCaseTable heading={false} anchors />
+        <UseCaseCards heading={false} anchors />
         <section className={u.cases} aria-label="Use cases in detail">
           {USE_CASES.map((c, i) => (
-            <article key={c.intent} id={`case-${i + 1}`} className={u.case} data-art={!!c.image || undefined}>
-              {c.image && (
-                <div className={u.art}>
-                  <Image src={c.image.src} alt={c.image.alt} width={1200} height={1200} sizes="(max-width: 800px) 90vw, 40vw" />
-                </div>
-              )}
+            <article key={c.intent} id={`case-${i + 1}`} className={u.case} data-art>
+              <div className={u.art}>
+                <Image src={c.image.src} alt={c.image.alt} width={1200} height={1200} sizes="(max-width: 800px) 90vw, 40vw" />
+              </div>
               <div className={u.caseText}>
                 <p className={u.caseNo}>{String(i + 1).padStart(2, "0")}</p>
                 <h2>{c.intent}</h2>

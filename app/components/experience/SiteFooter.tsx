@@ -13,7 +13,7 @@ export function SiteFooter() {
     <footer className={s.siteFooter}>
       <div className={s.footerBrand}>
         <Wordmark />
-        <p>Clear terms. One loan at a time.</p>
+        <p>Yes, a loan shark. A legit one.</p>
         <p className={s.note}>Built on Solana and MagicBlock. Devnet only, with test assets. Nothing here is a guaranteed return.</p>
       </div>
       {COLUMNS.map((c) => (

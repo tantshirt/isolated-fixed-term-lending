@@ -20,19 +20,52 @@ export function HeroArtwork() {
     offset: ["start start", "end start"],
   });
   const y = useTransform(scrollYProgress, [0, 1], [0, 45]);
-  const rotate = useTransform(scrollYProgress, [0, 1], [0, -3]);
+  const rotate = useTransform(scrollYProgress, [0, 1], [0, -2]);
   return (
     <div ref={ref} className={s.heroArtwork}>
-      <m.div style={reduced ? undefined : { y, rotate }}>
-        <Image
-          src="/illustrations/lendspan-bridge.webp"
-          width={1536}
-          height={1024}
-          priority
-          sizes="(max-width: 800px) 100vw, 52vw"
-          alt="A blue ribbon bridges two platforms, connecting both sides of one agreement."
-        />
-      </m.div>
+      <div className={s.stage}>
+        <m.div
+          className={s.sharky}
+          // One entrance, then still (council ruling: no idle loops).
+          initial={reduced ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <m.div style={reduced ? undefined : { y, rotate }}>
+            <Image
+              src="/illustrations/sharky-hero.webp"
+              width={1200}
+              height={1600}
+              priority
+              sizes="(max-width: 800px) 70vw, 30vw"
+              alt="Sharky, the LegitShark mascot, a grinning shark in a blue polo and sunglasses, holds out a clipboard."
+            />
+          </m.div>
+        </m.div>
+        <div className={s.termSheet}>
+          <p className={s.termSheetTitle} id="hero-terms">
+            Term sheet · example
+          </p>
+          <dl aria-labelledby="hero-terms">
+            <div>
+              <dt>You receive</dt>
+              <dd>100 USDC</dd>
+            </div>
+            <div>
+              <dt>Full-term cost</dt>
+              <dd>5 USDC</dd>
+            </div>
+            <div>
+              <dt>Collateral</dt>
+              <dd>1.1 wSOL</dd>
+            </div>
+            <div>
+              <dt>Deadline</dt>
+              <dd>7 days</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
       <div className={s.heroCaption}>
         <span>Two sides. One clear agreement.</span>
         <a href="#how-it-works">
@@ -63,8 +96,8 @@ const steps = [
     detail: "Held as collateral for this loan",
     body: "The borrower locks 1.1 wSOL and receives 100 USDC. That exchange starts the seven-day clock. At the example SOL price of $150, the collateral is worth $165.",
     note: "The program checks the collateral limit against a fresh SOL price before acceptance.",
-    image: "lendspan-collateral",
-    alt: "A blue solid rests inside an open white frame, representing collateral held separately.",
+    image: "sharky-collateral",
+    alt: "Sharky drops one blue token into a locked glass box while handing over an envelope: collateral held separately.",
   },
   {
     title: "105 USDC back. The collateral goes home.",
@@ -75,8 +108,8 @@ const steps = [
     detail: "100 principal + 5 fixed interest",
     body: "Before the deadline, the borrower repays 105 USDC. The lender receives the principal and interest; the borrower gets all 1.1 wSOL back.",
     note: "Repay early if you like. The 5 USDC full-term interest stays the same.",
-    image: "lendspan-return",
-    alt: "A blue ribbon loops between two white pieces, representing a completed agreement.",
+    image: "sharky-return",
+    alt: "Sharky gives the blue token back from the open, empty glass box with a thumbs up: the collateral goes home.",
   },
 ];
 
@@ -98,7 +131,7 @@ export function LoanStory() {
           if (entry.isIntersecting)
             setActive(Number((entry.target as HTMLElement).dataset.chapter));
       },
-      { rootMargin: "-25% 0px -45% 0px", threshold: 0 }
+      { rootMargin: "-25% 0px -45% 0px", threshold: 0 },
     );
     sections.forEach((node) => observer.observe(node));
     return () => observer.disconnect();
@@ -200,8 +233,8 @@ export function LoanStory() {
                   <Image
                     src={`/illustrations/${step.image}.webp`}
                     alt={step.alt!}
-                    width={1024}
-                    height={1024}
+                    width={1200}
+                    height={1200}
                     sizes="(max-width: 800px) 90vw, 45vw"
                   />
                 </m.figure>

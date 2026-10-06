@@ -164,3 +164,14 @@ Applied council findings: native button reset on the explainer, labelled row fig
 | On-chain program name, crate, PDA seeds, package names and `--tenor-*` token names do not change | Hollis / Plumb | The rebrand is display-only; renaming seeds would break deployed Devnet accounts. |
 
 Phase 1 review (Kestrel / Indigo / Plumb / Fovea): the wordmark and 34 px head pass at 1440 and 390 px. The 19 poses hold identity, and the banker's-lamp green is accepted as a single prop. The IDL description stays "Lendspan" because on-chain metadata is out of scope. The 2K PNG originals stay local, and compact WebP masters are committed.
+
+## LegitShark phase 2: landing (2026-10-06)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| The hero reads "Yes, a loan shark. A legit one." Sharky stands on a soft accent stage next to an HTML term-sheet card | Ravi / Sol | The joke and the proof sit in one screen. Figures stay in HTML beside Sharky, never in the image. |
+| "About the name" runs right after the hero: four "Other sharks / Sharky" rows of mechanics | Sol / Plumb | Every claim maps to program behaviour: fixed terms, one full-term fee, a per-loan vault, an enforced deadline. |
+| The scroll story is unchanged; Sharky poses replace the abstract art in chapters 2 and 3 | Nils / Ravi | The user asked to keep the scroll animation. |
+| The private chapter becomes "Sharky's case files", with the PI poses shown uncropped | Indigo | The noir framing marks the private side; contain-fit keeps the wide room scene whole. |
+| Use cases change from a table to six cards: image, Public/Private tag, intent, one-line hook, start link | Ravi / Wren | The user called the use cases weak; each card shows a different job. |
+| On phones, contrast cells carry visually hidden "Other sharks:" / "Sharky:" labels | Fovea | Column headers are hidden on phones. |
