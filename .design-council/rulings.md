@@ -234,3 +234,13 @@ Reviewed Discover, Offers, the create wizard, the request venue choice, a closed
 | The request venue choice shows two image cards; Private is navy | Ravi / Wren | The choice is visual and matches the landing's private chapter. |
 | Buttons, chips and the app nav are pills; containers are 20–24px; Nunito weights move to 800 | Hollis / Indigo | One shape language across landing and app, done in tokens and modules, not per page. |
 | Error copy is "That page didn't load." | Sol | Plain words, no mascot joke. |
+
+## My loans (2026-10-06)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| A remembered wallet is the account: `/devnet/me` is the returning user's home, and the header gains "My loans" with an attention count | User / Sol | The user asked for people to keep coming back and manage everything without a sign-up. |
+| Rows are ordered by urgency, not by date: past due, past the line, due within a day, near the line, running, open, settled | Plumb / Fovea | A lender with five borrowers sees the one that needs them first. Each tier names the action in words, not color alone. |
+| Rows link to the existing offer and request screens for every action | Hollis / Plumb | Signing stays in one audited place; the dashboard never duplicates transaction code. |
+| Running loans get "Add to calendar" with a reminder 23 hours before the last second | Sol | No backend sends reminders; the person's own calendar does. |
+| Public request rows show "Fund this request" to other wallets and "Your request" to the borrower | Wren | Lenders see where they can act straight from Discover. |

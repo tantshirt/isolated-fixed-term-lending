@@ -27,6 +27,7 @@ There is no account sign-up. A remembered wallet is the identity: it reconnects 
 - `/`: explanatory landing page, primary **Try the demo**, secondary **Use Devnet**.
 - `/demo`: wallet-free guided simulation and free exploration.
 - `/devnet`: actual offer list and wallet-based transactions.
+- `/devnet/me`: My loans, the home for a returning wallet. Totals, then Lending and Borrowing tabs ordered by urgency: past due, past the liquidation line, due within a day, near the line, running, open, settled. Each row names the next action and links to the screen that performs it; running loans can be added to a calendar. The header shows My loans with a count of items that need attention once a wallet is connected.
 - `/devnet/discover`: the live marketplace. **Borrowers asking** and **Lenders offering**, each with **Public** and **Private**. Public rows are on-chain requests and offers; private borrower rows are discovery cards showing only the fields their borrower chose. Private lenders have no listing, and the page says so instead of inventing one. A status badge says whether the list is live, polling, or unreachable, in words.
 - `/devnet/discover/request`: borrower's choice of public or private, then the public request wizard. `/devnet/requests/[borrower]/[id]`: one public request, where a lender funds it.
 - Create and offer details live under their respective experience. Existing create/offer links redirect into Devnet.

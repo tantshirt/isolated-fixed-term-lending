@@ -87,9 +87,9 @@ The rebrand and the returning-user experience. Each phase ships as its own pull 
 | 2 | [15.2 Abstract art set](stories.md) | Done |
 | 3 | [15.3 Landing and use cases](stories.md) | Done |
 | 4 | [15.4 App restyle without Sharky](stories.md) | Done |
-| 5 | [16.1 Per-wallet reads](stories.md) | Open |
-| 6 | [16.2 My loans page](stories.md) | Open |
-| 7 | [16.3 Returning wallets](stories.md) | Open |
+| 5 | [16.1 Per-wallet reads](stories.md) | Done |
+| 6 | [16.2 My loans page](stories.md) | Done |
+| 7 | [16.3 Returning wallets](stories.md) | Done |
 | 8 | [17.1 Finding your rooms](stories.md) | Open |
 | 9 | [17.2 Owners and requests to join](stories.md) | Open |
 | 10 | [17.3 Loans and bids that stay visible](stories.md) | Open |

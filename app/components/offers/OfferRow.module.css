@@ -98,3 +98,25 @@ li:nth-child(2) > .row {
   transition: transform var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
 }
+
+.fund,
+.yours {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 0.875rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.fund {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.yours {
+  background: var(--color-cloud);
+  color: var(--tenor-green-pressed);
+}
