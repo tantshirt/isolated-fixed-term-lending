@@ -7,7 +7,11 @@ const mono = IBM_Plex_Mono({
   weight: ["400", "500"],
   variable: "--font-plex-mono",
 });
+/** Public address for absolute links (share images, canonical URLs). Override per deployment if needed. */
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://zenlo-loans.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "ZenLo", template: "%s · ZenLo" },
   applicationName: "ZenLo",
   description:
@@ -17,6 +21,7 @@ export const metadata: Metadata = {
     description:
       "Clear terms. Zero drama. Fixed-term USDC loans backed by wSOL on Solana.",
     siteName: "ZenLo",
+    url: "/",
     type: "website",
   },
 };

@@ -6,6 +6,8 @@
 
 <p align="center"><strong>Clear terms. Zero drama.</strong></p>
 
+<p align="center"><a href="https://zenlo-loans.vercel.app">zenlo-loans.vercel.app</a></p>
+
 ZenLo makes fixed-term lending on Solana easier to understand. A lender offers USDC, a borrower locks wrapped SOL as collateral, and an on-chain program enforces the agreed repayment amount, deadline, and settlement rules.
 
 Start with a guided, wallet-free demo. Then explore the same loan lifecycle on Devnet with a connected wallet and test tokens.
