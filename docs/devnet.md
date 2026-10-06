@@ -71,3 +71,13 @@ solana program deploy -u devnet --program-id target/deploy/isolated_loan-keypair
 ```
 
 The `Offer` layout did not change, so existing offers still read. `scripts/request-smoke.ts` (run with `npx tsx --env-file=.env.local scripts/request-smoke.ts --run`) proved the whole request lifecycle on Devnet: create, cancel and close; then create, a fresh Pyth post, fund, repay, close the offer and close the request. Receipts are in [devnet-request-evidence.json](devnet-request-evidence.json). Public Hermes now returns 401 without `PYTH_HERMES_API_KEY`; set it in `app/.env.local` and in the deployment environment, because `/api/pyth-update` needs it for in-app funding and acceptance.
+
+## Security upgrade — 6 October 2026
+
+Both programs were upgraded in place with the audit fixes ([security-audit.md](security-audit.md)): pinned USDC and wSOL mints (S2), reusable liquidation ticket slots with permissionless refunds (S1), and the price-account check in `schedule_watch` (S4).
+
+- `isolated_loan`: [upgrade](https://explorer.solana.com/tx/58dQXjEb3nHGMkWfsoKd393KHWTSE1Ki7Zcd1gQDbYDTJecGgLAUZUzgQf3W2Q4vDUucGizCqnaBCgXMKZHWZr6m?cluster=devnet). The CLI extended program data to 488,400 bytes itself; a manual `program extend` must request at least 10,240 bytes.
+- `private_loan`: [upgrade](https://explorer.solana.com/tx/3HisAApfzjauNYWm6Bb3HpQrMjEPUQsXTvr32b3SKAwVpaH8pCq7FvcJeQCDbZZabHY56Q3u3ZhAoKGBVKkiTJCX?cluster=devnet).
+- Both on-chain binaries were dumped and match the local pinned build byte for byte (`isolated_loan.so` sha256 `d11e88e1…`, `private_loan.so` sha256 `fa41fb36…`).
+- `scripts/request-smoke.ts` passed afterwards: create, cancel, fund, repay and close with canonical USDC and wSOL ([evidence](devnet-request-evidence.json)).
+- A simulated `create_offer` with SPL USDC-Dev (`Gh9Zw…tKJr`, 6 decimals) fails with `MintNotAllowed` (6022); the same call with canonical USDC simulates cleanly.
