@@ -131,15 +131,27 @@ export async function openRoom(base: Connection, er: Connection, signer: LoanSig
   rememberRoom(wallet, roomId);
 
   for (let i = 0; i < 30 && !(await er.getAccountInfo(anchor)); i++) await new Promise((r) => setTimeout(r, 1000));
+  await finishRoom(base, er, signer, anchor);
+  return { roomId, anchor };
+}
+
+/** ER step of opening a room. Safe to retry when it failed after the Solana step. */
+export async function finishRoom(base: Connection, er: Connection, signer: LoanSigner, anchor: PublicKey) {
+  const program = programFor(base, signer);
   await sendEr(
     er,
     signer.publicKey,
     await program.methods.initRoom().accountsPartial({ owner: signer.publicKey, ...recordAccounts(anchor) }).instruction(),
     (t) => signer.signTransaction(t),
     newReceipt("Create the private member list and thread", "er"),
-    wallet,
+    signer.publicKey.toBase58(),
   );
-  return { roomId, anchor };
+}
+
+/** The wallet that opened a room, read from its public anchor (delegated, so through the ER). */
+export async function roomCreator(er: Connection, anchor: PublicKey): Promise<PublicKey | null> {
+  const info = await er.getAccountInfo(anchor);
+  return info && info.data.length >= 72 ? new PublicKey(info.data.subarray(40, 72)) : null;
 }
 
 export type RoomView =

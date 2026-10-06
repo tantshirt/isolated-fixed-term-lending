@@ -4,7 +4,8 @@ import type { Connection, PublicKey } from "@solana/web3.js";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { LoanSigner } from "@/lib/keypair-wallet";
-import { SHOW, publishCard, readJoinQueue } from "@/lib/private/discovery";
+import { SHOW, listCards, publishCard, readJoinQueue, retractCard, type Card } from "@/lib/private/discovery";
+import type { RoleName } from "@/lib/private/room-codec";
 import { inviteMember } from "@/lib/private/rooms";
 import styles from "./private.module.css";
 
@@ -20,8 +21,30 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
   const [queue, setQueue] = useState<{ wallet: PublicKey; at: number }[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [roles, setRoles] = useState<Record<string, RoleName>>({});
+  const hiddenKey = `zenlo:join-dismissed:${room.toBase58()}`;
+  const [hidden, setHidden] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(hiddenKey) ?? "[]");
+    } catch {
+      return [];
+    }
+  });
+  const dismiss = (w: string) => {
+    const next = [w, ...hidden.filter((h) => h !== w)];
+    setHidden(next);
+    try {
+      localStorage.setItem(hiddenKey, JSON.stringify(next));
+    } catch {}
+  };
 
-  const load = useCallback(async () => setQueue(await readJoinQueue(er, room)), [er, room]);
+  const load = useCallback(async () => {
+    setQueue(await readJoinQueue(er, room));
+    // This room's live cards, so publishing again replaces instead of duplicating.
+    const all = await listCards(base).catch(() => [] as Card[]);
+    setCards(all.filter((c) => c.room.equals(room) && c.publisher.equals(signer.publicKey)));
+  }, [er, base, room, signer]);
   useEffect(() => {
     void load();
     const t = setInterval(() => void load(), 6000);
@@ -35,6 +58,7 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
     setBusy("publish");
     setMsg(null);
     try {
+      for (const c of cards) await retractCard(base, signer, c.address);
       await publishCard(base, er, signer, room, {
         show,
         amountMin: units(amount, 6),
@@ -43,7 +67,10 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
         durationSeconds: Math.round(Number(days || "0") * 86_400),
         collateralNote: note,
       });
-      setMsg({ tone: "ok", text: "Published. It appears on the Discover page with only the fields you ticked." });
+      setMsg({
+        tone: "ok",
+        text: cards.length ? "Updated. The old card is gone; Discover shows the new one." : "Published. It appears on the Discover page with only the fields you ticked.",
+      });
       await load();
     } catch (e) {
       setMsg({ tone: "error", text: e instanceof Error ? e.message : String(e) });
@@ -52,7 +79,21 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
     }
   }
 
-  const pending = (queue ?? []).filter((q) => !members.some((m) => m.equals(q.wallet)));
+  async function retract() {
+    setBusy("retract");
+    setMsg(null);
+    try {
+      for (const c of cards) await retractCard(base, signer, c.address);
+      setMsg({ tone: "ok", text: "Card removed from Discover. The room and its members are unchanged." });
+      await load();
+    } catch (e) {
+      setMsg({ tone: "error", text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const pending = (queue ?? []).filter((q) => !members.some((m) => m.equals(q.wallet)) && !hidden.includes(q.wallet.toBase58()));
 
   return (
     <section className={styles.panel} aria-labelledby="card-h">
@@ -81,9 +122,16 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
             <input className={styles.input} value={note} maxLength={48} onChange={(e) => setNote(e.target.value)} aria-label="Collateral note" />
           </label>
         </fieldset>
-        <Button variant="secondary" onClick={publish} loading={busy === "publish"} disabled={!show}>
-          Publish card
-        </Button>
+        <div className={styles.actions}>
+          <Button variant="secondary" onClick={publish} loading={busy === "publish"} disabled={!show}>
+            {cards.length ? "Update card" : "Publish card"}
+          </Button>
+          {cards.length > 0 && (
+            <Button variant="ghost" onClick={retract} loading={busy === "retract"}>
+              Remove from Discover
+            </Button>
+          )}
+        </div>
         <div>
           <p className={styles.fieldLabel}>Asked to join {queue === null ? "" : `(${pending.length})`}</p>
           {queue === null ? (
@@ -96,13 +144,23 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
                 <li key={q.wallet.toBase58()}>
                   <span className={styles.mono}>{short(q.wallet)}</span>
                   <span className={styles.hint}>{new Date(q.at * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                  <select
+                    className={styles.inputSm}
+                    aria-label={`Role for ${short(q.wallet)}`}
+                    value={roles[q.wallet.toBase58()] ?? "lender"}
+                    onChange={(e) => setRoles((r) => ({ ...r, [q.wallet.toBase58()]: e.target.value as RoleName }))}
+                  >
+                    <option value="lender">Lender</option>
+                    <option value="borrower">Borrower</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
                   <button
                     className={styles.textAccent}
                     disabled={busy !== null}
                     onClick={async () => {
                       setBusy(q.wallet.toBase58());
                       try {
-                        await inviteMember(base, er, signer, room, q.wallet, "lender");
+                        await inviteMember(base, er, signer, room, q.wallet, roles[q.wallet.toBase58()] ?? "lender");
                         onChange();
                         await load();
                       } catch (e) {
@@ -112,7 +170,10 @@ export function CardPublisher({ signer, base, er, room, members, onChange }: { s
                       }
                     }}
                   >
-                    Invite as lender
+                    Let in
+                  </button>
+                  <button className={styles.textMuted} disabled={busy !== null} onClick={() => dismiss(q.wallet.toBase58())}>
+                    Dismiss
                   </button>
                 </li>
               ))}

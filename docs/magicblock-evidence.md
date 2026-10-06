@@ -75,3 +75,14 @@ Findings from building it:
 
 - **SOAR's SDK pays from the provider key.** Registration is built with the learner as the provider's public key and no server signature, so the learner is the fee payer.
 - **The VRF program charges the requester.** Each request moves 0.0005 SOL from the learner to the oracle queue, so sponsorship covers it too.
+
+## Phase 6: finding rooms and loans (story 17.1)
+
+| Check | Status | Date | Evidence |
+| --- | --- | --- | --- |
+| An invited wallet can list its rooms | PASS | 2026-10-06 | A Devnet room was opened by one wallet, which invited a fresh wallet. With its own TEE token, the invitee's `getProgramAccounts` with `dataSize: 313` plus a `memcmp` on its member slot returned exactly that `RoomState`. Without the `memcmp`, the same call returned only rooms the caller may read. |
+| A stranger lists nothing | PASS | 2026-10-06 | A fresh wallet's token got 0 `RoomState` accounts back for the same `dataSize` filter, while 21 room anchors exist. |
+| Rooms map back to their links | PASS | 2026-10-06 | Listing `RoomAnchor` by discriminator through the TEE and deriving `room-state` PDAs matched all 3 of the owner's readable states. Delegated anchors exist only in the ER; the same query on Solana returns 0. |
+| Loans are listed per room | PASS | 2026-10-06 | `LoanAnchor` records (public, `room` at byte 40) list through the TEE by discriminator; `LoanTerms` then read only for the lender and borrower. |
+
+Decision: the invite inbox and the room loan registry need no program change. The permission program already filters `getProgramAccounts` by the caller's token, so the app lists what a wallet may read instead of keeping a private inbox account.

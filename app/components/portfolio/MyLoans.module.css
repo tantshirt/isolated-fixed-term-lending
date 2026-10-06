@@ -378,3 +378,70 @@
   color: var(--color-accent);
   white-space: nowrap;
 }
+
+.privateDesk {
+  display: grid;
+  gap: 0.875rem;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 28px;
+  background: var(--color-background-surface);
+}
+
+.privateDesk h2 {
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.privateDesk > p {
+  color: var(--color-text-secondary);
+  max-width: 64ch;
+}
+
+.inlineLink {
+  color: var(--color-text-accent);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bids {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 20px;
+  background: var(--color-background-body);
+}
+
+.bid[data-state="funded"] {
+  box-shadow: inset 4px 0 0 var(--color-accent);
+}
+
+.bidLabel {
+  font-weight: 900;
+}
+
+.bidTerms {
+  font-weight: 700;
+}
+
+.bidDetail {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.privateDesk > button {
+  justify-self: start;
+}

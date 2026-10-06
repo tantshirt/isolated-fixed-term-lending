@@ -141,12 +141,22 @@ export async function requestJoin(base: Connection, er: Connection, signer: Loan
 export async function readJoinQueue(er: Connection, room: PublicKey): Promise<{ wallet: PublicKey; at: number }[] | null> {
   const info = await er.getAccountInfo(joinQueuePda(room));
   if (!info) return null;
-  const d = info.data;
-  const count = Math.min(d.readUInt32LE(0), 16);
+  return decodeJoinQueue(info.data);
+}
+
+/**
+ * The queue is a 16-slot ring: `count` is the total ever written. Once it wraps,
+ * the oldest entry sits at `count % 16`, so read from there.
+ */
+export function decodeJoinQueue(d: Uint8Array): { wallet: PublicKey; at: number }[] {
+  const v = new DataView(d.buffer, d.byteOffset, d.byteLength);
+  const total = v.getUint32(0, true);
+  const n = Math.min(total, 16);
+  const start = total > 16 ? total % 16 : 0;
   const out = [];
-  for (let i = 0; i < count; i++) {
-    const o = 4 + i * 40;
-    out.push({ wallet: new PublicKey(d.subarray(o, o + 32)), at: Number(d.readBigInt64LE(o + 32)) });
+  for (let k = 0; k < n; k++) {
+    const o = 4 + ((start + k) % 16) * 40;
+    out.push({ wallet: new PublicKey(d.subarray(o, o + 32)), at: Number(v.getBigInt64(o + 32, true)) });
   }
   return out;
 }

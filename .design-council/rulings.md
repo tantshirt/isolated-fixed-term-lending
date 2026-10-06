@@ -244,3 +244,13 @@ Reviewed Discover, Offers, the create wizard, the request venue choice, a closed
 | Rows link to the existing offer and request screens for every action | Hollis / Plumb | Signing stays in one audited place; the dashboard never duplicates transaction code. |
 | Running loans get "Add to calendar" with a reminder 23 hours before the last second | Sol | No backend sends reminders; the person's own calendar does. |
 | Public request rows show "Fund this request" to other wallets and "Your request" to the borrower | Wren | Lenders see where they can act straight from Discover. |
+
+## Rooms and invites (2026-10-06)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Invitations appear on Private home and My loans as a navy panel: room, your role, who invited you, Open or Dismiss | Sol / Fovea | Invitees used to need a link sent outside the app; now the rollup tells them. Navy keeps it private-coded. |
+| A non-member sees "Ask to join" and a way back to private requests; a half-created room shows "Finish setting up" to its creator | Plumb / Sol | Every dead end now has a next step that matches what the program allows. |
+| The owner picks Lender, Borrower or Viewer when letting someone in, and can dismiss requests | Plumb | The program supports all three roles; the old button only offered lender. |
+| Funded private bids say "waiting for the borrower" and explain how to cancel, never "lost" | Plumb / Hollis | Only the borrower can read which offer won; the interface does not claim what it cannot know. |
+| Rooms list by role (Owner, Lender, Borrower, Viewer) and come from the rollup, so they follow the wallet across devices | Indigo / Hollis | Local storage alone lost rooms on a new device. |
