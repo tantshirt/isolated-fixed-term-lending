@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sharky } from "@/components/brand/Sharky";
+import { Spot } from "@/components/brand/Spot";
 import list from "@/components/offers/OffersPage.module.css";
 import styles from "./Discover.module.css";
 
@@ -7,7 +7,7 @@ import styles from "./Discover.module.css";
 export function LenderPrivateEmpty({ onSeeCards }: { onSeeCards: () => void }) {
   return (
     <div className={`${list.empty} ${styles.explainer}`}>
-      <Sharky pose="detective" size={104} />
+      <Spot kind="private" size={104} />
       <p className={list.emptyTitle}>Private lenders stay unlisted</p>
       <p className={list.emptyBody}>
         A private lender&apos;s money and terms live inside a sealed room, so there is nothing public to list. They find

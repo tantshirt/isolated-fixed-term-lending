@@ -40,7 +40,7 @@
 }
 
 .confirmQ {
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .row {
@@ -54,7 +54,7 @@
   gap: 0.625rem;
   margin: 0;
   padding: 1rem;
-  border-radius: 12px;
+  border-radius: 20px;
   background: var(--color-background-body);
 }
 

@@ -20,7 +20,7 @@ import {
 } from "@/lib/offer-validation";
 import { SubmissionError, signatureUrl } from "@/lib/transaction-lifecycle";
 import { DevnetLoanService } from "@/lib/devnet-loan-service";
-import { SharkyTip } from "@/components/brand/SharkyTip";
+import { Tip } from "@/components/brand/Tip";
 import { OfferPreview } from "./OfferPreview";
 import { StepAmount } from "./StepAmount";
 import { StepReview } from "./StepReview";
@@ -359,9 +359,9 @@ export function CreateWizard() {
           price={price}
           live={Boolean(created)}
         />
-        <SharkyTip>
+        <Tip>
           {created ? "Posted. Every term is on chain now." : TIPS[step - 1]}
-        </SharkyTip>
+        </Tip>
       </aside>
     </div>
   );

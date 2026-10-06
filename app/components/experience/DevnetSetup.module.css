@@ -1,9 +1,9 @@
 .setup {
-  width: calc(100% - 2rem);
-  max-width: 976px;
+  width: calc(100% - 3rem);
+  max-width: 1216px;
   margin: 24px auto 0;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: var(--radius-container);
   background: var(--color-background-surface);
 }
 .summary {
@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  font-weight: 600;
+  font-weight: 800;
   font-size: 0.9375rem;
 }
 .chevron {
@@ -68,7 +68,7 @@
 .intro h2 {
   font-size: 1.125rem;
   letter-spacing: -0.02em;
-  font-weight: 600;
+  font-weight: 800;
 }
 .intro p {
   color: var(--color-text-secondary);
@@ -109,7 +109,7 @@
   color: var(--color-accent);
   min-height: 44px;
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 800;
 }
 .funding {
   display: grid;
@@ -143,7 +143,7 @@
 }
 .faucetText strong {
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: 800;
 }
 .faucetText > span {
   font-size: 0.8125rem;
@@ -190,7 +190,7 @@
 }
 .balances strong {
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 800;
   overflow-wrap: anywhere;
 }
 .tools {
@@ -203,7 +203,7 @@
   align-content: center;
   cursor: pointer;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 800;
 }
 .tools p {
   font-size: 0.8125rem;
@@ -217,7 +217,7 @@
 .wrap label {
   display: block;
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 800;
   margin-bottom: 0.5rem;
 }
 .wrap > div {

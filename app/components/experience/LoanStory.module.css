@@ -193,7 +193,7 @@
   margin: 2rem 0;
   padding: 2rem;
   background: var(--color-accent-muted);
-  border-radius: 12px;
+  border-radius: 20px;
   display: grid;
   gap: 0.75rem;
 }

@@ -41,7 +41,7 @@ li:nth-child(2) > .row {
 
 .unit {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--color-text-secondary);
 }
 

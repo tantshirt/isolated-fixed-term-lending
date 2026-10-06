@@ -17,7 +17,7 @@
   background: var(--color-accent-muted);
   color: var(--color-text-accent);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .title {
@@ -44,7 +44,7 @@
   margin-bottom: 1rem;
   color: var(--color-text-tertiary);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -99,7 +99,7 @@
   place-items: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 12px;
+  border-radius: 20px;
   background: var(--color-accent-muted);
   color: var(--color-text-accent);
 }
@@ -111,7 +111,7 @@
 
 .teeTitle {
   font-size: var(--text-md);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .teeBody {
@@ -157,7 +157,7 @@
 
 .panelHead h2 {
   font-size: var(--text-md);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .panelBody {
@@ -172,7 +172,7 @@
   background: var(--color-background-muted);
   color: var(--color-text-secondary);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 800;
   white-space: nowrap;
 }
 
@@ -228,7 +228,7 @@
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 20px;
   transition: border-color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
 }
 
@@ -250,7 +250,7 @@
 }
 
 .roomName {
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .roomId {
@@ -271,7 +271,7 @@
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 20px;
   background: var(--color-border);
 }
 
@@ -297,7 +297,7 @@
 .balances dd {
   margin: 0;
   font-size: var(--text-xl);
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: -0.02em;
 }
 
@@ -390,7 +390,7 @@
   grid-column: 3;
   color: var(--color-text-accent);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 span.receiptLink {
@@ -520,7 +520,7 @@ span.receiptLink {
   height: 2.75rem;
   padding: 0 0.875rem;
   border: 1px solid var(--color-border-emphasized);
-  border-radius: 12px;
+  border-radius: 20px;
   background: var(--color-background-surface);
   color: var(--color-text-primary);
   font: inherit;
@@ -571,7 +571,7 @@ span.receiptLink {
   background: var(--color-background-muted);
   color: var(--color-text-secondary);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .textButton {
@@ -580,7 +580,7 @@ span.receiptLink {
   color: var(--color-text-red);
   font: inherit;
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -594,7 +594,7 @@ span.receiptLink {
 
 .invite label {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .roleChoice {
@@ -619,7 +619,7 @@ span.receiptLink {
   border-color: var(--color-accent);
   background: var(--color-accent-muted);
   color: var(--color-text-accent);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .copy {
@@ -629,7 +629,7 @@ span.receiptLink {
   background: none;
   color: var(--color-text-accent);
   font: inherit;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -645,7 +645,7 @@ span.receiptLink {
   max-width: 26rem;
   margin-left: auto;
   padding: 0.75rem 1rem;
-  border-radius: 12px;
+  border-radius: 20px;
   background: var(--color-text-primary);
   color: var(--color-background-card);
   box-shadow: var(--shadow-high);
@@ -670,7 +670,7 @@ span.receiptLink {
 
 .propose > label {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .summary {
@@ -680,7 +680,7 @@ span.receiptLink {
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 20px;
   background: var(--color-border);
 }
 
@@ -698,7 +698,7 @@ span.receiptLink {
 
 .summary dd {
   margin: 0;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .loanCard {
@@ -722,7 +722,7 @@ span.receiptLink {
 }
 
 .loanStatus {
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .loanCard[data-status="repaid"] .loanStatus {
@@ -743,14 +743,14 @@ span.receiptLink {
 
 .fieldLabel {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .textarea {
   width: 100%;
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--color-border-emphasized);
-  border-radius: 12px;
+  border-radius: 20px;
   background: var(--color-background-surface);
   color: var(--color-text-primary);
   font: inherit;
@@ -763,7 +763,7 @@ span.receiptLink {
   gap: 0.625rem;
   padding: 0.875rem;
   border: 1px solid var(--color-accent-muted);
-  border-radius: 12px;
+  border-radius: 20px;
   background: var(--color-background-muted);
 }
 
@@ -796,7 +796,7 @@ span.receiptLink {
 .staleNote {
   color: var(--color-text-yellow);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .fields {
@@ -831,7 +831,7 @@ span.receiptLink {
   color: var(--color-text-accent);
   font: inherit;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -874,7 +874,7 @@ span.receiptLink {
 
 .cardFields dd {
   margin: 0;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .compare {
@@ -899,12 +899,12 @@ span.receiptLink {
 
 .compare thead th {
   color: var(--color-text-secondary);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .compareBest {
   color: var(--color-text-green);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .threadAi {
@@ -921,7 +921,7 @@ span.receiptLink {
   gap: 0.625rem;
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .notShared {
@@ -931,13 +931,13 @@ span.receiptLink {
 
 .sendBox {
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 20px;
 }
 
 .sendBox summary {
   min-height: 44px;
   padding: 0.75rem 1rem;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -1009,7 +1009,7 @@ span.receiptLink {
 }
 
 .checkName {
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .checkDetail {
@@ -1040,7 +1040,7 @@ span.receiptLink {
   color: var(--color-text-secondary);
   font: inherit;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -1082,7 +1082,7 @@ span.receiptLink {
 
 .termSteps h3 {
   font-size: var(--text-md);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .termSteps p {
@@ -1100,7 +1100,7 @@ span.receiptLink {
   background: var(--color-accent-muted);
   color: var(--color-text-accent);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .activity {
@@ -1113,7 +1113,7 @@ span.receiptLink {
   align-items: center;
   min-height: 44px;
   color: var(--color-text-secondary);
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -1146,7 +1146,7 @@ span.receiptLink {
 
 .deskTitle {
   font-size: var(--text-md);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .deskList {
@@ -1168,7 +1168,7 @@ span.receiptLink {
 
 .deskList dd {
   margin: 0;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .deskList dd[data-tone="ok"] {
@@ -1180,7 +1180,7 @@ span.receiptLink {
   border-top: 1px solid var(--color-border);
   color: var(--color-text-tertiary);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1198,7 +1198,7 @@ span.receiptLink {
 .deskPrivacy strong {
   display: block;
   color: var(--color-text-primary);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 /* Propose wizard: full width over the room */
@@ -1235,7 +1235,7 @@ span.receiptLink {
 .field > label,
 .fieldLabel {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .ruleList {
@@ -1252,7 +1252,7 @@ span.receiptLink {
 
 .ruleList b {
   color: var(--color-text-primary);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .figures {
@@ -1274,7 +1274,7 @@ span.receiptLink {
 
 .figures b {
   font-size: var(--text-xl);
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: -0.02em;
   text-align: right;
 }
@@ -1284,28 +1284,46 @@ span.receiptLink {
   font-size: var(--text-sm);
 }
 
-/* PI Sharky sits beside the private home heading. */
+/* Private home opens on a navy hero: navy marks private everywhere. */
 .heroArt {
-  position: relative;
-  padding-right: 8rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: center;
+  overflow: hidden;
+  margin-bottom: 2.5rem;
+  border-radius: 32px;
+  background: var(--color-navy);
+  color: var(--color-on-navy);
 }
 
-.detective {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 112px;
-  height: 112px;
+.heroCopy {
+  display: grid;
+  gap: 0.875rem;
+  padding: clamp(1.75rem, 4vw, 2.75rem);
+}
+
+.heroArt .eyebrow {
+  background: var(--color-navy-line);
+  color: var(--color-sky);
+}
+
+.heroArt .title {
+  color: var(--color-on-navy);
+}
+
+.heroArt .lede {
+  color: var(--color-on-navy-muted);
+}
+
+.heroImage {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  object-fit: cover;
 }
 
 @media (max-width: 640px) {
   .heroArt {
-    padding-right: 0;
-  }
-
-  .detective {
-    position: static;
-    width: 88px;
-    height: 88px;
+    grid-template-columns: 1fr;
   }
 }

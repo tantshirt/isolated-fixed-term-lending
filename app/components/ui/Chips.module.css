@@ -6,7 +6,7 @@
 
 .label {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--color-text-secondary);
 }
 
@@ -15,7 +15,7 @@
   flex-wrap: wrap;
   gap: 0.25rem;
   padding: 0.25rem;
-  border-radius: 12px;
+  border-radius: var(--radius-full);
   background: var(--color-background-muted);
   width: fit-content;
   max-width: 100%;
@@ -26,10 +26,10 @@
   height: 2.25rem;
   padding: 0 0.875rem;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-text-secondary);
-  font-weight: 600;
+  font-weight: 800;
   font-size: var(--text-sm);
   transition: color var(--duration-fast) var(--ease-out);
 }
@@ -45,7 +45,7 @@
 .pill {
   position: absolute;
   inset: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-full);
   background: var(--color-background-surface);
   box-shadow: var(--shadow-low), 0 0 0 1px var(--color-border);
 }

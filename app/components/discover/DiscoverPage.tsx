@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, m } from "motion/react";
 import { useMemo, useState, type ReactNode } from "react";
-import { Sharky } from "@/components/brand/Sharky";
+import { Spot } from "@/components/brand/Spot";
 import { OfferRow } from "@/components/offers/OfferRow";
 import { Chips } from "@/components/ui/Chips";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -227,7 +227,7 @@ export function DiscoverPage() {
             />
           </div>
           <div className={styles.guide}>
-            <Sharky pose={venue === "private" ? "detective" : "guide"} size={96} className={styles.guideArt} />
+            <Spot kind={venue === "private" ? "private" : "success"} size={96} className={styles.guideArt} />
             <p className={styles.bubble} aria-live="polite">
               {COPY[side][venue]}
             </p>
@@ -290,7 +290,7 @@ function ListState<T>({
   if (items === null && error)
     return (
       <div role="alert" className={list.empty}>
-        <Sharky pose="confused" size={110} />
+        <Spot kind="notFound" size={110} />
         <p className={list.emptyTitle}>Devnet is not answering</p>
         <p className={list.emptyBody}>Nothing here is lost. The list reloads by itself as soon as the network responds.</p>
       </div>
@@ -346,7 +346,7 @@ function Rows({ header, children }: { header: string[]; children: { key: string;
 function Empty({ title, body, href, cta }: { title: string; body: string; href: string; cta: string }) {
   return (
     <m.div className={list.empty} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <Sharky pose="waiting" size={120} />
+      <Spot kind="waiting" size={120} />
       <p className={list.emptyTitle}>{title}</p>
       <p className={list.emptyBody}>{body}</p>
       <Link href={href} className={list.emptyLink}>
