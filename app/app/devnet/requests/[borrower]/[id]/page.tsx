@@ -3,7 +3,7 @@ import { RequestView } from "@/components/request/RequestView";
 
 type Props = { params: Promise<{ borrower: string; id: string }> };
 
-export const metadata: Metadata = { title: "Loan request · Lendspan" };
+export const metadata: Metadata = { title: "Loan request · LegitShark" };
 
 export default async function RequestPage({ params }: Props) {
   const { borrower, id } = await params;

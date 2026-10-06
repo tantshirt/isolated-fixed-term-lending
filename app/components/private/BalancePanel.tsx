@@ -156,7 +156,7 @@ export function BalancePanel({ signer, base, er, onChange }: { signer: LoanSigne
           </li>
         )}
         <li>
-          <span>Lendspan fee</span>
+          <span>LegitShark fee</span>
           <span className="num">None</span>
         </li>
       </ul>

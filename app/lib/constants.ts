@@ -52,7 +52,7 @@ export const CAPS = {
 } as const;
 
 export const BRAND = {
-  name: "Lendspan",
+  name: "LegitShark",
   tagline: "Fixed-term loans against SOL.",
 } as const;
 

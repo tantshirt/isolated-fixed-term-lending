@@ -69,7 +69,7 @@ export function DiagnosticsPage() {
       await attempt("Automatic checks (Hydra)", async () => {
         const cranks = await er.getProgramAccounts(HYDRA_EPHEMERAL);
         const ours = cranks.filter((c) => c.account.data.subarray(120).includes(PRIVATE_PROGRAM_ID.toBuffer()));
-        return { state: "ok", detail: `${ours.length} Lendspan schedules in the rollup; a Vercel Cron job triggers due ones every minute.` };
+        return { state: "ok", detail: `${ours.length} LegitShark schedules in the rollup; a Vercel Cron job triggers due ones every minute.` };
       });
     }
     await attempt("Liquidation pool", async () => {

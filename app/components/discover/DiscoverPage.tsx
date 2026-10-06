@@ -178,7 +178,7 @@ export function DiscoverPage() {
             </p>
             <h1 className={styles.title}>Discover</h1>
             <p className={styles.lede}>
-              Every open loan on Lendspan, from both sides. Public terms are on chain for anyone to read. Private requests show
+              Every open loan on LegitShark, from both sides. Public terms are on chain for anyone to read. Private requests show
               only what the borrower chose to share.
             </p>
           </div>

@@ -9,8 +9,8 @@ import s from "@/components/experience/Experience.module.css";
 import u from "./UseCases.module.css";
 
 export const metadata: Metadata = {
-  title: "Use cases · Lendspan",
-  description: "Who Lendspan is for: borrowing, lending, comparing offers, and liquidating, in public or in private.",
+  title: "Use cases · LegitShark",
+  description: "Who LegitShark is for: borrowing, lending, comparing offers, and liquidating, in public or in private.",
 };
 
 export default function Page() {
@@ -22,7 +22,7 @@ export default function Page() {
           <p className={u.eyebrow}>Use cases</p>
           <h1>One loan, many reasons to make it.</h1>
           <p className={u.lede}>
-            Lendspan is a fixed-term USDC loan against wSOL. Use it in public, or in a private room where only the people in the deal can read it.
+            LegitShark is a fixed-term USDC loan against wSOL. Use it in public, or in a private room where only the people in the deal can read it.
           </p>
         </header>
         <UseCaseTable heading={false} anchors />
@@ -42,7 +42,7 @@ export default function Page() {
                   <dd>{c.who}</dd>
                   <dt>The problem</dt>
                   <dd>{c.problem}</dd>
-                  <dt>How Lendspan does it</dt>
+                  <dt>How LegitShark does it</dt>
                   <dd>{c.how}</dd>
                 </dl>
                 <Link className={u.start} href={c.start.href}>

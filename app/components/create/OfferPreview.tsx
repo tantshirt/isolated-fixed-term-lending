@@ -54,7 +54,7 @@ export function OfferPreview({
       </AnimatePresence>
       <div className={styles.head}>
         <span className={styles.badge}>
-          {live ? "Live on Lendspan" : lenderReads ? "Lender's view" : "Borrower's view"}
+          {live ? "Live on LegitShark" : lenderReads ? "Lender's view" : "Borrower's view"}
         </span>
         <LogoMark size={28} tone="panel" progress={live ? 1 : 0.25} />
       </div>

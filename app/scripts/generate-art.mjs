@@ -1,12 +1,15 @@
-// Generates Lendspan illustrations with Kie GPT Image 2.5 (Sunburst).
+// Generates LegitShark illustrations with Kie GPT Image 2.5 (Sunburst).
 // Prompts follow ~/Desktop/VIDEOS/manticore/brand/prompt-craft/gpt-image.md.
-// Usage: node scripts/generate-art.mjs ../docs/brand/image-prompts-private.json
+// Usage: node scripts/generate-art.mjs ../docs/brand/sharky-prompts.json [name ...]
+// An entry with `references` (repo-relative image paths) is uploaded to Kie
+// and generated image-to-image; `background` may be "transparent".
 // Reads KIE_API_KEY from .env.local; never prints it. Stops above MAX_CREDITS.
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const MODEL = "gpt-image-2-5-sunburst-text-to-image";
+const EDIT_MODEL = "gpt-image-2-5-sunburst-image-to-image";
 const MAX_CREDITS = 100; // about $0.50 at Kie's 2K pricing
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")
@@ -19,15 +22,36 @@ const KEY = process.env.KIE_API_KEY || env.KIE_API_KEY;
 if (!KEY) throw new Error("Set KIE_API_KEY in app/.env.local");
 const auth = { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" };
 
-const prompts = JSON.parse(readFileSync(process.argv[2], "utf8"));
+const only = process.argv.slice(3);
+const prompts = JSON.parse(readFileSync(process.argv[2], "utf8")).filter((p) => !only.length || only.includes(p.name));
 const receiptsFile = new URL("../../docs/brand/generation-receipts.json", import.meta.url);
 const receipts = JSON.parse(readFileSync(receiptsFile, "utf8"));
 mkdirSync(new URL("../../docs/brand/originals/", import.meta.url), { recursive: true });
 
 let spent = 0;
+const uploaded = new Map();
+// Kie keeps uploads for 24 hours; one upload per reference per run.
+async function upload(path) {
+  if (uploaded.has(path)) return uploaded.get(path);
+  const form = new FormData();
+  const file = new URL(`../../${path}`, import.meta.url);
+  form.append("file", new Blob([readFileSync(file)]), path.split("/").pop());
+  form.append("uploadPath", "legitshark");
+  const res = await (
+    await fetch("https://kieai.redpandaai.co/api/file-stream-upload", {
+      method: "POST",
+      headers: { Authorization: auth.Authorization },
+      body: form,
+    })
+  ).json();
+  const url = res.data?.downloadUrl ?? res.data?.fileUrl;
+  if (!url) throw new Error(`upload ${path}: ${res.msg}`);
+  uploaded.set(path, url);
+  return url;
+}
 const webp = (p, png) =>
   sharp(png)
-    .resize({ width: p.aspect_ratio === "3:2" ? 1600 : 1200 })
+    .resize({ width: p.width ?? (p.aspect_ratio === "3:2" ? 1600 : 1200) })
     .webp({ quality: 78 })
     .toFile(fileURLToPath(new URL(`../public/illustrations/${p.name}.webp`, import.meta.url)));
 
@@ -40,11 +64,15 @@ for (const p of prompts) {
     console.log(`${p.name}: reused original`);
     continue;
   }
+  const refs = p.references?.length ? await Promise.all(p.references.map(upload)) : null;
+  const model = refs ? EDIT_MODEL : MODEL;
+  const input = { prompt: p.prompt, aspect_ratio: p.aspect_ratio, resolution: "2K", background: p.background ?? "opaque" };
+  if (refs) input.input_urls = refs;
   const create = await (
     await fetch("https://api.kie.ai/api/v1/jobs/createTask", {
       method: "POST",
       headers: auth,
-      body: JSON.stringify({ model: MODEL, input: { prompt: p.prompt, aspect_ratio: p.aspect_ratio, resolution: "2K", background: "opaque" } }),
+      body: JSON.stringify({ model, input }),
     })
   ).json();
   if (create.code !== 200) throw new Error(`${p.name}: ${create.msg}`);
@@ -61,7 +89,7 @@ for (const p of prompts) {
   writeFileSync(original, png);
   await webp(p, png);
   spent += info.creditsConsumed ?? 10;
-  receipts.push({ name: p.name, taskId, creditsConsumed: info.creditsConsumed, model: MODEL });
+  receipts.push({ name: p.name, taskId, creditsConsumed: info.creditsConsumed, model });
   writeFileSync(receiptsFile, JSON.stringify(receipts, null, 2) + "\n");
   console.log(`${p.name}: ok (${info.creditsConsumed} credits)`);
 }

@@ -25,3 +25,36 @@ Five more 2K images in the same family, made with the same model through `app/sc
 - [Open liquidation](../../app/public/illustrations/lendspan-open-liquidation.webp): a liquidator sees only a slot, never the loan.
 
 The script reads `KIE_API_KEY` from gitignored `app/.env.local`, caps a run at 100 credits, and reuses an existing original instead of paying again.
+
+## LegitShark and Sharky (6 October 2026)
+
+Lendspan became **LegitShark** and the abstract series is being replaced by **Sharky**, the mascot (see [design-and-experience.md](../design-and-experience.md#name-and-mascot) and the 2026-10-06 rulings). The `lendspan-*` images above stay until the landing and app phases stop using them.
+
+Sharky is made in two steps, both with `app/scripts/generate-art.mjs` and the prompts in [sharky-prompts.json](sharky-prompts.json).
+
+**1. Character sheets.** These were generated with `gpt-image-2-5-sunburst-image-to-image`. The user's stock cartoon was the starting pose reference; it is watermarked, so it stays in gitignored `references/` and is never committed.
+
+The user sent the sheets back twice before approving them:
+1. No fin on top of the head.
+2. A Miami polo instead of a suit.
+3. No tail.
+
+The approved sheets:
+- [sharky-public](../../app/public/illustrations/sharky-public.webp): cobalt knit polo, gold chain and watch, white slacks, white loafers.
+- [sharky-pi](../../app/public/illustrations/sharky-pi.webp): the private-investigator look, with navy trench, wide-brim fedora, round glasses and a cobalt tie.
+
+**2. Poses.** Each of the 19 poses uses one approved sheet as its only identity reference. The poses are:
+- Hero, bad sharks, collateral, return.
+- Private room, negotiate, settle quietly.
+- Six use-case poses.
+- Guide, waiting, clipboard, confused.
+- Head and PI head, which are also cut into the `sharky-avatar*` crops and `app/app/icon.png` / `apple-icon.png`.
+
+App cutouts use `background: "transparent"`.
+
+**Spend:** 27 successful generations used 270 credits, about $1.35. Two clipboard attempts were rejected by the provider's content filter. One clipboard was regenerated because the pencil appeared to come out of his eye.
+
+**Files:**
+- 2K PNG originals stay local (gitignored) so the script never pays twice.
+- Compact WebP masters are in [masters/](masters/).
+- Receipts are in [generation-receipts.json](generation-receipts.json).

@@ -1,4 +1,4 @@
-# Lendspan interface
+# LegitShark interface
 
 Next.js 15 / React 19 interface for the isolated loan program.
 

@@ -1,8 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BRAND } from "@/lib/constants";
-import { LogoMark } from "./LogoMark";
 import styles from "./Wordmark.module.css";
 
+/** Sharky's head plus the name. LogoMark stays the progress ring used inside the app. */
 export function Wordmark() {
   return (
     <Link
@@ -10,8 +11,17 @@ export function Wordmark() {
       className={styles.wordmark}
       aria-label={`${BRAND.name}, home`}
     >
-      <LogoMark size={26} />
-      <span className={styles.name}>{BRAND.name}</span>
+      <Image
+        className={styles.head}
+        src="/illustrations/sharky-avatar.webp"
+        alt=""
+        width={34}
+        height={34}
+        priority
+      />
+      <span className={styles.name}>
+        Legit<span className={styles.accent}>Shark</span>
+      </span>
     </Link>
   );
 }

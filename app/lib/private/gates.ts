@@ -22,7 +22,7 @@ const COPY: Record<string, Omit<Gate, "id" | "status" | "date" | "signatures" | 
     title: "Toolchain",
     question: "Does a private program build next to the public one?",
     proved: "Both programs build on Anchor 1.x with the MagicBlock SDK 0.17.3, with no warnings.",
-    limit: "The SDK's token helpers do not build for Solana programs, so Lendspan builds those instructions itself.",
+    limit: "The SDK's token helpers do not build for Solana programs, so LegitShark builds those instructions itself.",
   },
   "8.2": {
     title: "Who can read a private account",
@@ -51,7 +51,7 @@ const COPY: Record<string, Omit<Gate, "id" | "status" | "date" | "signatures" | 
     title: "Scheduled checks",
     question: "Can expiry and liquidation checks run on a timer without reading the loan?",
     proved: "A Hydra crank ran a signer-free tick on a private account, and a tick after settlement changed nothing.",
-    limit: "No hosted cranker fired, so Lendspan's worker must trigger the schedule.",
+    limit: "No hosted cranker fired, so LegitShark's worker must trigger the schedule.",
   },
   "8.7": {
     title: "What settling reveals",

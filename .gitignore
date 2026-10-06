@@ -20,3 +20,8 @@ isolated_loan/target/
 isolated_loan/node_modules/
 app/node_modules/
 .vercel
+
+# Third-party pose references (stock, watermarked): never commit
+docs/brand/references/
+# Sharky 2K PNGs stay local (skip-if-exists cache); compact masters live in docs/brand/masters/
+docs/brand/originals/sharky-*.png

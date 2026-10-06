@@ -1,6 +1,6 @@
 @import "@astryxdesign/theme-neutral/theme.css";
 
-/* Lendspan light palette. Legacy variable names keep existing components compatible.
+/* LegitShark light palette. Legacy variable names keep existing components compatible.
    Components consume semantic tokens; palette literals are contained here. */
 html[data-astryx-theme="neutral"] {
   /* Palette */
@@ -29,7 +29,7 @@ html[data-astryx-theme="neutral"] {
   --tenor-risk: #b4432f;
   --tenor-risk-tint: #f7e4de;
 
-  /* Astryx semantic tokens → Lendspan */
+  /* Astryx semantic tokens → LegitShark */
   --color-background-body: var(--tenor-ivory);
   --color-background-surface: var(--tenor-surface);
   --color-background-card: var(--tenor-surface);
