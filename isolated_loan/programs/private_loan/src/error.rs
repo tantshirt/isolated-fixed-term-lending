@@ -76,6 +76,8 @@ pub enum PrivateLoanError {
     RequestExpired,
     #[msg("This ticket can still execute; wait until the quote expires or moves on")]
     TicketInPlay,
+    #[msg("Only canonical USDC and wrapped SOL are accepted")]
+    MintNotAllowed,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

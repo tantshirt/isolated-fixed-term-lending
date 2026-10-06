@@ -163,6 +163,10 @@ pub fn create_loan(ctx: Context<CreateLoan>, loan_id: [u8; 32]) -> Result<()> {
     let a = &ctx.accounts;
     require!(a.usdc_mint.decimals == 6, PrivateLoanError::InvalidTerms);
     require!(a.wsol_mint.decimals == 9, PrivateLoanError::InvalidTerms);
+    require!(
+        loan_core::constants::mints_allowed(&a.usdc_mint.key(), &a.wsol_mint.key()),
+        PrivateLoanError::MintNotAllowed
+    );
     let anchor = &mut ctx.accounts.anchor;
     anchor.loan_id = loan_id;
     anchor.room = ctx.accounts.room.key();

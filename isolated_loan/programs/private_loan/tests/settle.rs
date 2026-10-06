@@ -11,6 +11,7 @@ use anchor_lang::{AccountSerialize, AnchorSerialize, InstructionData, ToAccountM
 use anchor_spl::associated_token::get_associated_token_address as ata;
 use litesvm::LiteSVM;
 use private_loan::loan::{LoanAnchor, LoanTerms, STATUS_ACTIVE, STATUS_EXPIRED};
+use private_loan::error::PrivateLoanError;
 use private_loan::settle::{q, LiquidationPool, STATUS_LIQUIDATED};
 use pyth_solana_receiver_sdk::price_update::{PriceFeedMessage, PriceUpdateV2, VerificationLevel};
 use solana_account::Account;
@@ -271,6 +272,74 @@ impl Env {
     }
 }
 
+impl Env {
+    /// `refund_ticket` for `owner`, sent and paid for by `caller`.
+    fn refund(&mut self, owner: Pubkey, caller: &Keypair) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: private_loan::ID,
+            accounts: private_loan::accounts::RefundTicket {
+                owner,
+                anchor: self.anchor,
+                quote: self.quote,
+                pool: self.pool,
+                owner_usdc: ata(&owner, &self.usdc),
+                pool_usdc: ata(&self.pool, &self.usdc),
+                token_program: TOKEN,
+            }
+            .to_account_metas(None),
+            data: private_loan::instruction::RefundTicket {}.data(),
+        };
+        self.send(ix, caller)
+    }
+
+    fn refund_ix_with_destination(&self, owner: Pubkey, owner_usdc: Pubkey) -> Instruction {
+        Instruction {
+            program_id: private_loan::ID,
+            accounts: private_loan::accounts::RefundTicket {
+                owner,
+                anchor: self.anchor,
+                quote: self.quote,
+                pool: self.pool,
+                owner_usdc,
+                pool_usdc: ata(&self.pool, &self.usdc),
+                token_program: TOKEN,
+            }
+            .to_account_metas(None),
+            data: vec![],
+        }
+    }
+
+    fn schedule(&mut self) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: private_loan::ID,
+            accounts: private_loan::accounts::ScheduleWatch {
+                anchor: self.anchor,
+                terms: self.terms,
+                quote: self.quote,
+                pool: self.pool,
+                price_update: self.price,
+                crank: Pubkey::new_unique(),
+                vault: VAULT,
+                magic_program: MAGIC,
+                hydra_program: private_loan::schedule::HYDRA_EPHEMERAL_ID,
+            }
+            .to_account_metas(None),
+            data: private_loan::instruction::ScheduleWatch {}.data(),
+        };
+        let payer = Keypair::new();
+        self.svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
+        self.send(ix, &payer)
+    }
+
+    fn revision(&self) -> u32 {
+        u32::from_le_bytes(self.quote()[q::REVISION..q::REVISION + 4].try_into().unwrap())
+    }
+}
+
+fn code(e: PrivateLoanError) -> String {
+    format!("Custom({})", u32::from(e))
+}
+
 fn rd_u64(d: &[u8], o: usize) -> u64 {
     u64::from_le_bytes(d[o..o + 8].try_into().unwrap())
 }
@@ -470,4 +539,105 @@ fn direct_receipt_calls_are_rejected() {
     let ix = Instruction { program_id: private_loan::ID, accounts: metas, data: private_loan::instruction::RecordReceipt { status: 3, commitment: [9; 32], settled_at: 1 }.data() };
     assert!(env.send(ix, &attacker).is_err(), "a foreign signer is not the escrow");
     assert_eq!(env.svm.get_account(&receipt).unwrap().data[8 + 32], 0, "receipt untouched");
+}
+
+/// Audit S1: refunded tickets used to keep their slot, so four tickets over a
+/// loan's life switched liquidation off for good.
+#[test]
+fn refunded_tickets_free_their_slots() {
+    let mut env = Env::new();
+    for round in 0..3 {
+        env.post_price(PRICE_DROP, 0, START + 60);
+        env.watch().unwrap();
+        let rev = env.revision();
+        env.fund(1, rev).unwrap();
+        env.fund(2, rev).unwrap();
+        env.post_price(15_000_000_000, 15_000_000, START + 60);
+        env.watch().unwrap(); // price recovered: quote withdrawn
+        env.settle(1).unwrap();
+        env.settle(2).unwrap();
+        assert_eq!(env.balance(env.pool, env.usdc), 0, "round {round}: every refund paid");
+    }
+    env.post_price(PRICE_DROP, 0, START + 60);
+    env.watch().unwrap();
+    let rev = env.revision();
+    env.fund(1, rev).expect("a seventh ticket can still be funded");
+    env.watch().unwrap();
+    assert_eq!(env.status(), STATUS_LIQUIDATED);
+    assert_eq!(env.balance(env.lender, env.usdc), DEBT);
+}
+
+/// Audit S1: a griefer who fills every slot and never collects cannot block
+/// liquidation, because anyone can push their refunds once the tickets are dead.
+#[test]
+fn anyone_can_refund_dead_tickets_so_a_griefer_cannot_fill_the_quote() {
+    let mut env = Env::new();
+    let griefer = env.liquidator2.pubkey();
+    let honest = env.liquidator.insecure_clone();
+    env.post_price(PRICE_DROP, 0, START + 60);
+    env.watch().unwrap();
+    for _ in 0..4 {
+        env.fund(2, 1).unwrap();
+    }
+    let r = env.fund(1, 1);
+    assert!(r.as_ref().unwrap_err().contains(&code(PrivateLoanError::RoomFull)), "{r:?}");
+
+    // The first funded ticket is still in play, so nothing is refundable yet.
+    assert!(env.refund(griefer, &honest).is_err());
+
+    // Refunds go only to the owner's own USDC account.
+    let mut bad = env.refund_ix_with_destination(griefer, ata(&honest.pubkey(), &env.usdc));
+    bad.data = private_loan::instruction::RefundTicket {}.data();
+    assert!(env.send(bad, &honest).unwrap_err().contains(&code(PrivateLoanError::WrongTokenAccount)));
+
+    // The quote expires and moves to revision 2; the griefer's tickets are dead.
+    env.set_time(START + 60 + 200);
+    env.post_price(PRICE_DROP, 0, START + 255);
+    env.watch().unwrap();
+    assert_eq!(env.revision(), 2);
+    assert!(env.fund(1, 2).is_err(), "still full until someone refunds");
+
+    let griefer_before = env.balance(griefer, env.usdc);
+    env.refund(griefer, &honest).unwrap();
+    assert_eq!(env.balance(griefer, env.usdc), griefer_before + 4 * DEBT, "griefer refunded exactly");
+    assert_eq!(env.balance(env.pool, env.usdc), 0);
+    assert!(env.refund(griefer, &honest).is_err(), "each ticket refunds once");
+    assert!(env.settle(2).is_err(), "and cannot be collected again");
+
+    env.fund(1, 2).unwrap();
+    env.watch().unwrap();
+    assert_eq!(env.status(), STATUS_LIQUIDATED);
+    assert_eq!(env.balance(env.lender, env.usdc), DEBT);
+}
+
+/// Audit S4: the crank keeps its price account forever and treats oracle errors
+/// as "no decision", so a wrong account is refused before scheduling.
+#[test]
+fn schedule_watch_rejects_a_wrong_price_account() {
+    let mut env = Env::new();
+    let data = env.svm.get_account(&env.price).unwrap().data;
+    env.put(env.price, Pubkey::new_unique(), data);
+    let r = env.schedule();
+    assert!(r.as_ref().unwrap_err().contains(&code(PrivateLoanError::InvalidPriceOwner)), "{r:?}");
+
+    let update = PriceUpdateV2 {
+        write_authority: Pubkey::new_unique(),
+        verification_level: VerificationLevel::Full,
+        price_message: PriceFeedMessage {
+            feed_id: [1u8; 32],
+            price: 15_000_000_000,
+            conf: 0,
+            exponent: -8,
+            publish_time: START + 60,
+            prev_publish_time: START + 59,
+            ema_price: 15_000_000_000,
+            ema_conf: 0,
+        },
+        posted_slot: 1,
+    };
+    let mut data = Vec::new();
+    update.try_serialize(&mut data).unwrap();
+    env.put(env.price, RECEIVER, data);
+    let r = env.schedule();
+    assert!(r.as_ref().unwrap_err().contains(&code(PrivateLoanError::InvalidFeedId)), "{r:?}");
 }

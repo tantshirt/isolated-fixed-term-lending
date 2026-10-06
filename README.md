@@ -130,8 +130,10 @@ Program work also requires Rust, the Solana CLI, Anchor, and Surfpool. The local
 ```bash
 cd isolated_loan
 npm ci
-anchor build
+anchor build -- --features local-mints
 ```
+
+The `local-mints` feature lets the walkthroughs use their own mock mints. The default build accepts only canonical USDC and wSOL; deploy only that build.
 
 Start Surfpool in a separate terminal:
 
