@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  programs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: isolated_loan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: isolated_loan
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v4.2.2/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            isolated_loan/package-lock.json
+            app/package-lock.json
+      - run: npm ci
+      # tests/loan-math.test.ts checks the app's math and PDAs, so it needs the app's packages.
+      - run: npm ci
+        working-directory: app
+      # The default build pins canonical USDC and wSOL; tests fail if it does not.
+      - name: Build programs
+        run: |
+          cargo build-sbf --manifest-path programs/isolated_loan/Cargo.toml
+          cargo build-sbf --manifest-path programs/private_loan/Cargo.toml
+      - run: npm run test:rust
+      - run: npm run test:ts
+      - name: LiteSVM attack tests
+        run: |
+          cargo test --manifest-path programs/isolated_loan/Cargo.toml --test litesvm
+          cargo test --manifest-path programs/private_loan/Cargo.toml --test settle --test worker_claim
+      - name: Fuzz (2000 cases)
+        run: npm run test:fuzz
+
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=critical
