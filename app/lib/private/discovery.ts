@@ -6,7 +6,7 @@ import type { LoanSigner } from "@/lib/keypair-wallet";
 import { MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID, permissionPda } from "./espl";
 import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
 import { PRIVATE_PROGRAM_ID, roomStatePda } from "./room-codec";
-import { validateTransaction } from "./tx-validator";
+import { assertDevnet, validateTransaction } from "./tx-validator";
 
 const EPHEMERAL_VAULT_ID = new PublicKey("MagicVau1t999999999999999999999999999999999");
 const enc = new TextEncoder();
@@ -72,6 +72,7 @@ async function sendEr(er: Connection, signer: LoanSigner, tx: Transaction, inten
 
 /** Owner: opens the private join queue if needed, then publishes a public card with chosen fields. */
 export async function publishCard(base: Connection, er: Connection, signer: LoanSigner, room: PublicKey, fields: CardFields) {
+  await assertDevnet(base);
   const program = programFor(base, signer);
   const queue = joinQueuePda(room);
   if (!(await er.getAccountInfo(queue))) {
@@ -130,6 +131,7 @@ export async function publishCard(base: Connection, er: Connection, signer: Loan
 }
 
 export async function retractCard(base: Connection, signer: LoanSigner, card: PublicKey) {
+  await assertDevnet(base);
   const program = programFor(base, signer);
   return program.methods.retractCard().accountsPartial({ publisher: signer.publicKey, card }).rpc();
 }

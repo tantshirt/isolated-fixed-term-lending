@@ -8,7 +8,7 @@ import { DELEGATION_PROGRAM_ID, ESPL_PROGRAM_ID, MAGIC_PROGRAM_ID, PERMISSION_PR
 import { decodeLoanTerms, loanAnchorPda, loanTermsPda, type LoanTerms } from "./loan-codec";
 import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
 import { PRIVATE_PROGRAM_ID, roomStatePda } from "./room-codec";
-import { validateTransaction } from "./tx-validator";
+import { assertDevnet, validateTransaction } from "./tx-validator";
 
 const EPHEMERAL_VAULT_ID = new PublicKey("MagicVau1t999999999999999999999999999999999");
 const USDC = DEVNET_USDC_MINT;
@@ -118,6 +118,7 @@ export async function proposeLoan(base: Connection, er: Connection, signer: Loan
   );
   tx.feePayer = signer.publicKey;
   validateTransaction(tx, { feePayer: signer.publicKey });
+  await assertDevnet(base);
   const { blockhash, lastValidBlockHeight } = await base.getLatestBlockhash();
   tx.recentBlockhash = blockhash;
   const signed = await signer.signTransaction(tx);
