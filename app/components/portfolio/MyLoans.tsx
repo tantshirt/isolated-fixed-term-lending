@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { useSigner } from "@/lib/client/signer-context";
 import { formatBpsAsPercent, formatCountdown, formatDeadline, formatUsdc, formatWsol, shortKey } from "@/lib/format";
 import { URGENCY, deadlineIcs, type PortfolioItem, type Side } from "@/lib/portfolio";
+import { PrivateDesk } from "./PrivateDesk";
 import { usePortfolio } from "./usePortfolio";
 import s from "./MyLoans.module.css";
 
@@ -253,6 +254,8 @@ export function MyLoans() {
           ))}
         </ul>
       )}
+
+      <PrivateDesk />
 
       <p className={s.note}>
         Closed accounts leave the chain, so settled loans disappear here once they are closed. Your wallet history keeps

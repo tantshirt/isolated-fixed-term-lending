@@ -90,9 +90,9 @@ The rebrand and the returning-user experience. Each phase ships as its own pull 
 | 5 | [16.1 Per-wallet reads](stories.md) | Done |
 | 6 | [16.2 My loans page](stories.md) | Done |
 | 7 | [16.3 Returning wallets](stories.md) | Done |
-| 8 | [17.1 Finding your rooms](stories.md) | Open |
-| 9 | [17.2 Owners and requests to join](stories.md) | Open |
-| 10 | [17.3 Loans and bids that stay visible](stories.md) | Open |
+| 8 | [17.1 Finding your rooms](stories.md) | Done |
+| 9 | [17.2 Owners and requests to join](stories.md) | Done |
+| 10 | [17.3 Loans and bids that stay visible](stories.md) | Done |
 | 11 | [18.1 Both sides, end to end](stories.md) | Open |
 
 ## Notes

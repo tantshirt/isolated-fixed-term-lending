@@ -8,12 +8,14 @@ import { MAX_BODY, type RoleName } from "@/lib/private/room-codec";
 import {
   activeSession,
   endSession,
+  finishRoom,
   inviteLink,
   inviteMember,
   postMessage,
   readRoom,
   rememberRoom,
   revokeMember,
+  roomCreator,
   roomRef,
   startSession,
   type RoomView as RoomData,
@@ -27,6 +29,8 @@ import { loanFromId, readLoan } from "@/lib/private/loans";
 import type { LoanTerms } from "@/lib/private/loan-codec";
 import { TeeCard } from "./TeeCard";
 import { LOAN_MESSAGE_PREFIX, loansInThread } from "@/lib/private/loans";
+import { requestJoin } from "@/lib/private/discovery";
+import { listRoomLoans } from "@/lib/private/inbox";
 import styles from "./private.module.css";
 
 const short = (k: PublicKey) => `${k.toBase58().slice(0, 4)}…${k.toBase58().slice(-4)}`;
@@ -50,6 +54,9 @@ export function RoomView({ roomId }: { roomId: string }) {
   const [copied, setCopied] = useState(false);
   const [, force] = useState(0);
   const [loans, setLoans] = useState<{ anchor: PublicKey; terms: LoanTerms }[]>([]);
+  const [loanIds, setLoanIds] = useState<string[]>([]);
+  const [creator, setCreator] = useState<PublicKey | null>(null);
+  const [asked, setAsked] = useState(false);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [proposing, setProposing] = useState(false);
   useEffect(() => {
@@ -62,9 +69,14 @@ export function RoomView({ roomId }: { roomId: string }) {
     const view = await readRoom(er, ref.anchor);
     setData(view);
     if (view.access === "member") {
-      const ids = loansInThread(view.messages.map((m) => m.body));
+      // Every loan in the room, from its public anchors, plus any the thread mentions.
+      const registry = await listRoomLoans(er, ref.anchor).catch(() => []);
+      const ids = [...new Set([...registry.filter((l) => l.terms).map((l) => l.loanId), ...loansInThread(view.messages.map((m) => m.body))])];
+      setLoanIds(ids);
       const read = await Promise.all(ids.map(async (id) => ({ anchor: loanFromId(id), terms: await readLoan(er, loanFromId(id)) })));
       setLoans(read.filter((l): l is { anchor: PublicKey; terms: LoanTerms } => l.terms !== null));
+    } else {
+      setCreator(await roomCreator(er, ref.anchor).catch(() => null));
     }
     if (view.access === "member" && signer) rememberRoom(signer.publicKey.toBase58(), roomId);
   }, [er, ref, signer, roomId]);
@@ -72,7 +84,7 @@ export function RoomView({ roomId }: { roomId: string }) {
   useEffect(() => {
     void load();
     if (!er) return;
-    const t = setInterval(() => void load(), 4000);
+    const t = setInterval(() => void load(), 6000);
     return () => clearInterval(t);
   }, [er, load]);
 
@@ -133,11 +145,52 @@ export function RoomView({ roomId }: { roomId: string }) {
         <div className={styles.narrow}>
           <section className={styles.panel}>
             <div className={styles.panelBody}>
-              <h1 className={styles.roomTitle}>You are not in this room</h1>
-              <p className={styles.muted}>
-                The rollup returned nothing for this wallet. Ask the room owner to invite{" "}
-                <span className={styles.mono}>{me ? short(me) : "your wallet"}</span>.
-              </p>
+              {me && creator?.equals(me) ? (
+                <>
+                  <h1 className={styles.roomTitle}>Finish setting up this room</h1>
+                  <p className={styles.muted}>
+                    The room exists on Solana, but its private member list and thread were not created. This step is free
+                    apart from the rollup fee, and safe to repeat.
+                  </p>
+                  {signer && er && (
+                    <Button loading={busy === "finish"} onClick={() => act("finish", () => finishRoom(base, er, signer, ref.anchor), "Room is ready.")}>
+                      Finish setting up
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <h1 className={styles.roomTitle}>You are not in this room</h1>
+                  <p className={styles.muted}>
+                    Only wallets the owner invited can read it. Ask to join and the owner sees your wallet,{" "}
+                    <span className={styles.mono}>{me ? short(me) : "your wallet"}</span>, in their list of requests. You
+                    will see the room under Invitations once they let you in.
+                  </p>
+                  {signer && er && !asked && (
+                    <Button
+                      loading={busy === "ask"}
+                      onClick={() =>
+                        act("ask", async () => {
+                          await requestJoin(base, er, signer, ref.anchor);
+                          setAsked(true);
+                        }, "Asked. The owner decides who joins.")
+                      }
+                    >
+                      Ask to join
+                    </Button>
+                  )}
+                  <Link href="/devnet/discover?side=borrowers&venue=private" className={styles.textLink}>
+                    Back to private requests
+                  </Link>
+                </>
+              )}
+              {note && (
+                <p role={note.tone === "error" ? "alert" : "status"} className={note.tone === "error" ? styles.error : styles.muted}>
+                  {note.tone === "error" && /queue|account/i.test(note.text)
+                    ? "This room is not taking requests yet. The owner opens requests by publishing a card; until then, send them your wallet address."
+                    : note.text}
+                </p>
+              )}
             </div>
           </section>
         </div>
@@ -243,7 +296,7 @@ export function RoomView({ roomId }: { roomId: string }) {
                 er={er}
                 room={ref.anchor}
                 members={member.state.members}
-                loanIds={loansInThread(member.messages.map((m) => m.body))}
+                loanIds={loanIds}
                 loans={loans}
                 onPropose={() => setProposing(true)}
                 onChange={() => void load()}

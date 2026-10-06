@@ -8,6 +8,7 @@ import wiz from "@/components/create/CreateWizard.module.css";
 import { savedRooms } from "@/lib/private/rooms";
 import { usePrivate } from "@/lib/private/use-private";
 import { BalancePanel } from "./BalancePanel";
+import { InvitesPanel } from "./InvitesPanel";
 import { ReceiptList } from "./ReceiptList";
 import { RoomList } from "./RoomList";
 import { TeeCard } from "./TeeCard";
@@ -108,6 +109,8 @@ export function PrivateHome() {
           sizes="(max-width: 760px) 92vw, 40vw"
         />
       </header>
+
+      <InvitesPanel er={er} wallet={signer?.publicKey ?? null} />
 
       <div className={wiz.layout}>
         <div className={wiz.main}>

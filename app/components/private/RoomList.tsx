@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { LoanSigner } from "@/lib/keypair-wallet";
 import { openRoom, savedRooms } from "@/lib/private/rooms";
+import { useMyRooms } from "@/lib/private/use-rooms";
 import type { Connection } from "@solana/web3.js";
 import styles from "./private.module.css";
 
@@ -24,6 +25,10 @@ export function RoomList({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => setRooms(wallet ? savedRooms(wallet) : []), [wallet]);
+  // Rooms found through the rollup work on any device; saved ids cover rooms still being set up.
+  const listed = useMyRooms(er, signer?.publicKey ?? null).rooms;
+  const roles = new Map((listed ?? []).map((r) => [r.roomId, r.owner ? "Owner" : r.role === "lender" ? "Lender" : r.role === "borrower" ? "Borrower" : "Viewer"]));
+  const ids = [...new Set([...(listed ?? []).map((r) => r.roomId), ...rooms])];
 
   async function create() {
     if (!signer || !er) return;
@@ -43,14 +48,17 @@ export function RoomList({
 
   return (
     <div className={styles.panelBody}>
-      {rooms.length ? (
+      {ids.length ? (
         <ul className={styles.roomList}>
-          {rooms.map((id) => (
+          {ids.map((id) => (
             <li key={id}>
               <Link href={`/devnet/private/rooms/${id}`} className={styles.roomLink}>
                 <span className={styles.roomGlyph} aria-hidden />
                 <span>
-                  <span className={styles.roomName}>Room {id.slice(0, 4)}</span>
+                  <span className={styles.roomName}>
+                    Room {id.slice(0, 4)}
+                    {roles.get(id) ? <span className={styles.roleTag}>{roles.get(id)}</span> : listed ? <span className={styles.roleTag}>Not set up</span> : null}
+                  </span>
                   <span className={`${styles.mono} ${styles.roomId}`}>{id.slice(0, 10)}…</span>
                 </span>
                 <span aria-hidden className={styles.chevron}>›</span>

@@ -1327,3 +1327,99 @@ span.receiptLink {
     grid-template-columns: 1fr;
   }
 }
+
+/* Invitations: rooms you were added to, found by listing what you may read. */
+.invites {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-container);
+  background: var(--color-navy);
+  color: var(--color-on-navy);
+}
+
+.invites h2 {
+  color: var(--color-on-navy);
+  font-size: var(--text-lg);
+  font-weight: 900;
+}
+
+.invites ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.invite {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-element);
+  background: var(--color-navy-line);
+  color: var(--color-on-navy-muted);
+}
+
+.invite strong {
+  color: var(--color-on-navy);
+}
+
+.inviteActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.inviteOpen,
+.inviteDismiss {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+}
+
+.inviteOpen {
+  background: var(--color-background-surface);
+  color: var(--color-navy);
+}
+
+.inviteDismiss {
+  background: transparent;
+  color: var(--color-on-navy-muted);
+  box-shadow: inset 0 0 0 2px var(--color-navy-line);
+}
+
+.roleTag {
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-cloud);
+  color: var(--tenor-green-pressed);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  vertical-align: 1px;
+}
+
+.textLink {
+  justify-self: start;
+  color: var(--color-text-accent);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.textMuted {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

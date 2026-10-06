@@ -8,12 +8,29 @@ import { messageFromAnchorError } from "@/lib/anchor-errors";
 import { formatBpsAsPercent, formatDuration, formatUsdc } from "@/lib/format";
 import { SHOW, requestJoin, type Card } from "@/lib/private/discovery";
 import { usePrivate } from "@/lib/private/use-private";
+import { roomAnchorPda } from "@/lib/private/room-codec";
+import { savedRooms } from "@/lib/private/rooms";
+import { utils } from "@coral-xyz/anchor";
+import type { PublicKey } from "@solana/web3.js";
 import styles from "@/components/private/private.module.css";
 import own from "./Discover.module.css";
 
 const NOT_SHARED = <span className={styles.notShared}>Not shared</span>;
 
 /** Borrower cards published from private rooms. Each shows only the fields its borrower chose. */
+/** The room link for one of your own cards, when this device knows the room's id. */
+function roomLinkFor(room: PublicKey, wallet: string | null): string {
+  if (!wallet) return "/devnet/private";
+  const id = savedRooms(wallet).find((r) => {
+    try {
+      return roomAnchorPda(utils.bytes.bs58.decode(r)).equals(room);
+    } catch {
+      return false;
+    }
+  });
+  return id ? `/devnet/private/rooms/${id}` : "/devnet/private";
+}
+
 export function PrivateCardList({ cards }: { cards: Card[] }) {
   const { signer, base, er, status, error, connect } = usePrivate();
   const [asked, setAsked] = useState<Record<string, "busy" | "done" | string>>({});
@@ -56,8 +73,8 @@ export function PrivateCardList({ cards }: { cards: Card[] }) {
                 </div>
               </dl>
               {mine ? (
-                <Link className={styles.textAccent} href="/devnet/private">
-                  Your card
+                <Link className={styles.textAccent} href={roomLinkFor(c.room, signer?.publicKey.toBase58() ?? null)}>
+                  Your card · open its room
                 </Link>
               ) : asked[key] === "done" ? (
                 <p className={styles.ok}>Asked. The borrower decides whether to invite you.</p>

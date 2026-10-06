@@ -421,7 +421,7 @@ Acceptance:
 
 Acceptance:
 
-- An invited wallet sees the room in an invites list without being sent a link. If the rollup cannot list readable rooms, a private per-wallet inbox written by `invite_member` provides the list.
+- An invited wallet sees the room in an invites list without being sent a link. The rollup lists only rooms the caller may read, so no inbox account is needed (evidence 2026-10-06).
 - A non-member who opens a room link can ask to join from that screen.
 
 ### Story 17.2. Owners and requests to join
@@ -436,7 +436,7 @@ Acceptance:
 Acceptance:
 
 - Every loan proposed in a room stays listed regardless of thread length, including when the follow-up message failed.
-- Lenders see all their private bids with status: draft, funded, accepted, lost or settled. A lost bid offers Cancel.
+- Lenders see all their private bids with status: proposed, funded, accepted or settled. A funded bid always says how to cancel it, because only the borrower can see which offer was accepted.
 - The private sign-in survives a reload in the same tab until it expires; session keys stay in memory only.
 
 ## Epic 18. Full cycle
