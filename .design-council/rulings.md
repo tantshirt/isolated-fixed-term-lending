@@ -187,4 +187,10 @@ Phase 1 review (Kestrel / Indigo / Plumb / Fovea): the wordmark and 34 px head p
 | Private home shows PI Sharky in "Sharky's office" | Indigo | Marks the private side without a dark canvas. |
 | The `lendspan-*` abstract WebPs are removed from `public/` | Kestrel | No page uses them. |
 
-Open item (low): the "Request unavailable" network state on request detail is still text-only.
+Open item (low): the "Request unavailable" network state on request detail is still text-only. Closed in the final review: both the offer and request "unavailable" states now use the confused-Sharky layout.
+
+## LegitShark final review (2026-10-06)
+
+The full council reviewed `/`, `/use-cases`, Discover (all four side/venue views), both wizards, private home, not-found and error states, and `/demo` at 1440 and 390 px. The only open item, text-only "unavailable" states, is fixed.
+- **Accepted as is:** `/demo` keeps no mascot. It is a figures-first simulation, and Plumb's rule keeps Sharky out of readouts.
+- **Not covered:** a signed-in wallet run after the rebrand. Wallet code was not touched.
