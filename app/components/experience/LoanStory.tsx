@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
   motion as m,
@@ -9,6 +8,7 @@ import {
 } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { AssetLabel } from "@/components/brand/AssetLabel";
+import { FlowScene } from "./vignettes/FlowScene";
 import s from "./LoanStory.module.css";
 
 const steps = [
@@ -31,8 +31,7 @@ const steps = [
     detail: "Held as collateral for this loan",
     body: "The borrower locks 1.1 wSOL and receives 100 USDC. That exchange starts the seven-day clock. At the example SOL price of $150, the collateral is worth $165.",
     note: "The program checks the collateral limit against a fresh SOL price before acceptance.",
-    image: "zr-story-exchange",
-    alt: "A blue ribbon bridges above a separate protective white fold.",
+    flow: "exchange" as const,
   },
   {
     title: "105 USDC back. The collateral goes home.",
@@ -43,8 +42,7 @@ const steps = [
     detail: "100 principal + 5 fixed interest",
     body: "Before the deadline, the borrower repays 105 USDC. The lender receives the principal and interest; the borrower gets all 1.1 wSOL back.",
     note: "Repay early if you like. The 5 USDC full-term interest stays the same.",
-    image: "zr-story-settle",
-    alt: "Blue and white satin ribbons unfold outward from a shared center.",
+    flow: "settle" as const,
   },
 ];
 
@@ -155,24 +153,10 @@ export function LoanStory() {
               </p>
               <h3>{step.title}</h3>
               <p className={s.body}>{step.body}</p>
-              {step.image ? (
-                <m.figure
-                  className={s.art}
-                  initial={false}
-                  whileInView={
-                    reduced ? undefined : { y: [24, 0], rotate: [1.5, 0] }
-                  }
-                  viewport={{ once: true, amount: 0.25 }}
-                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <Image
-                    src={`/illustrations/${step.image}.webp`}
-                    alt={step.alt!}
-                    width={1400}
-                    height={933}
-                    sizes="(max-width: 800px) 90vw, 45vw"
-                  />
-                </m.figure>
+              {step.flow ? (
+                <div className={s.art}>
+                  <FlowScene phase={step.flow} />
+                </div>
               ) : (
                 <div className={s.agreement}>
                   <div>

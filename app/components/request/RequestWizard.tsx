@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, m } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,6 +25,7 @@ import { SubmissionError, signatureUrl } from "@/lib/transaction-lifecycle";
 import { sendWrapSol } from "@/lib/transactions";
 import styles from "@/components/create/CreateWizard.module.css";
 import own from "./RequestWizard.module.css";
+import { PrivateVenueScene, PublicVenueScene } from "@/components/experience/vignettes/Scenes";
 
 const BASE = "/devnet/discover/request";
 const DRAFT_KEY = "lendspan-devnet-request-draft-v1";
@@ -64,7 +64,9 @@ function ChooseVenue() {
       </p>
       <div className={own.options}>
         <Link href={`${BASE}?venue=public`} className={own.option}>
-          <Image className={own.optionArt} src="/illustrations/zr-venue-public.webp" alt="" aria-hidden width={1200} height={900} sizes="(max-width: 760px) 92vw, 40vw" />
+          <div className={own.optionArt}>
+            <PublicVenueScene />
+          </div>
           <span className={own.optionTag}>Public</span>
           <span className={own.optionTitle}>Post it on chain</span>
           <span className={own.optionBody}>
@@ -74,7 +76,9 @@ function ChooseVenue() {
           <span className={own.optionCta}>Continue in public →</span>
         </Link>
         <Link href="/devnet/private" className={own.option} data-private>
-          <Image className={own.optionArt} src="/illustrations/zr-venue-private.webp" alt="" aria-hidden width={1200} height={900} sizes="(max-width: 760px) 92vw, 40vw" />
+          <div className={own.optionArt}>
+            <PrivateVenueScene />
+          </div>
           <span className={own.optionTag} data-private>
             Private
           </span>

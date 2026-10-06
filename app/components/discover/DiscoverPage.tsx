@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useMemo, useState, type ReactNode } from "react";
-import { Spot } from "@/components/brand/Spot";
+import { Spot, type SpotKind } from "@/components/brand/Spot";
 import { OfferRow } from "@/components/offers/OfferRow";
 import { Chips } from "@/components/ui/Chips";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -227,7 +227,7 @@ export function DiscoverPage() {
             />
           </div>
           <div className={styles.guide}>
-            <Spot kind={venue === "private" ? "private" : "success"} size={96} className={styles.guideArt} />
+            <Spot kind={venue === "private" ? "private" : "discover"} size={96} className={styles.guideArt} />
             <p className={styles.bubble} aria-live="polite">
               {COPY[side][venue]}
             </p>
@@ -345,10 +345,10 @@ function Rows({ header, children }: { header: string[]; children: { key: string;
   );
 }
 
-function Empty({ title, body, href, cta }: { title: string; body: string; href: string; cta: string }) {
+function Empty({ spot, title, body, href, cta }: { spot: SpotKind; title: string; body: string; href: string; cta: string }) {
   return (
     <m.div className={list.empty} initial={false} animate={{ opacity: 1 }}>
-      <Spot kind="waiting" size={120} />
+      <Spot kind={spot} size={120} />
       <p className={list.emptyTitle}>{title}</p>
       <p className={list.emptyBody}>{body}</p>
       <Link href={href} className={list.emptyLink}>
@@ -360,6 +360,7 @@ function Empty({ title, body, href, cta }: { title: string; body: string; href: 
 
 const EmptyRequests = () => (
   <Empty
+    spot="requests"
     title="No public requests yet"
     body="Borrowers lock wSOL and post the terms they want. Be the first: lenders see it here the moment it lands."
     href="/devnet/discover/request"
@@ -368,6 +369,7 @@ const EmptyRequests = () => (
 );
 const EmptyCards = () => (
   <Empty
+    spot="private"
     title="No private requests yet"
     body="A borrower publishes a card from their private room, choosing which fields to show."
     href="/devnet/private"
@@ -376,6 +378,7 @@ const EmptyCards = () => (
 );
 const EmptyOffers = () => (
   <Empty
+    spot="offers"
     title="No open offers"
     body="Lenders post offers here with every term fixed. Create one with test USDC."
     href="/devnet/create"

@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { UseCaseVisual } from "./vignettes/Scenes";
 import { USE_CASES } from "./use-cases";
 import u from "@/app/use-cases/UseCases.module.css";
 
@@ -40,13 +40,7 @@ export function UseCaseList() {
         {shown.map(({ c, i }) => (
           <article key={c.intent} id={`case-${i + 1}`} className={u.case}>
             <div className={u.art}>
-              <Image
-                src={c.image.src}
-                alt={c.image.alt}
-                width={1200}
-                height={900}
-                sizes="(max-width: 800px) 90vw, 30vw"
-              />
+              <UseCaseVisual scene={c.scene} />
             </div>
             <div className={u.caseText}>
               <p className={u.caseTag} data-venue={c.venue}>

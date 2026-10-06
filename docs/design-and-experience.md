@@ -13,10 +13,10 @@ Light only: white and cool-blue surfaces, navy ink (`#0f1f4b`), blue primary act
 The product is **ZenLo**, spelled with a capital Z and a capital L. The name promises calm; the page proves it, because both parties see every term before anything is signed.
 
 - **Mark:** a pebble crossed by a wave on a blue rounded tile (`docs/brand/zenlo/mark.svg`, component `components/brand/Mark.tsx`). It doubles as the favicon and reads at 16px. `LogoMark` stays the progress ring used for transaction state.
-- **No mascot.** Active illustrations are broad, precisely folded satin ribbons in blue, navy and white, with directional studio lighting, negative space and restrained depth. No pebbles, coins, toys, people, generic blobs or generated typography. The existing small pebble-and-wave mark and favicon remain unchanged.
-- **Where art appears:** heroes, story chapters, use cases, the private chapter, empty and error states, and the request venue choice. Never inside a figure readout, a risk warning, a signing control or a liquidation state.
-- **Prompts:** in `docs/brand/zenlo-ribbon-prompts.json`, generated with `app/scripts/generate-art.mjs` using the inspected `zr-hero.webp` as the only style reference. Receipts are in `docs/brand/generation-receipts.json`.
-- **Motion:** restrained continuous hero-art movement is allowed under the approved refinement. Pause offscreen and in hidden tabs, expose a pause/resume control, and respect reduced motion. Financial readouts, risk text and signing controls stay steady.
+- **No mascot, no generated art.** Illustration slots show staged pieces of the real interface (product vignettes in `app/components/experience/vignettes/`): real ZenLo cards, rows and pills with the landing page's example loan, each marked "Example". Navy scenes mark private features. No people, sculpted objects, ribbons, pebbles or generated imagery. The existing small pebble-and-wave mark and favicon remain unchanged.
+- **Where vignettes appear:** the landing hero, story steps 2 and 3 (the assets moving between borrower, lender and vault), use cases, the private chapter, the final invitation, the request venue choice and Private's entrance. Example figures never sit beside the viewer's own figures, a risk warning, a signing control or a liquidation state.
+- **Empty and error states:** `components/brand/Spot.tsx` draws a small outline of a list row with one badge glyph (`offers`, `requests`, `discover`, `waiting`, `notFound`, `private`, `success`).
+- **Motion:** only the money-flow vignettes move. They run while on screen and stand still under reduced motion. Financial readouts, risk text and signing controls stay steady.
 
 ## Returning users
 

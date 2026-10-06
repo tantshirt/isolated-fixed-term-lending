@@ -562,5 +562,23 @@
     "taskId": "5bbaaa8bef7115ab656243561f10af6c",
     "creditsConsumed": 10,
     "model": "gpt-image-2-5-sunburst-image-to-image"
+  },
+  {
+    "name": "zt-glass",
+    "taskId": "243fba1c098f245584f6b9e3873eaf1e",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zt-line",
+    "taskId": "21ad5e197f20da0596e8557dc7fceef3",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
+  },
+  {
+    "name": "zt-stone",
+    "taskId": "8ac133847f24209dcb2e9e07274f162b",
+    "creditsConsumed": 10,
+    "model": "gpt-image-2-5-sunburst-text-to-image"
   }
 ]

@@ -152,7 +152,7 @@ export function OffersPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <Spot kind={error ? "notFound" : "waiting"} size={120} />
+            <Spot kind={error ? "notFound" : "offers"} size={120} />
             <p className={styles.emptyTitle}>
               {filter === "open" ? "No open offers" : "Nothing here yet"}
             </p>

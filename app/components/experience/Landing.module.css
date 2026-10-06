@@ -105,22 +105,8 @@
 }
 
 .privateArt {
-  overflow: hidden;
+  min-width: 0;
   margin-bottom: 8px;
-  border-radius: 28px;
-  background: var(--color-background-muted);
-  aspect-ratio: 4 / 3;
-}
-
-.privateArt img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--duration-slow) var(--ease-out);
-}
-
-.privateStep:hover .privateArt img {
-  transform: scale(1.03);
 }
 
 .stepNo {
@@ -189,18 +175,8 @@
 }
 
 .caseArt {
-  overflow: hidden;
+  min-width: 0;
   margin-bottom: 8px;
-  border-radius: 20px;
-  background: var(--color-background-muted);
-  aspect-ratio: 4 / 3;
-}
-
-.caseArt img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .caseTag {

@@ -1,6 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArtMotion } from "@/components/experience/ArtMotion";
+import { CtaScene, HeroScene } from "@/components/experience/vignettes/Scenes";
 import { LoanStory } from "@/components/experience/LoanStory";
 import { PrivateChapter } from "@/components/experience/PrivateChapter";
 import { PublicHeader } from "@/components/experience/PublicHeader";
@@ -80,16 +79,9 @@ export default function Home() {
               </div>
               <p className={h.fine}>No wallet needed for the demo. No real funds at risk.</p>
             </div>
-            <div className={h.heroArt}><ArtMotion>
-              <Image
-                src="/illustrations/zr-hero.webp"
-                alt="Broad blue and white satin ribbons form an open sculptural arch."
-                width={1600}
-                height={1200}
-                priority
-                sizes="(max-width: 900px) 92vw, 46vw"
-              />
-              </ArtMotion></div>
+            <div className={h.heroArt}>
+              <HeroScene />
+            </div>
           </div>
         </section>
 
@@ -242,12 +234,7 @@ export default function Home() {
               </Link>
             </div>
             <div className={h.ctaArt}>
-              <Image
-                src="/illustrations/zr-story-settle.webp"
-                alt=""
-                fill
-                sizes="(max-width: 900px) 92vw, 46vw"
-              />
+              <CtaScene />
             </div>
           </section>
         </div>
