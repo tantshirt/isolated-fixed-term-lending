@@ -3,14 +3,17 @@ import Link from "next/link";
 import { USE_CASES } from "./use-cases";
 import s from "./Landing.module.css";
 
-/** One card per reason to use LegitShark, each with its own Sharky. */
+/** One card per reason to use ZenLo, each with its own abstract image. `featured` picks a snippet by index. */
 export function UseCaseCards({
   heading = true,
   anchors = false,
+  featured,
 }: {
   heading?: boolean;
   anchors?: boolean;
+  featured?: number[];
 }) {
+  const cases = featured ? featured.map((i) => USE_CASES[i]) : USE_CASES;
   return (
     <section
       className={s.useCases}
@@ -19,19 +22,24 @@ export function UseCaseCards({
     >
       {heading && (
         <div className={s.useCasesHead}>
-          <p className={s.eyebrow}>Use cases</p>
-          <h2 id="uc-h">Start where you are.</h2>
+          <div>
+            <p className={s.eyebrow}>Use cases</p>
+            <h2 id="uc-h">Start where you are.</h2>
+          </div>
+          <Link className={s.softButton} href="/use-cases">
+            See all {USE_CASES.length} use cases <span aria-hidden>→</span>
+          </Link>
         </div>
       )}
       <ul className={s.caseGrid}>
-        {USE_CASES.map((u, i) => (
+        {cases.map((u) => (
           <li key={u.intent} className={s.caseCard}>
             <div className={s.caseArt}>
               <Image
                 src={u.image.src}
                 alt={u.image.alt}
                 width={1200}
-                height={1200}
+                height={900}
                 sizes="(max-width: 640px) 92vw, (max-width: 1000px) 45vw, 360px"
               />
             </div>
@@ -39,7 +47,7 @@ export function UseCaseCards({
               {u.venue === "private" ? "Private" : "Public"}
             </p>
             <h3>
-              {anchors ? <a href={`#case-${i + 1}`}>{u.intent}</a> : u.intent}
+              {anchors ? <a href={`/use-cases#case-${USE_CASES.indexOf(u) + 1}`}>{u.intent}</a> : u.intent}
             </h3>
             <p>{u.hook}</p>
             <Link className={s.caseStart} href={u.start.href}>
@@ -48,11 +56,6 @@ export function UseCaseCards({
           </li>
         ))}
       </ul>
-      {heading && (
-        <Link className={s.textLink} href="/use-cases">
-          Every case in detail
-        </Link>
-      )}
     </section>
   );
 }

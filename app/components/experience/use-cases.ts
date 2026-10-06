@@ -20,7 +20,7 @@ export const USE_CASES: UseCase[] = [
     how: "Your room, the terms, and your private balance live inside a hardware-protected rollup. Only you and the lenders you invite can read them. Prices, interest, and settlement follow the same rules as a public ZenLo loan.",
     hook: "Your loan size stays off the public explorer.",
     venue: "private",
-    image: { src: "/illustrations/sharky-borrow-private.webp", alt: "Sharky in his detective trench coat and fedora strolls past with a sealed envelope tucked in his coat, winking." },
+    image: { src: "/illustrations/zl-uc-private-borrow.webp", alt: "A blue pebble in calm water, half hidden behind a frosted glass panel." },
   },
   {
     intent: "Lend to someone I invited, on terms we both approve",
@@ -30,7 +30,7 @@ export const USE_CASES: UseCase[] = [
     how: "You propose exact terms. Any edit creates a new revision, and both of you must approve the same revision before anything moves.",
     hook: "Both of you approve the same revision, or nothing moves.",
     venue: "private",
-    image: { src: "/illustrations/sharky-lend-invited.webp", alt: "Detective Sharky shakes hands across a small table holding two identical sealed envelopes." },
+    image: { src: "/illustrations/zl-uc-invited-lend.webp", alt: "A blue pebble and a navy pebble joined by one shared ripple, a white sphere above them." },
   },
   {
     intent: "Compare competing offers without lenders seeing each other",
@@ -40,7 +40,7 @@ export const USE_CASES: UseCase[] = [
     how: "Publish a card with only the fields you choose. Each lender's offer is readable only by that lender and you. Accept one, and the others are locked out and can cancel.",
     hook: "Lenders bid blind. You pick the best terms.",
     venue: "private",
-    image: { src: "/illustrations/sharky-compare-offers.webp", alt: "Detective Sharky studies three sealed envelopes, kept apart by blue dividers, through a magnifying glass." },
+    image: { src: "/illustrations/zl-uc-blind-bids.webp", alt: "Three frosted glass cards stand apart in calm water; the middle one glows blue." },
   },
   {
     intent: "Liquidate a loan that crossed its line, without seeing the loan",
@@ -50,7 +50,7 @@ export const USE_CASES: UseCase[] = [
     how: "When a loan crosses its line, its automatic check posts a short-lived quote: the debt and the wSOL you receive. You fund it from a private balance; if it executes you collect, otherwise you get a refund.",
     hook: "Fund a short-lived quote and earn the 5% incentive, without reading the loan.",
     venue: "private",
-    image: { src: "/illustrations/sharky-liquidate.webp", alt: "Detective Sharky posts a sealed envelope into a locked blue box with his eyes politely closed." },
+    image: { src: "/illustrations/zl-uc-liquidate.webp", alt: "The top pebble slides off a tilted stack toward fresh ripples in the water." },
   },
   {
     intent: "Understand a loan before I commit",
@@ -60,7 +60,7 @@ export const USE_CASES: UseCase[] = [
     how: "The wallet-free demo walks one loan through repayment, liquidation, and expiry with the same integer math. Inside a private room, the copilot can explain your exact loan, showing you the text it will share first.",
     hook: "Run one loan to every ending in the wallet-free demo.",
     venue: "public",
-    image: { src: "/illustrations/sharky-learn.webp", alt: "Sharky in his blue polo points at a whiteboard sketch of two boxes joined by one arrow." },
+    image: { src: "/illustrations/zl-uc-learn.webp", alt: "One blue pebble with three ripple paths flowing away from it, each ending in a small sphere." },
   },
   {
     intent: "Check the claims for myself",
@@ -70,7 +70,7 @@ export const USE_CASES: UseCase[] = [
     how: "Every capability was proven on the real Devnet TEE before it was used, with signatures and the findings that changed the design, including what does leak.",
     hook: "Signatures and findings from the real Devnet, including what leaks.",
     venue: "public",
-    image: { src: "/illustrations/sharky-verify.webp", alt: "Detective Sharky inspects a long receipt through a magnifying glass." },
+    image: { src: "/illustrations/zl-uc-verify.webp", alt: "A blue pebble and its ripples seen sharply through a round glass lens." },
   },
 ];
 

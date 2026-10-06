@@ -7,25 +7,25 @@ import s from "./Landing.module.css";
 
 const STEPS = [
   {
-    n: "Case 01",
+    n: "1",
     title: "Meet in a private room",
     body: "Invite a lender, or publish a card and choose who joins. A link alone opens nothing.",
-    image: "/illustrations/sharky-private-room.webp",
-    alt: "Detective Sharky sits in a leather armchair beside a lamp and a sealed envelope, finger to his lips, the second chair waiting.",
+    image: "/illustrations/zl-private-room.webp",
+    alt: "A small frosted-glass pavilion stands in calm water with two pebbles blurred inside it.",
   },
   {
-    n: "Case 02",
+    n: "2",
     title: "Agree on exact terms",
     body: "Offers stay between one lender and you. Both sides approve the same revision; any edit starts over.",
-    image: "/illustrations/sharky-negotiate.webp",
-    alt: "Detective Sharky slides a sealed envelope across a small table, peering over his round glasses.",
+    image: "/illustrations/zl-private-agree.webp",
+    alt: "A blue pebble and a navy pebble touch in calm water with a white sphere balanced where they meet.",
   },
   {
-    n: "Case 03",
+    n: "3",
     title: "Settle with only balances public",
     body: "Repay, expire, or liquidate with the usual rules. The terms never reach Solana.",
-    image: "/illustrations/sharky-settle-quietly.webp",
-    alt: "Detective Sharky tips his fedora while pressing a wax seal onto a blue case file.",
+    image: "/illustrations/zl-private-settle.webp",
+    alt: "A frosted card floats face down on calm water while two small glowing spheres rise above it.",
   },
 ];
 
@@ -34,14 +34,10 @@ export function PrivateChapter() {
   return (
     <section className={s.private} aria-labelledby="private-h">
       <div className={s.privateHead}>
-        <p className={s.eyebrow}>Private lending on MagicBlock · Sharky&rsquo;s case files</p>
-        <h2 id="private-h">
-          The same loan,
-          <br />
-          negotiated where only you two can see.
-        </h2>
+        <p className={s.eyebrow}>Private loans on MagicBlock</p>
+        <h2 id="private-h">Same clear terms. Fewer eyes.</h2>
         <p className={s.lede}>
-          Off duty, Sharky works private cases. Private loans run inside a hardware-protected rollup: your room, your terms, and your balance are readable only by the people in the deal.
+          Private loans run inside a hardware-protected rollup: your room, your terms, and your balance are readable only by the people in the deal. Prices, interest, and settlement follow the same rules as every ZenLo loan.
         </p>
       </div>
       <ol className={s.privateSteps}>
@@ -56,7 +52,7 @@ export function PrivateChapter() {
             transition={{ duration: 0.4, delay: reduced ? 0 : i * 0.08, ease: [0.2, 0, 0, 1] }}
           >
             <div className={s.privateArt}>
-              <Image src={step.image} alt={step.alt} width={1200} height={1200} sizes="(max-width: 800px) 90vw, 30vw" />
+              <Image src={step.image} alt={step.alt} width={1200} height={900} sizes="(max-width: 800px) 90vw, 30vw" />
             </div>
             <span className={s.stepNo}>{step.n}</span>
             <h3>{step.title}</h3>
