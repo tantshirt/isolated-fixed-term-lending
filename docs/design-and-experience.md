@@ -1,30 +1,26 @@
-# LegitShark design and experience
+# ZenLo design and experience
 
-LegitShark (renamed from Lendspan on 2026-10-06, which replaced Tenor) keeps the Lendspan tokens and adds Sharky, see Name and mascot. Product intent lives in [PRODUCT.md](../PRODUCT.md); financial rules in [research.md](research.md) and [architecture.md](architecture.md) remain authoritative. The [design council](../.design-council/README.md) records project-specific decisions and upstream provenance.
+ZenLo (renamed from LegitShark on 2026-10-06, earlier Lendspan and Tenor) keeps the Astryx semantic tokens and retires the Sharky mascot. Product intent lives in [PRODUCT.md](../PRODUCT.md); financial rules in [research.md](research.md) and [architecture.md](architecture.md) remain authoritative. The [design council](../.design-council/README.md) records project-specific decisions. The approved screens are the [ZenLo design canvas](https://claude.ai/artifact/5gGPGh4BdF71k8b8vCzapD); when this file and the canvas disagree, this file wins for rules and the canvas wins for layout.
 
 ## Identity and type
 
-LegitShark's voice is direct, approachable and precise. Tagline: **Clear terms. One loan at a time.** Use Inter for headings, text, controls and financial values, with tabular numerals where values align or change. Reserve monospace for addresses or technical details. Body text starts at 16px; controls on phones do not shrink below 16px. Headings wrap naturally, with tracking no tighter than -0.04em.
+ZenLo's voice is direct, calm and precise: "we're the legit, transparent lenders". Tagline: **Clear terms. Zero drama.** Nunito carries headings, text, controls and financial values, with tabular numerals where values align or change. Headings are heavy (800–900) with tracking no tighter than -0.045em. Reserve IBM Plex Mono for addresses or technical details. Body text starts at 16px; controls on phones do not shrink below 16px.
 
-Light mode only: white surfaces, cool neutral layers, blue primary actions, distinct semantic success/warning/error states. Keep Astryx semantic tokens. Palette literals belong in the token block in `app/app/globals.css`; components consume tokens. The previous ivory/green/brass palette and requirement for mono financial figures are superseded.
+Light only: white and cool-blue surfaces, navy ink (`#0f1f4b`), blue primary actions (`#245be8`), cloud (`#eaf0ff`) and sky (`#a9c4ff`) tints, distinct semantic success/warning/error states. Navy panels mark private features, so private always looks different from public without a dark canvas. Buttons are pills; cards are rounded (24px containers, 14px elements). Palette literals belong in the token block in `app/app/globals.css`; components consume tokens.
 
-## Name and mascot
+## Name and mark
 
-The product is **LegitShark**: "Yes, a loan shark. A legit one." The name gets a laugh. Then the page proves the point, because both parties see every term before anything is signed.
+The product is **ZenLo**, spelled with a capital Z and a capital L. The name promises calm; the page proves it, because both parties see every term before anything is signed.
 
-**Sharky** is the mascot, the good loan shark.
-
-- **Look:** soft 3D vinyl-toy finish, a cool grey shark with a white belly.
-  - **Anatomy:** flat-topped head with no fin on it, exactly one dorsal fin on his upper back, two legs, no tail.
-  - **Public outfit:** short-sleeve cobalt knit polo with white piping, thin gold chain, gold watch, white pleated slacks, white loafers, small dark gold-framed sunglasses. Miami nightlife, not a business suit. Reference: `app/public/illustrations/sharky-public.webp`.
-- **Face:** a closed smirk or a grin with rounded teeth. Never a snarl, blood or menace.
-- **PI variant (private rooms):** navy belted trench coat, wide-brim navy fedora with a cobalt band, round wire glasses, cobalt tie, magnifying glass and sealed envelope. The noir is in his posture, not in a dark canvas. Reference: `app/public/illustrations/sharky-pi.webp`.
-- **Where he appears:**
-  - He appears in heroes, story steps, use cases, empty states, wizard side panels and the error page.
-  - He never appears inside a figure readout, a risk warning, a signing control or a liquidation state. Story art beside explanatory copy is fine.
-- **Voice:** wry and precise, one line at most, like "Terms first. Handshake second." Numbers and risk copy stay in plain product language.
+- **Mark:** a pebble crossed by a wave on a blue rounded tile (`docs/brand/zenlo/mark.svg`, component `components/brand/Mark.tsx`). It doubles as the favicon and reads at 16px. `LogoMark` stays the progress ring used for transaction state.
+- **No mascot.** Art is abstract: soft matte clay pebbles and shapes, two-tone blue, resting on still white-blue water with clean concentric ripples. The hero is a balanced stack of three pebbles.
+- **Where art appears:** heroes, story chapters, use cases, the private chapter, empty and error states, and the request venue choice. Never inside a figure readout, a risk warning, a signing control or a liquidation state.
+- **Prompts:** in `docs/brand/zenlo-prompts.json`, generated with `app/scripts/generate-art.mjs` using the approved stack image as the only style reference. Receipts are in `docs/brand/generation-receipts.json`.
 - **Motion:** one entrance on the hero (at most 250 ms), then still. No idle loops.
-- **Prompts:** in `docs/brand/sharky-prompts.json`, following the GPT Image prompt guide. Every pose uses the matching approved sheet (public or PI) as its only identity reference.
+
+## Returning users
+
+There is no account sign-up. A remembered wallet is the identity: it reconnects on reload, and `/devnet/me` (My loans) is the home for a returning lender or borrower, ordered by what needs attention first.
 
 ## Information architecture
 
@@ -35,7 +31,7 @@ The product is **LegitShark**: "Yes, a loan shark. A legit one." The name gets a
 - `/devnet/discover/request`: borrower's choice of public or private, then the public request wizard. `/devnet/requests/[borrower]/[id]`: one public request, where a lender funds it.
 - Create and offer details live under their respective experience. Existing create/offer links redirect into Devnet.
 
-Landing and simulation do not initialize wallet providers or depend on chain availability. The Devnet shell identifies the network, displays readiness and connects a wallet only when the visitor chooses to. No registration or sign-in.
+Landing and simulation do not initialize wallet providers or depend on chain availability. The Devnet shell identifies the network, displays readiness and connects a wallet only when the visitor chooses to, then remembers that choice. No registration.
 
 ## Landing story
 

@@ -358,3 +358,92 @@ Acceptance:
 
 - A borrower chooses Public or Private. Public posts a request through a four-step wizard with a live summary. Private goes through a room and a discovery card.
 - Wrapping SOL is an explicit step, never silent.
+
+## Epic 15. ZenLo rebrand
+
+LegitShark and Sharky are retired. The product is **ZenLo**: a pebble-and-wave mark, Nunito, blue and navy on white, abstract pebble-and-water art. The rename is display-only; programs, IDLs, seeds and storage keys keep their names. The approved design canvas is linked from [design-and-experience.md](design-and-experience.md).
+
+### Story 15.1. Brand foundation
+
+Acceptance:
+
+- Tokens add navy, cloud and sky; ink is navy; Nunito replaces Inter; radii are rounder. Hex stays inside the token block.
+- The header and footer show the ZenLo mark and name. Favicon, Apple icon and the social share image use the mark.
+- Every user-facing "LegitShark" outside the landing page reads ZenLo, including errors, wallet metadata and the copilot prompt.
+
+### Story 15.2. Abstract art set
+
+Acceptance:
+
+- Use cases, loan-story chapters, the private chapter and empty or error states each have their own generated image in one consistent pebble-and-water style.
+- Prompts and receipts are recorded in `docs/brand/`. No art sits beside figures, risk copy or signing controls.
+
+### Story 15.3. Landing and use cases
+
+Acceptance:
+
+- The landing page follows the approved canvas: hero, promises, contrast, the loan story with its tracker, three endings, private chapter, a three-card use-case snippet linking to `/use-cases`, FAQ and a final call to action.
+- `/use-cases` shows all six cases with new art and Public or Private filters.
+
+### Story 15.4. App restyle without Sharky
+
+Acceptance:
+
+- No Sharky image, component or copy remains in the app. Empty and error states use the new spot art.
+- Devnet screens follow the canvas: header, Discover, create wizard, offer and request detail, private home and rooms.
+
+## Epic 16. My loans
+
+### Story 16.1. Per-wallet reads
+
+Acceptance:
+
+- Offers and requests can be read by lender or borrower with account filters, without loading every account.
+- A portfolio model orders items by urgency: past due, due within a day, near the liquidation line, then open. Unit tests cover the order.
+
+### Story 16.2. My loans page
+
+Acceptance:
+
+- `/devnet/me` shows totals and two tabs. Lenders see open offers, running loans with countdown and health, loans ready to claim, liquidatable loans and funded requests. Borrowers see running loans with repay, and open requests.
+- Each deadline can be added to a calendar. Recent activity links to the explorer.
+
+### Story 16.3. Returning wallets
+
+Acceptance:
+
+- A remembered wallet reconnects on reload and the header shows My loans with a count of items that need attention.
+- Changing wallets refreshes every view and says which wallet is now active. Loans due within a day or near their line raise an in-app banner.
+
+## Epic 17. Rooms and invites
+
+### Story 17.1. Finding your rooms
+
+Acceptance:
+
+- An invited wallet sees the room in an invites list without being sent a link. If the rollup cannot list readable rooms, a private per-wallet inbox written by `invite_member` provides the list.
+- A non-member who opens a room link can ask to join from that screen.
+
+### Story 17.2. Owners and requests to join
+
+Acceptance:
+
+- The owner chooses a role when admitting a request and can dismiss requests. The queue reads oldest first.
+- A half-created room can be finished. A card is updated or retracted rather than duplicated, and links to its room.
+
+### Story 17.3. Loans and bids that stay visible
+
+Acceptance:
+
+- Every loan proposed in a room stays listed regardless of thread length, including when the follow-up message failed.
+- Lenders see all their private bids with status: draft, funded, accepted, lost or settled. A lost bid offers Cancel.
+- The private sign-in survives a reload in the same tab until it expires; session keys stay in memory only.
+
+## Epic 18. Full cycle
+
+### Story 18.1. Both sides, end to end
+
+Acceptance:
+
+- A scripted Devnet run covers public offer → accept → repay, request → fund → expire → claim, and private room → invite → inbox → card → two bids → accept → repay, with both wallets' My loans pages updated.
+- The full design council reviews every screen and records its ruling.

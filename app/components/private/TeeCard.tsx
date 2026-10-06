@@ -12,7 +12,7 @@ const COPY: Record<TeeStatus, { title: string; body: string }> = {
   },
   idle: {
     title: "Check the private rollup, then sign in",
-    body: "LegitShark first verifies the rollup's hardware attestation, then asks your wallet to sign a one-time message. Nothing is sent or spent.",
+    body: "ZenLo first verifies the rollup's hardware attestation, then asks your wallet to sign a one-time message. Nothing is sent or spent.",
   },
   verifying: { title: "Verifying the private rollup", body: "Checking the TEE's Intel TDX attestation before any private request." },
   signing: { title: "Approve the sign-in in your wallet", body: "This proves you own the wallet. It is not a transaction." },

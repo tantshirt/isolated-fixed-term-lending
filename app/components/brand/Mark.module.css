@@ -1,0 +1,27 @@
+.mark {
+  display: block;
+  flex: none;
+}
+
+.tile {
+  fill: var(--color-accent);
+}
+
+.pebble {
+  fill: var(--color-on-accent);
+}
+
+.wave {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.bare .pebble {
+  fill: var(--color-accent);
+}
+
+.bare .wave {
+  stroke: var(--color-background-surface);
+}

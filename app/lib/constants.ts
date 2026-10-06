@@ -52,8 +52,8 @@ export const CAPS = {
 } as const;
 
 export const BRAND = {
-  name: "LegitShark",
-  tagline: "Fixed-term loans against SOL.",
+  name: "ZenLo",
+  tagline: "Clear terms. Zero drama.",
 } as const;
 
 export const OFFER_SEED = Buffer.from("offer");

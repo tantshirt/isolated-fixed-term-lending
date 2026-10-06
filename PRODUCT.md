@@ -19,9 +19,9 @@ The simulation is not proof of an on-chain transaction. Only confirmed Devnet si
 
 ## Brand
 
-**Lendspan — Clear terms. One loan at a time.**
+**ZenLo — Clear terms. Zero drama.**
 
-Familiar, clear, precise. Light white surfaces and cool neutrals with blue primary actions. Inter carries words and aligned tabular figures. Monospace is reserved for addresses and technical details. This supersedes Tenor's ivory, deep-green and brass private-desk styling.
+Calm, clear, precise. White and cool-blue surfaces, navy ink and blue primary actions; navy panels mark private features. The mark is a pebble crossed by a wave; art is abstract pebbles on calm water, never a mascot. Nunito carries words and aligned tabular figures. Monospace is reserved for addresses and technical details. This supersedes Tenor's ivory, deep-green and brass private-desk styling.
 
 ## Principles
 

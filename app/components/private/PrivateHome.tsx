@@ -94,7 +94,7 @@ export function PrivateHome() {
         <h1 className={styles.title}>Lend and borrow without showing everyone the deal.</h1>
         <p className={styles.lede}>
           Terms, conversations, and balances stay inside a hardware-protected rollup that only the people in the deal
-          can read. Prices, interest, and settlement follow the same rules as every LegitShark loan.
+          can read. Prices, interest, and settlement follow the same rules as every ZenLo loan.
         </p>
       </header>
 

@@ -10,7 +10,7 @@ export function registerMetaMask(): Promise<void> {
         const client = await createSolanaClient({
           skipAutoRegister: true,
           dapp: {
-            name: "LegitShark",
+            name: "ZenLo",
             url: window.location.origin,
             iconUrl: `${window.location.origin}/icon.png`,
           },

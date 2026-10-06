@@ -1,4 +1,4 @@
-// Generates LegitShark illustrations with Kie GPT Image 2.5 (Sunburst).
+// Generates ZenLo illustrations with Kie GPT Image 2.5 (Sunburst).
 // Prompts follow ~/Desktop/VIDEOS/manticore/brand/prompt-craft/gpt-image.md.
 // Usage: node scripts/generate-art.mjs ../docs/brand/sharky-prompts.json [name ...]
 // An entry with `references` (repo-relative image paths) is uploaded to Kie
@@ -36,7 +36,7 @@ async function upload(path) {
   const form = new FormData();
   const file = new URL(`../../${path}`, import.meta.url);
   form.append("file", new Blob([readFileSync(file)]), path.split("/").pop());
-  form.append("uploadPath", "legitshark");
+  form.append("uploadPath", "zenlo");
   const res = await (
     await fetch("https://kieai.redpandaai.co/api/file-stream-upload", {
       method: "POST",

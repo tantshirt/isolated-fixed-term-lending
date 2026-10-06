@@ -23,5 +23,6 @@ app/node_modules/
 
 # Third-party pose references (stock, watermarked): never commit
 docs/brand/references/
-# Sharky 2K PNGs stay local (skip-if-exists cache); compact masters live in docs/brand/masters/
+# Generated 2K PNGs stay local (skip-if-exists cache); compact WebPs ship in app/public
 docs/brand/originals/sharky-*.png
+docs/brand/originals/zl-*.png

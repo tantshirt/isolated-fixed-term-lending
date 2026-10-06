@@ -68,7 +68,7 @@ const base = process.env.BROWSER_BASE_URL || "http://localhost:3003";
     await status("filled");
   }
   await visit("/");
-  assert.match(await page.locator("body").innerText(), /LegitShark/);
+  assert.match(await page.locator("body").innerText(), /ZenLo/);
   await page.screenshot({
     path: "/private/tmp/lendspan-landing.png",
     fullPage: true,

@@ -1,0 +1,38 @@
+[
+ {
+  "name": "zl-hero-opt-stack",
+  "aspect_ratio": "4:3",
+  "width": 1600,
+  "references": [
+   "app/public/illustrations/zl-hero-shapes-ripples.webp"
+  ],
+  "prompt": "OBJECTIVE: Landing-page hero art for ZenLo, a calm, transparent fixed-term lending app on Solana. TYPE: Abstract brand illustration. SUBJECT: exactly three smooth rounded pebbles stacked and perfectly balanced, largest at the bottom in ZenLo blue, middle in sky blue, smallest on top in white; the bottom pebble rests in the water and sends out four clean concentric ripples. REFERENCES: uploaded image 1 is the ONLY reference for the water: keep the same still white-blue water surface, soft reflections, clean concentric ripples and the soft white-to-cloud-blue background; replace every floating shape in it. STYLE: soft matte rounded 3D forms with gentle two-tone blue gradients, soft shadows, calm, friendly premium crypto brand. COMPOSITION: subject on the right 55% of the frame, 10% margins, calm empty white space on the left for a headline. LIGHTING: soft diffuse from upper left. PALETTE: white #FFFFFF, cloud blue #EAF0FF, sky blue #A9C4FF, ZenLo blue #245BE8, deep navy #0F1F4B. Blue and white only. CONSTRAINTS: no text anywhere, no letters, no numbers, no watermark, no characters, no faces, no ghosts, no animals, no purple, no currency signs, no logos except where described. ASPECT: 4:3."
+ },
+ {
+  "name": "zl-hero-opt-logo",
+  "aspect_ratio": "4:3",
+  "width": 1600,
+  "references": [
+   "app/public/illustrations/zl-hero-shapes-ripples.webp"
+  ],
+  "prompt": "OBJECTIVE: Landing-page hero art for ZenLo, a calm, transparent fixed-term lending app on Solana. TYPE: Abstract brand illustration. SUBJECT: one large smooth glossy pebble in ZenLo blue with a single gentle wave groove carved across its middle, the groove filled with soft white light, resting in the water and sending out four clean concentric ripples; it echoes a logo of a pebble crossed by a wave. REFERENCES: uploaded image 1 is the ONLY reference for the water: keep the same still white-blue water surface, soft reflections, clean concentric ripples and the soft white-to-cloud-blue background; replace every floating shape in it. STYLE: soft matte rounded 3D forms with gentle two-tone blue gradients, soft shadows, calm, friendly premium crypto brand. COMPOSITION: subject on the right 55% of the frame, 10% margins, calm empty white space on the left for a headline. LIGHTING: soft diffuse from upper left. PALETTE: white #FFFFFF, cloud blue #EAF0FF, sky blue #A9C4FF, ZenLo blue #245BE8, deep navy #0F1F4B. Blue and white only. CONSTRAINTS: no text anywhere, no letters, no numbers, no watermark, no characters, no faces, no ghosts, no animals, no purple, no currency signs, no logos except where described. ASPECT: 4:3."
+ },
+ {
+  "name": "zl-hero-opt-pair",
+  "aspect_ratio": "4:3",
+  "width": 1600,
+  "references": [
+   "app/public/illustrations/zl-hero-shapes-ripples.webp"
+  ],
+  "prompt": "OBJECTIVE: Landing-page hero art for ZenLo, a calm, transparent fixed-term lending app on Solana. TYPE: Abstract brand illustration. SUBJECT: two smooth rounded pebbles of equal size resting side by side in the water, one ZenLo blue and one deep navy, each sending out ripples whose rings overlap and merge in the middle; one small glowing white sphere floats exactly halfway between them above the overlap (lender and borrower sharing one deal). REFERENCES: uploaded image 1 is the ONLY reference for the water: keep the same still white-blue water surface, soft reflections, clean concentric ripples and the soft white-to-cloud-blue background; replace every floating shape in it. STYLE: soft matte rounded 3D forms with gentle two-tone blue gradients, soft shadows, calm, friendly premium crypto brand. COMPOSITION: subject on the right 55% of the frame, 10% margins, calm empty white space on the left for a headline. LIGHTING: soft diffuse from upper left. PALETTE: white #FFFFFF, cloud blue #EAF0FF, sky blue #A9C4FF, ZenLo blue #245BE8, deep navy #0F1F4B. Blue and white only. CONSTRAINTS: no text anywhere, no letters, no numbers, no watermark, no characters, no faces, no ghosts, no animals, no purple, no currency signs, no logos except where described. ASPECT: 4:3."
+ },
+ {
+  "name": "zl-hero-opt-cards",
+  "aspect_ratio": "4:3",
+  "width": 1600,
+  "references": [
+   "app/public/illustrations/zl-hero-shapes-ripples.webp"
+  ],
+  "prompt": "OBJECTIVE: Landing-page hero art for ZenLo, a calm, transparent fixed-term lending app on Solana. TYPE: Abstract brand illustration. SUBJECT: exactly two frosted-glass rounded rectangle cards floating at a slight angle above the water, one in front of the other, each with three short soft blue blank bars instead of text and one small blue pill shape; their bottom edge glows softly and the water below shows four clean concentric ripples and faint reflections of the cards. REFERENCES: uploaded image 1 is the ONLY reference for the water: keep the same still white-blue water surface, soft reflections, clean concentric ripples and the soft white-to-cloud-blue background; replace every floating shape in it. STYLE: soft matte rounded 3D forms with gentle two-tone blue gradients, soft shadows, calm, friendly premium crypto brand. COMPOSITION: subject on the right 55% of the frame, 10% margins, calm empty white space on the left for a headline. LIGHTING: soft diffuse from upper left. PALETTE: white #FFFFFF, cloud blue #EAF0FF, sky blue #A9C4FF, ZenLo blue #245BE8, deep navy #0F1F4B. Blue and white only. CONSTRAINTS: no text anywhere, no letters, no numbers, no watermark, no characters, no faces, no ghosts, no animals, no purple, no currency signs, no logos except where described. ASPECT: 4:3."
+ }
+]

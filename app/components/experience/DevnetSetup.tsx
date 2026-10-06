@@ -219,7 +219,7 @@ export function DevnetSetup() {
                 </div>
               </div>
               <p>
-                Keep some SOL for fees. LegitShark retains rent and at least 0.01
+                Keep some SOL for fees. ZenLo retains rent and at least 0.01
                 SOL.
               </p>
               <div className={s.price}>
