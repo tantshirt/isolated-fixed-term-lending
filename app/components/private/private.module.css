@@ -1283,3 +1283,29 @@ span.receiptLink {
   color: var(--color-text-tertiary);
   font-size: var(--text-sm);
 }
+
+/* PI Sharky sits beside the private home heading. */
+.heroArt {
+  position: relative;
+  padding-right: 8rem;
+}
+
+.detective {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 112px;
+  height: 112px;
+}
+
+@media (max-width: 640px) {
+  .heroArt {
+    padding-right: 0;
+  }
+
+  .detective {
+    position: static;
+    width: 88px;
+    height: 88px;
+  }
+}

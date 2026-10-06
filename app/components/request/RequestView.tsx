@@ -5,6 +5,7 @@ import { PublicKey } from "@solana/web3.js";
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
+import { Sharky } from "@/components/brand/Sharky";
 import { RequestStatusPill } from "@/components/discover/RequestStatusPill";
 import { HealthMeter } from "@/components/offer/HealthMeter";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
@@ -208,7 +209,7 @@ function Loading() {
 function Missing({ title, body }: { title: string; body?: string }) {
   return (
     <div className={styles.missing}>
-      <LogoMark size={44} progress={1} />
+      <Sharky pose="confused" size={120} />
       <h1 className={styles.title}>{title}</h1>
       {body && <p className={styles.sentence}>{body}</p>}
       <Link href="/devnet/discover" className={styles.back}>

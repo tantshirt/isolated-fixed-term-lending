@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { LogoMark } from "@/components/brand/LogoMark";
+import { Sharky } from "@/components/brand/Sharky";
 import { Button } from "@/components/ui/Button";
 
 export default function ErrorPage({
@@ -20,10 +20,10 @@ export default function ErrorPage({
       className="page page-narrow"
       style={{ display: "grid", gap: "1.25rem", justifyItems: "start" }}
     >
-      <LogoMark size={40} progress={0.08} />
-      <h1 style={{ fontSize: "var(--text-2xl)" }}>This page did not load</h1>
+      <Sharky pose="confused" size={140} />
+      <h1 style={{ fontSize: "var(--text-2xl)" }}>Even Sharky did not see that coming</h1>
       <p style={{ color: "var(--color-text-secondary)", maxWidth: "56ch" }}>
-        LegitShark could not load this page. Try again. If you submitted a Devnet
+        This page did not load. Try again. If you submitted a Devnet
         transaction, check its saved Explorer link before repeating the action.
       </p>
       <Button onClick={() => reset()}>Try again</Button>

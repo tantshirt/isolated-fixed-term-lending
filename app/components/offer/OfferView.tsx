@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
+import { Sharky } from "@/components/brand/Sharky";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
@@ -349,7 +350,7 @@ function Loading() {
 function Missing({ title, body }: { title: string; body?: string }) {
   return (
     <div className={styles.missing}>
-      <LogoMark size={44} progress={1} />
+      <Sharky pose="confused" size={120} />
       <h1 className={styles.title}>{title}</h1>
       {body && <p className={styles.sentence}>{body}</p>}
       <Link href="/devnet" className={styles.back}>

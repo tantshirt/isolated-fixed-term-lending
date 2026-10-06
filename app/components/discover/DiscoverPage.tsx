@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, m } from "motion/react";
 import { useMemo, useState, type ReactNode } from "react";
-import { LogoMark } from "@/components/brand/LogoMark";
+import { Sharky } from "@/components/brand/Sharky";
 import { OfferRow } from "@/components/offers/OfferRow";
 import { Chips } from "@/components/ui/Chips";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -225,7 +225,12 @@ export function DiscoverPage() {
               value={venue}
               onChange={(v) => setView({ venue: v })}
             />
-            <p className={styles.venueCopy}>{COPY[side][venue]}</p>
+          </div>
+          <div className={styles.guide}>
+            <Sharky pose={venue === "private" ? "detective" : "guide"} size={96} className={styles.guideArt} />
+            <p className={styles.bubble} aria-live="polite">
+              {COPY[side][venue]}
+            </p>
           </div>
         </div>
       </section>
@@ -259,7 +264,7 @@ export function DiscoverPage() {
       {side === "borrowers" && venue === "public" && mine.length > 0 && (
         <section className={styles.mine} aria-labelledby="mine-heading">
           <h2 id="mine-heading" className={styles.mineTitle}>
-            Your settled requests
+            Your moves: settled requests
           </h2>
           <p className={styles.venueCopy}>Close these to take back the account rent.</p>
           <Rows header={["Borrow", "Repays", "Term", "Collateral locked", "Status"]}>
@@ -285,6 +290,7 @@ function ListState<T>({
   if (items === null && error)
     return (
       <div role="alert" className={list.empty}>
+        <Sharky pose="confused" size={110} />
         <p className={list.emptyTitle}>Devnet is not answering</p>
         <p className={list.emptyBody}>Nothing here is lost. The list reloads by itself as soon as the network responds.</p>
       </div>
@@ -340,7 +346,7 @@ function Rows({ header, children }: { header: string[]; children: { key: string;
 function Empty({ title, body, href, cta }: { title: string; body: string; href: string; cta: string }) {
   return (
     <m.div className={list.empty} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <LogoMark size={48} progress={0.08} />
+      <Sharky pose="waiting" size={120} />
       <p className={list.emptyTitle}>{title}</p>
       <p className={list.emptyBody}>{body}</p>
       <Link href={href} className={list.emptyLink}>
