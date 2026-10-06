@@ -2,6 +2,14 @@
 
 Refinement tracking is separate from the completed sprint stories. Scope: `_bmad-output/implementation-artifacts/spec-zenlo-experience-refinement.md`.
 
+## GitHub release record
+
+The implementation is [commit `81215bd`](https://github.com/tantshirt/isolated-fixed-term-lending/commit/81215bd8274f724ce8b732470fc20f1553e0d58f), which reached `main` before the follow-up pull request was requested. The follow-up PR records that existing implementation and its verification; its diff does not reapply the application changes.
+
+All 18 generated production images are tracked under `app/public/illustrations/zr-*.webp`. The landing page uses `zr-hero.webp`, ribbon story art and the private-room set; use cases and empty states use the rest of the same set. Source PNGs remain ignored local files under `docs/brand/originals/`, as intended. The small brand mark and favicon remain unchanged.
+
+The GitHub production deployment for `81215bd` completed successfully. On 2026-10-06, the HTML served by `https://zenlo-loans.vercel.app` referenced the new `zr-*` images and `/learn`, with no old `zl-*` illustration references on the landing page. This confirms the web release, not deployment of the updated Solana program.
+
 ## Implemented
 
 - Satin ribbon art replaces active pebble illustrations; the small mark and favicon are unchanged. The hero is the style reference for the coordinated set. Source originals remain local and ignored; optimized WebPs, prompts and receipts are retained.
