@@ -115,6 +115,7 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 12 | [24.1 Auditor consent](stories.md) and [24.2 Private portfolios](stories.md) | 23.1 | Done (auditors shown and verified by hash before signing, consent bound on-chain, reader removal; V1 and V2 private totals in My loans) |
 | 13 | [24.3 Alerts and reminders](stories.md) | 19.3, 22.2 | Open (built and proven on local Convex; needs a Telegram bot token and hosted Convex) |
 | 14 | [24.4 MoneyGram cash-out](stories.md) and [24.5 Gate metrics](stories.md) | 19.3, 24.2 | Open (built and checked locally; needs MoneyGram sandbox keys, an allowlisted domain and hosted Convex) |
+| 15 | [19.7 Honest shipped-feature surfaces](stories.md) | 19.6 | Done (landing, use cases and six official logos; badges derived from Devnet evidence and provider flags) |
 
 Not queued until the gate passes: [25.1 Customer gate](stories.md), [Epic 26 expansion](stories.md), [Epic 27 research](stories.md).
 

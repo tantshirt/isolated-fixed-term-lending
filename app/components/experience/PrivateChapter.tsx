@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion as m, useReducedMotion } from "motion/react";
 import { PoweredByMagicBlock } from "@/components/brand/PoweredByMagicBlock";
+import { StatusBadge } from "./StatusBadge";
 import s from "./Landing.module.css";
 import { PRIVATE_SCENES } from "./vignettes/Scenes";
 
@@ -15,19 +16,19 @@ const STEPS = [
   {
     n: "1",
     title: "Meet in a private room",
-    body: "Invite a lender, or publish a card and choose who joins. A link alone opens nothing.",
+    body: "Invite a lender, or publish a card and choose who joins. A link alone opens nothing. Lenders can work as a desk, with a private policy every offer must fit.",
     scene: "room" as const,
   },
   {
     n: "2",
     title: "Agree on exact terms",
-    body: "Offers stay between one lender and you. Both sides approve the same revision; any edit starts over.",
+    body: "Offers stay between one lender and you. Both sides approve the same revision; any edit starts over. If an auditor will read the loan, you see who before you sign.",
     scene: "agree" as const,
   },
   {
     n: "3",
     title: "Settle with only balances public",
-    body: "Repay, expire, or liquidate with the usual rules. The terms never reach Solana.",
+    body: "Repay early or in parts, top up, or settle with the usual rules. The terms never reach Solana; your totals show in My loans.",
     scene: "settle" as const,
   },
 ];
@@ -72,7 +73,15 @@ export function PrivateChapter() {
         </Link>
         <PoweredByMagicBlock />
       </div>
-      <p className={s.note}>Devnet only, with test assets. Deposits, withdrawals, and request cards are public; we list exactly what leaks.</p>
+      <ul className={s.privateStatus} aria-label="What is live">
+        <li>Rooms <StatusBadge feature="private-rooms" /></li>
+        <li>Desks <StatusBadge feature="desks" /></li>
+        <li>Desk workspace <StatusBadge feature="desk-workspace" /></li>
+        <li>Auditor consent <StatusBadge feature="auditor-consent" /></li>
+      </ul>
+      <p className={s.note}>
+        Devnet only, with test assets. The lock covers the MagicBlock rollup only. Deposits, withdrawals, and request cards are public on Solana; alerts and cash-out run through other providers with their own rules. We list exactly what leaks.
+      </p>
     </section>
   );
 }

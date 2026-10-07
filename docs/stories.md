@@ -513,6 +513,15 @@ Acceptance:
 - `app/public/brands/registry.json` records each logo's source, retrieval date, file hash, approved variants and intended placement.
 - Logos are official artwork with their original proportions and colors. A logo appears only where that provider is actually used; anything not yet sourced is shown as a text label.
 
+### Story 19.7. Honest shipped-feature surfaces
+
+Acceptance:
+
+- The landing page and `/use-cases` describe what Epics 19–24 shipped: V2 early and partial repayment, top-up, grace and late recovery, lender desks, auditor consent, private portfolios, Telegram alerts, MoneyGram cash-out and Squads governance. The FAQ no longer says a loan cannot change after it starts, and legacy loans are still described as all-or-nothing.
+- Every feature claim carries a badge from `app/lib/feature-status.ts`: "Live on Devnet" only with a Devnet evidence pointer that resolves, "Pilot · gated" while its provider flag is off, and "Sandbox" for MoneyGram's sandbox. MoneyGram is never shown as live.
+- Pyth, Squads, Convex, Vercel, Telegram and MoneyGram use official artwork from the registry, beside the feature that uses them, through `ProviderLogo`. Logo styles never recolor artwork. Helius stays a text label because nothing uses it.
+- The MoneyGram case says the step is not private before anything else about it.
+
 ## Epic 20. Shared V2 accounting (Stage 2)
 
 ### Story 20.1. Accounting engine and parity vectors

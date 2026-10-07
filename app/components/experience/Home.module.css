@@ -406,3 +406,42 @@
 .learnPrimary { background: var(--color-accent); color: var(--color-on-accent); }
 .learnPrimary h2, .learnPrimary p { color: var(--color-on-accent); }
 .learnPrimary .btn { background: var(--color-background-surface); color: var(--color-accent); }
+
+/* How it runs */
+
+.stack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+}
+
+.stackItem {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-background-surface);
+}
+
+.stackHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 28px;
+}
+
+.stackItem p {
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 900px) {
+  .stack {
+    grid-template-columns: 1fr;
+  }
+}

@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { PublicHeader } from "@/components/experience/PublicHeader";
 import { SiteFooter } from "@/components/experience/SiteFooter";
 import { UseCaseList } from "@/components/experience/UseCaseList";
-import { FEATURES } from "@/components/experience/use-cases";
+import { FEATURES, USE_CASES } from "@/components/experience/use-cases";
 import u from "./UseCases.module.css";
 
 export const metadata: Metadata = {
   title: "Use cases",
   description:
-    "Who ZenLo is for: borrowing, lending, comparing offers, and liquidating, in public or in private.",
+    "Who ZenLo is for: borrowing, lending, desks, early repayment, auditors, alerts, and cash-out, in public or in private.",
 };
 
 export default function Page() {
@@ -20,9 +20,10 @@ export default function Page() {
           <p className={u.eyebrow}>Use cases</p>
           <h1>Pick what you came to do.</h1>
           <p className={u.lede}>
-            Six real jobs ZenLo handles today, in public or in a private room
-            where only the people in the deal can read it. Each one starts in a
-            single click.
+            {USE_CASES.length} real jobs ZenLo handles, in public or in a private
+            room where only the people in the deal can read it. Each one starts
+            in a single click, and each says whether it is live on Devnet or
+            still a gated pilot.
           </p>
         </header>
         <UseCaseList />
