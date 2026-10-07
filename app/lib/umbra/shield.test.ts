@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { CAPABILITIES, capabilityFor, DEVNET_USDC, WSOL } from "../capabilities";
-import { balanceWords, callbackWords, parseWsolAmount, shieldErrorMessage, subscriptionsUrl } from "./shield";
+import { balanceWords, requireSupportedBalance, callbackWords, parseWsolAmount, shieldErrorMessage, subscriptionsUrl } from "./shield";
 
 test("Umbra shields wSOL only behind the deployment flag; USDC stays unavailable", () => {
   const row = CAPABILITIES.find((c) => c.provider === "umbra" && c.mint === WSOL && c.operation === "shield");
@@ -73,4 +73,18 @@ test("subscription URL follows the RPC scheme unless a WebSocket URL is set", ()
   assert.equal(subscriptionsUrl("https://api.devnet.solana.com"), "wss://api.devnet.solana.com");
   assert.equal(subscriptionsUrl("http://127.0.0.1:8899"), "ws://127.0.0.1:8899");
   assert.equal(subscriptionsUrl("https://x", "wss://y"), "wss://y");
+});
+
+test("MXE balances stop before deposit or withdrawal and explain the supported recovery path", () => {
+  let error: unknown;
+  try { requireSupportedBalance({ state: "mxe" }); } catch (e) { error = e; }
+  assert.ok(error instanceof Error);
+  const words = shieldErrorMessage(error);
+  assert.match(words, /cannot add to or withdraw/);
+  assert.match(words, /converting.*shared balance/);
+  assert.equal(balanceWords({ state: "mxe" }).note, words);
+  assert.doesNotMatch(words, /Unshield all|Couldn't reach/);
+  for (const balance of [{ state: "shared", balance: 10n }, { state: "non_existent" }, { state: "uninitialized" }] as const) {
+    assert.doesNotThrow(() => requireSupportedBalance(balance));
+  }
 });

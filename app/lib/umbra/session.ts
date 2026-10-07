@@ -17,7 +17,7 @@ import {
   getUserRegistrationFunction,
 } from "@umbra-privacy/sdk";
 import { WSOL } from "@/lib/capabilities";
-import type { CallbackStatus, EncryptedBalanceState } from "./shield";
+import { requireSupportedBalance, type CallbackStatus, type EncryptedBalanceState } from "./shield";
 
 type Deposit = ReturnType<typeof getPublicBalanceToEncryptedBalanceDirectDepositorFunction>;
 type Address = Parameters<Deposit>[0];
@@ -76,20 +76,26 @@ export async function openUmbraSession(config: UmbraSessionConfig): Promise<Umbr
     await getUserRegistrationFunction({ client })({ confidential: true, anonymous: false });
   };
 
+  const balance = async (): Promise<EncryptedBalanceState> => {
+    const map = await getEncryptedBalanceQuerierFunction({ client })([mint]);
+    const r = map.get(mint);
+    if (!r) return { state: "non_existent" };
+    return r.state === "shared" ? { state: "shared", balance: BigInt(r.balance) } : { state: r.state };
+  };
+
   return {
     owner: config.owner,
-    async balance() {
-      const map = await getEncryptedBalanceQuerierFunction({ client })([mint]);
-      const r = map.get(mint);
-      if (!r) return { state: "non_existent" };
-      return r.state === "shared" ? { state: "shared", balance: BigInt(r.balance) } : { state: r.state };
-    },
+    balance,
     async shield(lamports) {
+      // Registration does not convert an existing MXE balance to shared encryption.
+      requireSupportedBalance(await balance());
       await ensureRegistered();
       const r = await getPublicBalanceToEncryptedBalanceDirectDepositorFunction({ client })(owner, mint, lamports as U64);
       return { signature: String(r.queueSignature), status: r.callbackStatus };
     },
     async unshield(lamports) {
+      // Check fresh chain state, not the last balance displayed by the panel.
+      requireSupportedBalance(await balance());
       const r = await getEncryptedBalanceToPublicBalanceDirectWithdrawerFunction({ client })(owner, mint, lamports as U64);
       return { signature: String(r.queueSignature), status: r.callbackStatus };
     },

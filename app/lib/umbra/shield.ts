@@ -30,6 +30,7 @@ export function subscriptionsUrl(rpcUrl: string, wsUrl?: string): string {
 /** Plain words for an Umbra or wallet failure. Raw SDK text never reaches the page. */
 export function shieldErrorMessage(e: unknown): string {
   const text = (e instanceof Error ? `${e.name} ${e.message}` : String(e ?? "")).toLowerCase();
+  if (text.includes("umbra-mxe-unsupported")) return MXE_UNSUPPORTED_WORDS;
   if (/reject|denied|cancel|declined/.test(text)) return "You cancelled in your wallet. Nothing moved.";
   if (/insufficient|not enough|custom program error: 0x1\b/.test(text)) return "There isn't enough wSOL or SOL for this and its fees.";
   if (/signmessage|sign message|solana:signmessage|feature/.test(text)) return "This wallet can't sign the message Umbra needs. Try Phantom, Backpack or Solflare.";
@@ -56,6 +57,13 @@ export type EncryptedBalanceState =
   | { state: "mxe" }
   | { state: "shared"; balance: bigint };
 
+/** The installed SDK withdraws shared balances only; it cannot convert an existing MXE balance. */
+export const MXE_UNSUPPORTED_WORDS = "This Umbra balance uses network encryption. ZenLo cannot add to or withdraw it yet. Contact Umbra about converting it to a shared balance.";
+
+export function requireSupportedBalance(balance: EncryptedBalanceState): void {
+  if (balance.state === "mxe") throw new Error("umbra-mxe-unsupported");
+}
+
 /** Shielded balance in words. Only "shared" balances can be decrypted on this device. */
 export function balanceWords(b: EncryptedBalanceState | null): { lamports: bigint | null; note: string } {
   if (!b) return { lamports: null, note: "Hidden. Unlock with one wallet signature to see it." };
@@ -63,7 +71,7 @@ export function balanceWords(b: EncryptedBalanceState | null): { lamports: bigin
     case "shared":
       return { lamports: b.balance, note: "Decrypted on this device." };
     case "mxe":
-      return { lamports: null, note: "Held by Umbra but readable only by its network. Unshield all of it, or contact Umbra." };
+      return { lamports: null, note: MXE_UNSUPPORTED_WORDS };
     case "uninitialized":
     case "non_existent":
       return { lamports: 0n, note: "Nothing shielded yet." };
