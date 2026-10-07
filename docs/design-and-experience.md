@@ -97,3 +97,20 @@ Room conversation is visible to current room members; each loan proposal, revisi
 Liquidation distinguishes loading, no open quotes and unavailable reads. A failed read does not prove healthy loans or an empty market. Funding reserves USDC without guaranteeing execution; execution makes wSOL collectible, while expired or superseded unsuccessful tickets become refundable. Re-read current quote terms and ticket eligibility before signing. Diagnostics and proof remain secondary.
 
 Copilot distinguishes checking, disabled and unavailable states. Offer only applicable tasks; show the exact shared text and revision before approval, invalidate review when that text changes, and mark answers stale when their bound revision changes. A suggested proposal remains an editable draft.
+
+## Desk-first experience (approved 2026-10-07)
+
+Keep the current top-level navigation. Nunito, aligned tabular figures, Astryx tokens, white and cool-blue surfaces, navy ink, blue actions and navy private panels all stay. The landing promise becomes **Your repayment rules, upfront.**
+
+- **Offer and request wizards** add repayment policy, pricing ceiling, grace, late fee, collateral asset and, later, credential requirements.
+- **Loan detail** adds current payoff, top-up, partial repayment and, later, refinance, sale and automation.
+- **My loans** shows public and private portfolios with separately named totals. Locked private data reads "Locked", never zero. Activity, Credentials and Preferences come later.
+- **Private** adds Desks alongside Workspace and Liquidations. A desk workspace has Overview, Loans, Policy and People. Overview leads with urgent loans and pending signatures, every position names its funding wallet, and aggregate exposure is labelled a loan-book total, not a shared treasury.
+- **Rooms** have Conversation, Loans and Members, with funding in context.
+- **Mobile:** access, identity and the next action come before introductory artwork.
+
+Signing reviews for V2 loans show the current payoff rules, term and annual pricing, the auditor audience, maturity, grace end and the final whole-collateral claim time. The final claim is disclosed as an agreed default remedy that can lose surplus, before signing and throughout recovery.
+
+Privacy disclosures sit next to the action they describe. One lock badge must not imply that settlement, Telegram, credentials and MoneyGram share a privacy boundary. The MoneyGram step says it is not private.
+
+Provider logos come from the registry in `app/public/brands/registry.json` and appear only where that provider is actually used. Official artwork keeps its proportions and colors; logos are never recolored blue or redrawn.

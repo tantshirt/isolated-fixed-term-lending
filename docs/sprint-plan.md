@@ -95,6 +95,29 @@ The rebrand and the returning-user experience. Each phase ships as its own pull 
 | 10 | [17.3 Loans and bids that stay visible](stories.md) | Done |
 | 11 | [18.1 Both sides, end to end](stories.md) | Done |
 
+## Desk lane
+
+The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed by the design council and merged before the next row in the same track starts. The foundation, accounting and governance tracks can run side by side; the Depends column says what must be merged first. Stage 5 (Epic 25) starts only when every row here is Done.
+
+| Order | Story | Depends on | Status |
+| --- | --- | --- | --- |
+| 1 | [19.1 Lender pilot kit](stories.md) | — | Open |
+| 2 | [19.2 Convex and wallet sign-in](stories.md) | — | Open |
+| 3 | [19.3 Durable jobs, capabilities and operations](stories.md) and [19.4 Versioned models](stories.md) | 19.2 | Open |
+| 4 | [19.5 Governance](stories.md) and [19.6 Asset registry](stories.md) | — | Open |
+| 5 | [20.1 Accounting engine](stories.md), [20.2 Pricing ceilings](stories.md), [20.3 Spot and EMA](stories.md) | — | Open |
+| 6 | [21.1 `isolated_loan_v2` core](stories.md) | 19.5, 20.x | Open |
+| 7 | [21.2 Grace, recovery and surplus](stories.md) and [21.3 Reference liquidator](stories.md) | 21.1 | Open |
+| 8 | [22.1 Multi-loan rooms](stories.md) | 19.5 | Open |
+| 9 | [22.2 Private V2 protections](stories.md) | 20.x, 22.1 | Open |
+| 10 | [23.1 Desk accounts, roles and policies](stories.md) | 22.2 | Open |
+| 11 | [23.2 Desk workspace](stories.md) | 23.1 | Open |
+| 12 | [24.1 Auditor consent](stories.md) and [24.2 Private portfolios](stories.md) | 23.1 | Open |
+| 13 | [24.3 Alerts and reminders](stories.md) | 19.3, 22.2 | Open |
+| 14 | [24.4 MoneyGram cash-out](stories.md) and [24.5 Gate metrics](stories.md) | 19.3, 24.2 | Open |
+
+Not queued until the gate passes: [25.1 Customer gate](stories.md), [Epic 26 expansion](stories.md), [Epic 27 research](stories.md).
+
 ## Notes
 
 - Program and UI live under `isolated_loan/` and `app/`. Outcome scripts: `npm run script:repay|liquidate|expire` in `isolated_loan/`.
@@ -117,3 +140,4 @@ The rebrand and the returning-user experience. Each phase ships as its own pull 
 - 2026-10-06 ZenLo phase 1: tokens, Nunito, pebble-and-wave mark, icons and share image, display name. Story 15.2 art ships with 15.3 in the landing pull request.
 - 2026-10-06 ZenLo complete: rebrand (15), My loans (16), rooms and invites without a program change (17), and a 12-check Devnet cycle (18).
 - 2026-10-06: Security audit ([report](security-audit.md)). Fixed S1, S2, S4 on chain and A1–A3 in the app. The fuzz part of story 7.2 is done (`npm run test:fuzz`, 2,000 cases by default, plus a 50,000-case run); 7.2 stays Open for the indexer. CI added in `.github/workflows/ci.yml`.
+- 2026-10-07: Desk-first roadmap queued (Epics 19–27). The week-1 limits on per-second interest, partial repayment, top-up, refinance and Devnet work now apply to the legacy programs only; V2 follows the updated research note.

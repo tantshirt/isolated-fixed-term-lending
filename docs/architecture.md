@@ -240,3 +240,26 @@ A quote holds four ticket slots. `fund_quote` reuses refunded or paid slots, so 
 AI workers require `claim_ai_request` before a maximum of two model attempts. The claim is permanent; uncertainty or process failure does not restart spending. Old program deployments reject the new claim instruction before model spending. Sponsored first draws use `request_first_scenario` with initialization-only semantics, so concurrent approvals for the same learner cannot repeatedly fund account rent. Normal self-funded repeat draws still use `request_scenario`.
 
 Optional sponsorship uses `PRIVATE_LAB_SPONSOR_SECRET`, a dedicated Devnet budget wallet, never the SOAR authority secret. Its whole funded balance is the spending cap. The reserve check is best effort across concurrent different learners. Configuration presence is not evidence that sponsorship is currently usable. The current release has not been deployed or tested against an upgraded hosted TEE.
+
+## Desk-first architecture (approved 2026-10-07)
+
+| Layer | Owns |
+| --- | --- |
+| Vercel / Next.js | Interface, wallet interactions, transaction reviews, authentication endpoints and simulation |
+| Convex | Consented profiles, preferences, operational metadata, notifications, provider sessions, activity projections and durable jobs |
+| `isolated_loan_v2` | Public V2 loan custody, authority, accounting and settlement |
+| `private_loan_v2` (MagicBlock) | Private rooms, desks, membership, terms, accounting, permissions and execution |
+| Provider adapters | Explicitly scoped payments, shielding, proofs, attestations, indexing and notifications |
+
+Decisions:
+
+- **Separate V2 programs.** New program IDs and versioned accounts, with every account starting with a version byte. The app picks a codec by program ID. Legacy programs stay readable and serviceable through their original codecs.
+- **Shared accounting.** One economic model in `crates/loan-core` is used by both V2 programs, the TypeScript client, simulation, alerts and keepers, with parity vectors in `vectors-v2.json`.
+- **Lender identity.** V2 loans carry an immutable `origin_lender` used for PDA signing and a mutable `current_lender` that receives repayments and claims.
+- **Authentication.** A domain-bound, expiring, single-use wallet challenge leads to a short-lived JWT, which Convex verifies as custom JWT auth. Authorization is derived from the verified identity only.
+- **Background work.** Durable job records with deduplication, bounded retries and reconciliation of uncertain signatures before resubmitting. One active scheduler. The Vercel Cron cranker moves to Convex only after parity testing.
+- **Governance.** V2 upgrade authorities sit under a 2-of-3 Squads multisig vault with a 24-hour time lock. A `Config` account separates the AI admin, AI worker, liquidation-pool admin, credential issuer and keeper. `AI_ADMIN` is not reused for financial administration.
+- **Privacy boundary.** Private conversations, full private books, raw income proofs and viewing keys never reach Convex. Private book totals are computed in an authorized context. Convex stores only the monitoring metadata the user explicitly permits.
+- **Capabilities.** Each provider capability is keyed by network and mint. Flags can pause new originations or a provider without blocking recovery of existing loans.
+
+Account layouts, seeds and instruction rules are added to this file story by story (Epics 20–24) as they are implemented. A seed is not specified here until its story is built.

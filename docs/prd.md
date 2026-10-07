@@ -55,3 +55,19 @@ A fresh local setup can run the three outcome tests without a manual database or
 - USDC is treated as one dollar. A depeg is not detected.
 - A price that gaps far through the liquidation line can leave the collateral worth less than the debt. A liquidator then has no reason to call. The lender still has the expiry path.
 - One feed is a single point of failure. The checks (owner, id, age, confidence, exponent) are the mitigation in week 1, not a second oracle.
+
+## Desk-first roadmap (approved 2026-10-07)
+
+Everything above describes the week-1 product and stays true for the legacy programs. The next product is one lending journey: find a counterparty, agree terms, fund, manage the loan, settle, and reuse the relationship. The landing promise becomes **Your repayment rules, upfront.**
+
+Private lender desks are the first commercial hypothesis. Five to ten real lender operators are recruited during development, and a two-week observed pilot (the customer gate, Epic 25) must pass before the expansion backlog is built.
+
+Decisions:
+
+- Launch on public Solana Devnet with test assets. The website is the existing Next.js app on Vercel. Convex holds operational data, realtime updates and jobs. MagicBlock stays the private execution engine.
+- Identity is the wallet. There is no email registration. A desk is a set of individual lender wallets, not a pooled treasury.
+- Existing loans keep their original programs, terms and servicing. New economics ship in separate V2 programs with versioned accounts and clients.
+- Desk pricing caps are product controls, not legal-compliance guarantees. Licensing, sanctions and jurisdiction analysis are deferred beyond this Devnet build. The business location and countries are undecided.
+- MoneyGram uses the existing sandbox access and the official Ramps documentation. Advanced privacy is progressive and disclosed accurately; confidential settlement and Arcium stay research-only until a paying desk needs them.
+
+The stories are Epics 19–27 in [stories.md](stories.md), and the order is the desk lane in [sprint-plan.md](sprint-plan.md). V2 lifts several week-1 exclusions for the V2 programs only: per-second (pro-rata) accrual, topping up collateral, partial repayment and a grace period.
