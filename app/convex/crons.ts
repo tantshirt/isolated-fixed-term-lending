@@ -11,4 +11,6 @@ crons.interval("sample oracle freshness", { minutes: 5 }, internal.opsNode.sampl
 crons.daily("purge old observations", { hourUTC: 3, minuteUTC: 41 }, internal.ops.purgeObservations);
 // Reference liquidator; a no-op unless KEEPER_ENABLED=1 on this deployment.
 crons.interval("reference liquidator", { minutes: 1 }, internal.keeper.run);
+// Consented loan alerts; sends nothing until a chat is linked and the bot token is set.
+crons.interval("loan alerts", { minutes: 1 }, internal.alertsNode.scan);
 export default crons;

@@ -113,7 +113,7 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 10 | [23.1 Desk accounts, roles and policies](stories.md) | 22.2 | Open (program and unit tests done; Devnet TEE proof in `v2-rooms.ts` waits for deploy SOL) |
 | 11 | [23.2 Desk workspace](stories.md) | 23.1 | Open |
 | 12 | [24.1 Auditor consent](stories.md) and [24.2 Private portfolios](stories.md) | 23.1 | Open (24.1 program side done with row 10; 24.2 done for V1 rooms, V2 rooms once deployed) |
-| 13 | [24.3 Alerts and reminders](stories.md) | 19.3, 22.2 | Open |
+| 13 | [24.3 Alerts and reminders](stories.md) | 19.3, 22.2 | Open (built and proven on local Convex; needs a Telegram bot token and hosted Convex) |
 | 14 | [24.4 MoneyGram cash-out](stories.md) and [24.5 Gate metrics](stories.md) | 19.3, 24.2 | Open |
 
 Not queued until the gate passes: [25.1 Customer gate](stories.md), [Epic 26 expansion](stories.md), [Epic 27 research](stories.md).
@@ -151,3 +151,4 @@ Not queued until the gate passes: [25.1 Customer gate](stories.md), [Epic 26 exp
 - 2026-10-07: `private_loan_v2` written: Config authorities, creator-namespaced rooms and loans, role bits with no owner bypass, 16 members, room index registry, one deal per request, V2 ledger (partial repay, top-up, priced and terminal claims), and a spot-and-EMA watch with stale-quote invalidation and excess refunds. 836 KB. 10 unit and 7 LiteSVM tests pass.
 - 2026-10-07: Desks and auditor consent are in `private_loan_v2` before its first deploy, so one deploy covers rows 8–12. 931 KB. 15 unit and 7 LiteSVM tests pass.
 - 2026-10-07: Private V2 codec (`app/lib/private/v2-codec.ts`) proven byte-for-byte against a Rust fixture. My loans names public and private totals separately; private totals read "Locked" until private sign-in, and private borrowing is listed.
+- 2026-10-07: Story 24.3 built: band engine with hysteresis and rebasing, deadline and window reminders, consented subscriptions, one-use Telegram links, secret-checked webhook, deduplicated sends. Private loans share deadlines only and get generic text.

@@ -9,7 +9,9 @@
    */
   
   import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
-  import type * as auth from "../auth.js";
+  import type * as alerts from "../alerts.js";
+import type * as alertsNode from "../alertsNode.js";
+import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as jobRunner from "../jobRunner.js";
@@ -30,7 +32,9 @@ import type * as opsNode from "../opsNode.js";
    * ```
    */
   declare const fullApi: ApiFromModules<{
-    "auth": typeof auth,
+    "alerts": typeof alerts,
+"alertsNode": typeof alertsNode,
+"auth": typeof auth,
 "crons": typeof crons,
 "http": typeof http,
 "jobRunner": typeof jobRunner,
