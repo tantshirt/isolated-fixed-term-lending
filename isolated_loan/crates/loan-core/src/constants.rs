@@ -30,3 +30,19 @@ pub const WSOL_MINT: Pubkey = pubkey!("So111111111111111111111111111111111111111
 pub fn mints_allowed(usdc: &Pubkey, wsol: &Pubkey) -> bool {
     cfg!(feature = "local-mints") || (*usdc == USDC_MINT && *wsol == WSOL_MINT)
 }
+
+// Story 26.2 additions, kept below the week-1 items.
+
+/// JITOSOL/USD. Governance writes it into jitoSOL's `CollateralConfig`; it is kept here so tests
+/// and clients share one value. It never prices wSOL.
+pub const JITOSOL_USD_FEED_ID: [u8; 32] = [
+    0x67, 0xbe, 0x9f, 0x51, 0x9b, 0x95, 0xcf, 0x24, 0x33, 0x88, 0x01, 0x05, 0x1f, 0x9a, 0x80, 0x8e,
+    0xff, 0x0a, 0x57, 0x8c, 0xcb, 0x38, 0x8d, 0xb7, 0x3b, 0x7f, 0x6f, 0xe1, 0xde, 0x01, 0x9f, 0xfb,
+];
+
+/// True when `usdc` is the pinned USDC mint (or any mint in a `local-mints` build). Per-asset
+/// collateral checks the collateral mint against its governance config instead of `WSOL_MINT`.
+#[inline]
+pub fn usdc_allowed(usdc: &Pubkey) -> bool {
+    cfg!(feature = "local-mints") || *usdc == USDC_MINT
+}

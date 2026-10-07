@@ -261,6 +261,8 @@ value_usdc  = floor( amount * (price - conf) / 10^divisor_exp )
 | wSOL | SOL/USD `ef0d8b6f…b56d` | up to 70% | up to 85% | threshold + 300 bps |
 | jitoSOL | JITOSOL/USD `67be9f519b95cf24338801051f9a808eff0a578ccb388db73b7f6fe1de019ffb` | up to 60% (provisional) | up to 70% (provisional) | threshold + 300 bps |
 
+The enabled flag gates new originations only (create, accept, fund). Liquidation, overdue liquidation and priced recovery of an existing loan keep reading the asset's feed after it is disabled, so a governance switch can never freeze recovery. Accept and fund re-check the asset's current caps, so a tightened cap stops pending offers and requests that exceed it.
+
 jitoSOL is priced by its own verified feed, never derived from SOL/USD and a stake-pool rate. On Devnet the collateral is a ZenLo test mint labelled "jitoSOL (test)", priced by the real JITOSOL/USD feed posted through the Pyth receiver in the same transaction.
 
 ### Refinance and rollover (26.1)

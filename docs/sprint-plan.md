@@ -117,7 +117,7 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 14 | [24.4 MoneyGram cash-out](stories.md) and [24.5 Gate metrics](stories.md) | 19.3, 24.2 | Open (built and checked locally; needs MoneyGram sandbox keys, an allowlisted domain and hosted Convex) |
 | 15 | [19.7 Honest shipped-feature surfaces](stories.md) | 19.6 | Done (landing, use cases and six official logos; badges derived from Devnet evidence and provider flags) |
 | 16 | Provider cutover: hosted Convex, Telegram, MoneyGram sandbox, independent Squads signers (closes rows 2, 3, 4, 13, 14) | owner keys | Open (waiting on keys) |
-| 17 | [26.2 Per-asset collateral and jitoSOL](stories.md) | 19.5, 20.3 | Open |
+| 17 | [26.2 Per-asset collateral and jitoSOL](stories.md) | 19.5, 20.3 | Open (code and tests done; Devnet config write waits on a Squads proposal and the 24-hour time lock) |
 | 18 | [26.1 Refinance and rollover](stories.md) | 26.2 | Open |
 | 19 | [26.3 Automation mandates](stories.md) and [26.4 Private liquidation operations](stories.md) | 26.1, 26.2 | Open |
 | 20 | [26.5 MoneyGram cash-in](stories.md) | row 16 | Open |

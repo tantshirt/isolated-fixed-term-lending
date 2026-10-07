@@ -22,9 +22,31 @@ export type Capability = {
 export const DEVNET_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 export const WSOL = "So11111111111111111111111111111111111111112";
 
+/** ZenLo's Devnet "jitoSOL (test)" mint, when this deployment has one (Story 26.2). */
+export const JITOSOL_TEST_MINT = process.env.NEXT_PUBLIC_JITOSOL_MINT ?? "";
+
 export const CAPABILITIES: Capability[] = [
   { provider: "zenlo-public", network: "devnet", mint: DEVNET_USDC, operation: "originate", available: true },
   { provider: "zenlo-public", network: "devnet", mint: DEVNET_USDC, operation: "service", available: true },
+  {
+    provider: "zenlo-public",
+    network: "devnet",
+    mint: JITOSOL_TEST_MINT || "jitosol-test-unset",
+    operation: "originate",
+    // jitoSOL (test) collateral on isolated_loan_v2: on once governance has written its
+    // CollateralConfig through a Squads proposal and the deployment sets the flag and mint.
+    available: process.env.NEXT_PUBLIC_JITOSOL_ENABLED === "1" && JITOSOL_TEST_MINT !== "",
+    reason: "jitoSOL (test) collateral is not enabled on this deployment yet.",
+  },
+  {
+    provider: "zenlo-public",
+    network: "devnet",
+    mint: JITOSOL_TEST_MINT || "jitosol-test-unset",
+    operation: "service",
+    // The flag pauses new jitoSOL loans only; existing ones stay serviceable.
+    available: JITOSOL_TEST_MINT !== "",
+    reason: "This deployment has no jitoSOL (test) mint.",
+  },
   { provider: "zenlo-private", network: "devnet", mint: DEVNET_USDC, operation: "originate", available: true },
   { provider: "zenlo-private", network: "devnet", mint: DEVNET_USDC, operation: "service", available: true },
   {

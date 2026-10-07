@@ -10,6 +10,9 @@ export type ProgramGeneration = "legacy" | "v2";
 export type CollateralAsset = {
   version: 1;
   symbol: "wSOL" | "jitoSOL";
+  /** What the interface shows, e.g. "jitoSOL (test)" on Devnet. */
+  label: string;
+  /** Empty when the asset has no mint on this deployment. */
   mint: string;
   decimals: number;
   /** Pyth feed id (hex) used to price this asset in USD. */
