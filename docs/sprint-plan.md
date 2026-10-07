@@ -102,7 +102,7 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | Order | Story | Depends on | Status |
 | --- | --- | --- | --- |
 | 1 | [19.1 Lender pilot kit](stories.md) | — | Done |
-| 2 | [19.2 Convex and wallet sign-in](stories.md) | — | Open |
+| 2 | [19.2 Convex and wallet sign-in](stories.md) | — | Open (code done; hosted Convex waits on Marketplace terms) |
 | 3 | [19.3 Durable jobs, capabilities and operations](stories.md) and [19.4 Versioned models](stories.md) | 19.2 | Open |
 | 4 | [19.5 Governance](stories.md) and [19.6 Asset registry](stories.md) | — | Open |
 | 5 | [20.1 Accounting engine](stories.md), [20.2 Pricing ceilings](stories.md), [20.3 Spot and EMA](stories.md) | — | Open |
@@ -142,3 +142,4 @@ Not queued until the gate passes: [25.1 Customer gate](stories.md), [Epic 26 exp
 - 2026-10-06: Security audit ([report](security-audit.md)). Fixed S1, S2, S4 on chain and A1–A3 in the app. The fuzz part of story 7.2 is done (`npm run test:fuzz`, 2,000 cases by default, plus a 50,000-case run); 7.2 stays Open for the indexer. CI added in `.github/workflows/ci.yml`.
 - 2026-10-07: Desk-first roadmap queued (Epics 19–27). The week-1 limits on per-second interest, partial repayment, top-up, refinance and Devnet work now apply to the legacy programs only; V2 follows the updated research note.
 - 2026-10-07: Story 19.1 done. Pilot kit in `docs/pilot/`; `app/lib/pilot/gate.ts` evaluates the measurable gate checks and excludes `developer-wallets.json`.
+- 2026-10-07: Story 19.2 code done and proven against a local Convex deployment (`app/scripts/auth-e2e.mjs`, 9 checks). See [backend.md](backend.md). Stays Open until the hosted Convex deployments are connected through the Vercel Marketplace.

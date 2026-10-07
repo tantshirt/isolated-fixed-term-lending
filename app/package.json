@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "sync-idl": "cp ../isolated_loan/target/idl/isolated_loan.json idl/isolated_loan.json && cp ../isolated_loan/target/idl/private_loan.json idl/private_loan.json",
-    "test": "node --import tsx --test lib/*.test.ts lib/private/*.test.ts lib/pilot/*.test.ts",
+    "test": "node --import tsx --test lib/*.test.ts lib/private/*.test.ts lib/pilot/*.test.ts lib/auth/*.test.ts",
     "sync-evidence": "cp ../docs/magicblock-evidence.json lib/private/evidence.json"
   },
   "dependencies": {
@@ -18,6 +18,7 @@
     "@magicblock-labs/soar-sdk": "^0.1.23",
     "@metamask/connect-solana": "^2.1.1",
     "@pythnetwork/pyth-solana-receiver": "^0.16.0",
+    "@scure/base": "^1.2.6",
     "@solana/spl-token": "^0.4.15",
     "@solana/wallet-adapter-base": "^0.9.28",
     "@solana/wallet-adapter-react": "^0.15.40",
@@ -26,10 +27,13 @@
     "ai": "^7.0.127",
     "bn.js": "^5.2.5",
     "botid": "1.5.11",
+    "convex": "^1.46.0",
+    "jose": "^6.2.12",
     "motion": "^14.0.0",
     "next": "15.5.27",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "tweetnacl": "^1.0.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
