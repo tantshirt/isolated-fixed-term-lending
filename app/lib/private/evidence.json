@@ -1099,6 +1099,111 @@
           }
         }
       }
+    },
+    "v2-rooms": {
+      "status": "PASS",
+      "date": "2026-10-07",
+      "program": "JAzy8NP6V8AGrAko8vfgrD44BDghN6eLwqB7vjuYhHNq",
+      "room": "H9nCpXNvUxHBLaBXWAYHuZi912YdEhoSBZ38wqmqoazb",
+      "loans": {
+        "A": "8JsD2oB8VP9HCrA8KJ1CaEuHipkKE5LjME1RG8THqd2J",
+        "B": "7TtussG3AtffjgzK9Khaytih8DjnxAcSkKgE4m8qeBwd",
+        "C": "BqmejQTnkzESuN1qdUSdMSaorXfoQH6NNraSZZuNrT1e",
+        "D": "ERPdXH2uD5ZhdbiAxdhzSqbGMdTeFd528pWD5VCRXDZd"
+      },
+      "desk": "7BjmKRDyhbFvB8guoSF5RAKmDrQbWS8wcxZsMJMAksM4",
+      "overdueFixture": {
+        "loan": "7TtussG3AtffjgzK9Khaytih8DjnxAcSkKgE4m8qeBwd",
+        "lender": "6iBx3cMzvBZxNeT1EshhBCTv6aQzHe531emKifJBC3HU",
+        "borrower": "6yNVZ6YAcVHWMJtBb5tsFaBUkAsrPkxkrwhm9XL8TDTQ",
+        "note": "60-second term, 24-hour grace; parties kept in .local/parties for the watch evidence"
+      },
+      "failed": [],
+      "checks": {
+        "owner-has-no-lender-bypass": {
+          "ok": true,
+          "detail": "Error: 3YxS8MtGDwWQs2UeiATohXfMeXF2LQK3ymrJnx4gY1em2J9nkFV7rSRjp63EkDgJW3nqSzb4qbNXc4UV75SFuJTW failed: {\"InstructionError\":[0,{\"Custom\":6023}]}"
+        },
+        "room-indexes-are-sequential": {
+          "ok": true,
+          "detail": {
+            "a": 0,
+            "b": 1
+          }
+        },
+        "members-read-the-room-registry": {
+          "ok": true,
+          "detail": "3FwLYFkmCYoqQnnHGVuGGJobJicg4yf2YMuGeVdRoA3E"
+        },
+        "outsiders-cannot-read-the-registry": {
+          "ok": true,
+          "detail": "hidden"
+        },
+        "two-loans-active-in-one-room": {
+          "ok": true,
+          "detail": [
+            2,
+            2
+          ]
+        },
+        "one-accepted-proposal-per-request": {
+          "ok": true,
+          "detail": "Error: iKnFcHYfsuj8jc2G9nU3R1dS7XZoUFKhxbmL4dZfiCeqFT4wY9y6LuGvtL8yvpi1uc4ro1WtDmLTS5kCCLUvxUL failed: {\"InstructionError\":[0,{\"Custom\":6031}]}"
+        },
+        "partial-repay-keeps-the-deadline": {
+          "ok": true,
+          "detail": {
+            "outstanding": "60000",
+            "paid": "0"
+          }
+        },
+        "top-up-adds-collateral": {
+          "ok": true,
+          "detail": "locked"
+        },
+        "full-repay-returns-all-collateral": {
+          "ok": true,
+          "detail": {
+            "status": 3
+          }
+        },
+        "terms-never-on-solana": {
+          "ok": true,
+          "detail": "absent on base"
+        },
+        "non-desk-lender-cannot-originate-under-the-desk": {
+          "ok": true,
+          "detail": "Error: 2zmj53XjHuhPhxyb73NLeHu4Z3ih4uYAhLSMgBRYQvT6j3bY25HCtBSGhEKBWXCXKWTBbpMoHXHjCP2LEhhNpc58 failed: {\"InstructionError\":[0,{\"Custom\":6047}]}"
+        },
+        "terms-outside-the-policy-rejected": {
+          "ok": true,
+          "detail": "Error: 5BZKoVSxDJuAh17BGzZToeaR6uwHtaKLHheJUYDHXhvwzE8NDFQ9VCibFCbwKFNbifbkCozvKbqTCX6vNYpHmZJt failed: {\"InstructionError\":[0,{\"Custom\":6045}]}"
+        },
+        "desk-loan-pins-policy-and-audience": {
+          "ok": true,
+          "detail": "auditor hash recorded"
+        },
+        "acceptance-must-name-the-shown-audience": {
+          "ok": true,
+          "detail": "Error: 2JAT3LfncuRoY7d8KTjgx8XUf5aHD5T6MvUTrGXkEJA7dEZjZftQKHJVUDFUrJdseo5Y9fsKvdEoC1WRda69PXaD failed: {\"InstructionError\":[0,{\"Custom\":6049}]}"
+        },
+        "auditor-cannot-read-before-acceptance": {
+          "ok": true,
+          "detail": "hidden"
+        },
+        "auditor-reads-after-consent": {
+          "ok": true,
+          "detail": "visible"
+        },
+        "administrator-cannot-read-desk-loans": {
+          "ok": true,
+          "detail": "admin has no read bypass"
+        },
+        "removing-a-reader-ends-access": {
+          "ok": true,
+          "detail": "hidden again"
+        }
+      }
     }
   }
 }
