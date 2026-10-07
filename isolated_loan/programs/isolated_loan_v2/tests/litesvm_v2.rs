@@ -1,4 +1,4 @@
-//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2, 26.1, 26.2, 26.3). Run `anchor build` first.
+//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2, 26.1, 26.2, 26.3, 26.7). Run `anchor build` first.
 //! Every boundary is driven by setting the clock to the exact second. The Pyth account is owned by
 //! the real receiver program, so the owner check is exercised, never bypassed.
 
@@ -1747,3 +1747,7 @@ fn jitosol_top_up_mandate_reads_its_own_feed() {
     env.jito_usd(180, 180);
     env.rearm_with(&k, o, ACTION_TOP_UP, jp, extra).unwrap();
 }
+
+// ---- Story 26.7: credit tiers (kept in its own file for easy rebases) ----
+#[path = "credit/mod.rs"]
+mod credit_tests;

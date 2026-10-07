@@ -12,6 +12,7 @@ import { URGENCY, deadlineIcs, type PortfolioItem, type Side } from "@/lib/portf
 import { PrivateDesk } from "./PrivateDesk";
 import { CashPanel } from "@/components/cash/CashPanel";
 import { ShieldPanel } from "@/components/shield/ShieldPanel";
+import { CREDIT_PILOT_ENABLED } from "@/lib/credit/flag";
 import { useBalances, useDevConfig } from "@/lib/client/hooks";
 import { usePortfolio } from "./usePortfolio";
 import s from "./MyLoans.module.css";
@@ -267,6 +268,12 @@ export function MyLoans() {
       {bySide("borrower").length > 0 && <CashPanel direction="in" usdcBalance={cashBalances?.usdc ?? null} />}
       <ShieldPanel wsolBalance={cashBalances?.wsol ?? null} />
 
+
+      {CREDIT_PILOT_ENABLED && (
+        <p className={s.note}>
+          Invited to the credit pilot? <Link href="/devnet/credit">See your credential and tier</Link>.
+        </p>
+      )}
 
       <p className={s.note}>
         Closed accounts leave the chain, so settled loans disappear here once they are closed. Your wallet history keeps

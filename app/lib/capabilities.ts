@@ -3,8 +3,8 @@
  * capability but never enable one that was not proven. Unsupported actions carry a reason.
  */
 export type Network = "devnet" | "localnet" | "mainnet";
-export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra" | "privacy-cash";
-export type Operation = "originate" | "service" | "refinance" | "automate" | "cash-out" | "cash-in" | "notify" | "shield";
+export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra" | "privacy-cash" | "sas" | "reclaim";
+export type Operation = "originate" | "service" | "refinance" | "automate" | "cash-out" | "cash-in" | "notify" | "shield" | "credential";
 
 export type Capability = {
   provider: Provider;
@@ -28,6 +28,9 @@ export function cashInEnabled(moneygram: string | undefined, cashIn: string | un
 }
 /** ZenLo's Devnet "jitoSOL (test)" mint, when this deployment has one (Story 26.2). */
 export const JITOSOL_TEST_MINT = process.env.NEXT_PUBLIC_JITOSOL_MINT ?? "";
+
+/** Story 26.7: the invited credit pilot ("1" or "true"). */
+const CREDIT_PILOT = process.env.NEXT_PUBLIC_CREDIT_PILOT_ENABLED === "1" || process.env.NEXT_PUBLIC_CREDIT_PILOT_ENABLED === "true";
 
 export const CAPABILITIES: Capability[] = [
   { provider: "zenlo-public", network: "devnet", mint: DEVNET_USDC, operation: "originate", available: true },
@@ -130,6 +133,26 @@ export const CAPABILITIES: Capability[] = [
       reason: "Privacy Cash has no public Devnet relayer, and its official SDK is mainnet-only.",
     }),
   ),
+  {
+    provider: "sas",
+    network: "devnet",
+    // Credit tiers apply to wSOL collateral only (research.md § Credit tiers).
+    mint: WSOL,
+    operation: "credential",
+    // Story 26.7: on once the flag is set, the credential and schema exist on Devnet, and the
+    // isolated_loan_v2 upgrade carrying CreditConfig has passed the Squads vault.
+    available: CREDIT_PILOT && !!process.env.NEXT_PUBLIC_SAS_CREDENTIAL && !!process.env.NEXT_PUBLIC_SAS_SCHEMA,
+    reason: "The credit pilot is invite-only and not enabled on this deployment yet.",
+  },
+  {
+    provider: "reclaim",
+    network: "devnet",
+    mint: "*",
+    operation: "credential",
+    // Income proofs are verified server-side and discarded; on once a Reclaim app id exists.
+    available: CREDIT_PILOT && !!process.env.NEXT_PUBLIC_RECLAIM_APP_ID,
+    reason: "Income verification is not connected on this deployment yet.",
+  },
 ];
 
 export type Availability = { available: true } | { available: false; reason: string; simulationOnly: boolean };
