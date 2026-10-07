@@ -74,7 +74,7 @@ export function useOffersV2(enabled: boolean, wallet?: string | null, ms = 20_00
 }
 
 /** Open V2 borrower requests, for Discover. */
-export function useRequestsV2(enabled: boolean, ms = 20_000) {
+export function useRequestsV2(enabled: boolean, ms = 20_000, wallet?: string | null) {
   const { refreshKey } = useSigner();
   const [rows, setRows] = useState<import("./offers").RequestV2[] | null>(null);
   useEffect(() => {
@@ -84,7 +84,7 @@ export function useRequestsV2(enabled: boolean, ms = 20_000) {
       if (document.visibilityState !== "visible") return;
       try {
         const { fetchRequestsV2 } = await import("./offers");
-        const found = await sharedRead(`v2-requests:${refreshKey}`, () => fetchRequestsV2(getConnection()));
+        const found = await sharedRead(`v2-requests:${wallet ?? "all"}:${refreshKey}`, () => fetchRequestsV2(getConnection(), wallet ?? undefined));
         if (alive) setRows(found);
       } catch {
         // Keep the last good list.
@@ -96,6 +96,6 @@ export function useRequestsV2(enabled: boolean, ms = 20_000) {
       alive = false;
       clearInterval(id);
     };
-  }, [enabled, refreshKey, ms]);
+  }, [enabled, wallet, refreshKey, ms]);
   return rows;
 }
