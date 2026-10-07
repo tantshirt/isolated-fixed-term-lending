@@ -4,6 +4,7 @@
 //! error enum, so both programs keep their own error codes.
 
 pub mod constants;
+pub mod accounting;
 pub mod math;
 pub mod oracle;
 

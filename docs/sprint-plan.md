@@ -105,7 +105,7 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 2 | [19.2 Convex and wallet sign-in](stories.md) | — | Open (code done; hosted Convex waits on Marketplace terms) |
 | 3 | [19.3 Durable jobs, capabilities and operations](stories.md) and [19.4 Versioned models](stories.md) | 19.2 | Open (code done; cutover after 7 clean days on hosted Convex; screens adopt `LoanView` as V2 lands) |
 | 4 | [19.5 Governance](stories.md) and [19.6 Asset registry](stories.md) | — | 19.6 Done; 19.5 Open (time-locked executions due 2026-10-08, independent signers, V2 deploys under the vault) |
-| 5 | [20.1 Accounting engine](stories.md), [20.2 Pricing ceilings](stories.md), [20.3 Spot and EMA](stories.md) | — | Open |
+| 5 | [20.1 Accounting engine](stories.md), [20.2 Pricing ceilings](stories.md), [20.3 Spot and EMA](stories.md) | — | 20.1 Done; 20.2 and 20.3 math Done, interface lands with 21.1 |
 | 6 | [21.1 `isolated_loan_v2` core](stories.md) | 19.5, 20.x | Open |
 | 7 | [21.2 Grace, recovery and surplus](stories.md) and [21.3 Reference liquidator](stories.md) | 21.1 | Open |
 | 8 | [22.1 Multi-loan rooms](stories.md) | 19.5 | Open |
@@ -145,3 +145,4 @@ Not queued until the gate passes: [25.1 Customer gate](stories.md), [Epic 26 exp
 - 2026-10-07: Story 19.2 code done and proven against a local Convex deployment (`app/scripts/auth-e2e.mjs`, 9 checks). See [backend.md](backend.md). Stays Open until the hosted Convex deployments are connected through the Vercel Marketplace.
 - 2026-10-07: Stories 19.3 and 19.4 code done. Proven on a local Convex: dedup, retry then success, permanent failure, crash-after-send → uncertain → reconciled → retried → succeeded, shadow scan of live Devnet watches, live-report parity, and `/ops/health`. My loans now reads `LoanView`.
 - 2026-10-07: Story 19.6 done (`app/public/brands/registry.json`, hash-checked by a test). Story 19.5: Squads 2-of-3 with a 24-hour time lock on Devnet. Threshold and time-lock refusals are recorded in [governance.md](governance.md), and the `governance` crate separates the V2 roles.
+- 2026-10-07: Story 20.1 done. `loan-core::accounting` and `app/lib/loan-math-v2.ts` agree on `vectors-v2.json` (7 cases, 29 steps). 200,000 property cases pass. A property test caught the late fee taking the ceiling room before the maturity round-up; the round-up now happens first, and research.md says so.

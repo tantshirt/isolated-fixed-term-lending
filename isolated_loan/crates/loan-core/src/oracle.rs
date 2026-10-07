@@ -63,3 +63,37 @@ pub fn read_sol_usd_price(price_update_account: &AccountInfo, clock: &Clock) -> 
         exponent: price.exponent,
     })
 }
+
+/// Same band checks the spot price must pass, applied to any price and its own confidence.
+fn band_ok(price: i64, conf: u64, exponent: i32) -> bool {
+    price > 0
+        && conf < price as u64
+        && (conf as u128) * 10_000 <= (price as u128) * MAX_CONF_BPS_OF_PRICE
+        && (MIN_EXPONENT..=MAX_EXPONENT).contains(&exponent)
+}
+
+/// Spot plus EMA for V2 liquidation (Story 20.3). The spot must pass every V1 check or this
+/// fails. The EMA comes from the same verified, fresh message and is judged on its own
+/// confidence; if it fails its checks it is `None`, so only an emergency liquidation can qualify.
+pub fn read_sol_usd_spot_and_ema(price_update_account: &AccountInfo, clock: &Clock) -> CoreResult<(OraclePrice, Option<OraclePrice>)> {
+    let spot = read_sol_usd_price(price_update_account, clock)?;
+    let price_update = PriceUpdateV2::try_deserialize(&mut &price_update_account.data.borrow()[..])
+        .map_err(|_| CoreError::InvalidPrice)?;
+    let m = &price_update.price_message;
+    let ema = band_ok(m.ema_price, m.ema_conf, m.exponent).then_some(OraclePrice { price: m.ema_price, conf: m.ema_conf, exponent: m.exponent });
+    Ok((spot, ema))
+}
+
+#[cfg(test)]
+mod band_tests {
+    use super::band_ok;
+
+    #[test]
+    fn ema_band_uses_its_own_confidence() {
+        assert!(band_ok(15_000_000_000, 15_000_000, -8));
+        assert!(band_ok(15_000_000_000, 300_000_000, -8));
+        assert!(!band_ok(15_000_000_000, 300_000_001, -8));
+        assert!(!band_ok(0, 0, -8));
+        assert!(!band_ok(15_000_000_000, 0, -2));
+    }
+}

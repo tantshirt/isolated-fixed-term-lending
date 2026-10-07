@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc ec6fdac02b09f90a650482fc636b18de3d29e64bdb16d8d28bc05e9b73a410a0 # shrinks to t = TermsV2 { principal: 1000, interest_bps: 601, duration: 1108198, start_ts: 1800000000, early_repayment: ProRata, min_interest_bps: 0, grace_seconds: 102893, late_fee_bps: 1, annual_ceiling_bps: 15884 }

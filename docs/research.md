@@ -147,3 +147,98 @@ Tests should assert these integers, not a rounded dollar display.
 - Mainnet USDC `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` and wrapped SOL `So11111111111111111111111111111111111111112` are the week-2 targets, not week 1.
 - Local tests build a `PriceUpdateV2` whose owner is the receiver program id. They do not turn the owner check off.
 - No Pyth-specific agent skill was available beyond the Solana Foundation development skill. These checks are the oracle spec.
+
+## V2 accounting (approved 2026-10-07)
+
+Everything above stays the rule for the legacy programs. The V2 programs use the model below, implemented once in `crates/loan-core/src/accounting.rs` and mirrored in `app/lib/loan-math-v2.ts`. `crates/loan-core/vectors-v2.json` is generated from Rust scenarios and replayed in TypeScript (`npm run test:ts`). `tests/accounting_props.rs` checks the invariants over random terms and payment sequences (`npm run test:fuzz`).
+
+### Terms fixed at origination
+
+| Term | Rule |
+| --- | --- |
+| Term interest | `interest_bps` of principal for the whole term, at most 20% (as in V1) |
+| Early repayment | `FullTerm`: the full-term interest is owed whenever the borrower repays. `ProRata`: interest accrues on outstanding principal until maturity. |
+| Minimum interest (pro-rata) | `ceil(full_term_interest × min_interest_bps / 10_000)`. Default 2,500 (25%). Never above the ceiling. |
+| Grace | Default 86,400 s, allowed 86,400–172,800 s (24–48 hours) |
+| Late fee | Default 100 bps, at most 500 bps of principal unpaid at maturity |
+| Annual pricing ceiling | Above 0 and at most 60,000 bps (600%), a Devnet test setting, not a compliance claim. A desk policy sets its own lower ceiling. |
+
+`full_term_interest = ceil(P0 × interest_bps / 10_000)`, the V1 formula.
+
+The charge ceiling is a maximum, so it rounds down:
+
+```
+charge_ceiling = floor(P0 × annual_ceiling_bps × (duration + grace) / (10_000 × 31_536_000))
+```
+
+The basis is the contract period (term plus grace) on a 365-day year. A loan whose full-term interest is above its ceiling is rejected at origination. After that, the ceiling clamps every later charge.
+
+Origination LTV uses the maximum contractual exposure:
+
+```
+max_exposure = P0 + min(full_term_interest + ceil(P0 × late_fee_bps / 10_000), charge_ceiling)
+```
+
+### Ledger and order of operations
+
+The ledger holds:
+- outstanding principal;
+- accrued and paid interest;
+- the accrual remainder;
+- the last accrual time;
+- the assessed and paid late fee, and whether the late fee has been checked.
+
+Every instruction first brings the ledger up to the chain clock. It accrues first, then assesses the late fee.
+
+**Pro-rata accrual** runs from the last accrual time up to `min(now, maturity)`:
+
+```
+num = outstanding × interest_bps × dt + remainder        (u128)
+accrued += num / (10_000 × duration);  remainder = num % (10_000 × duration)
+```
+
+At maturity, a non-zero remainder is rounded up by one atom, exactly once. With no partial payments this makes total interest equal V1's `ceil`. The round-up happens before the late fee, so contract interest takes the ceiling's room first. Accrual then stops. Every addition is clamped to the remaining ceiling headroom.
+
+**Late fee**: from the first second at or after maturity, charged once:
+
+```
+late_fee = min(ceil(outstanding_at_maturity × late_fee_bps / 10_000), headroom)
+```
+
+**Payments** go to accrued interest, then the unpaid late fee, then principal. A payment of at least the payoff closes the loan and takes only the payoff; anything smaller is partial. Reaching zero principal does not close the loan while charges remain.
+
+**Final payoff** of a pro-rata loan adds a one-time adjustment, clamped to headroom: the remainder rounded up (only when paying before maturity), plus any gap up to the minimum interest after interest already paid.
+
+**Payoff**:
+
+```
+payoff = outstanding + accrued + unpaid late fee + final adjustment
+```
+
+Health, liquidation and settlement all use this payoff.
+
+### Timeline
+
+| From (inclusive) | Phase | Allowed |
+| --- | --- | --- |
+| start | Active | Repay (partial or full), add collateral, risk liquidation |
+| maturity | Grace | The same; the late fee now applies. Maturity alone does not allow overdue liquidation. |
+| maturity + grace | Overdue | Overdue liquidation regardless of LTV: the caller pays the payoff and takes collateral worth payoff × 1.05 (rounded up); the surplus returns to the borrower |
+| grace end + 86,400 s | Priced recovery | Also: the lender takes collateral worth the payoff with no bonus, at a valid price. The surplus returns, and any uncovered payoff is recorded as `shortfall`. |
+| grace end + 604,800 s | Terminal | Also: the lender may claim all remaining collateral without an oracle. This is an agreed default remedy that can lose surplus, disclosed before signing. |
+
+Repayment stays open in every phase until a settlement executes. The first settlement to execute moves the loan to its single terminal status.
+
+### Oracle policy
+
+The spot price must pass every V1 check, and its conservative value is `price - conf`. The EMA comes from the same verified, fresh message and must pass the same band checks using its own confidence (`read_sol_usd_spot_and_ema`).
+
+- **Ordinary risk liquidation**: conservative spot LTV ≥ threshold **and** conservative EMA LTV ≥ threshold.
+- **Emergency liquidation**: conservative spot LTV ≥ threshold + 300 bps, whatever the EMA says. This is the exception to wick protection, for a crash the average has not caught up with.
+- An invalid spot never qualifies. An invalid EMA allows only the emergency path.
+- The EMA does not stop a caller from choosing among recent valid updates; that accepted risk (S3) remains.
+
+### Display
+
+- The annualized rate shown to users is `floor(interest_bps × 31_536_000 / duration)`, on a 365-day year.
+- Term cost, annualized pricing and current payoff are always shown as separate figures.
