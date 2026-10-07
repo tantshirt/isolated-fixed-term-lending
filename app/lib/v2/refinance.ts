@@ -1,3 +1,4 @@
+import { STANDARD_CAPS } from "../credit/bands";
 import { payoff, phase } from "../loan-math-v2";
 import type { OfferV2 } from "./offers";
 
@@ -43,6 +44,8 @@ export function refinanceQuote(old: OfferV2, next: OfferV2, borrower: string, no
   const quote = { payoffOld, newPrincipal, contribution, newCollateral: next.collateralRequired, collateralBack: old.collateralLocked - next.collateralRequired };
   const reason = !canRefinance(old, now)
     ? "Only a loan before the end of grace can refinance."
+    : next.maxLtvBps > STANDARD_CAPS.maxLtvBps || next.liquidationLtvBps > STANDARD_CAPS.liquidationLtvBps
+      ? "Credit-tier offers cannot be used for refinancing in this pilot."
     : next.status !== "open"
       ? "That offer is no longer open."
       : next.publicKey === old.publicKey

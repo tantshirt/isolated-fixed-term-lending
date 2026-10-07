@@ -73,3 +73,10 @@ test("Refinanced is its own terminal word, never Repaid", () => {
   assert.equal(REFINANCED_WORD, "Refinanced");
   assert.equal(LOAN_STATUS_V2[10], "refinanced");
 });
+
+ test("credit-tier replacement offers stay out of the pilot refinance picker", () => {
+  const old = loan();
+  const next = loan({ publicKey: "next", status: "open", maxLtvBps: 8_000, liquidationLtvBps: 8_500 });
+  assert.match(refinanceQuote(old, next, old.borrower!, NOW + DAY).reason!, /Credit-tier/);
+  assert.deepEqual(refinanceCandidates(old, [next], old.borrower!, NOW + DAY), []);
+});
