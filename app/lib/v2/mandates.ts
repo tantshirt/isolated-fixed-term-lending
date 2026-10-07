@@ -5,17 +5,19 @@
  * and the keeper make the same decision the program will. Public loans only: private mandates
  * are evaluated by their crank inside the rollup, never here and never in Convex.
  */
-import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey, SystemProgram, type Connection, type Keypair, type TransactionInstruction } from "@solana/web3.js";
 import type { BN } from "@coral-xyz/anchor";
 import { NATIVE_WSOL_MINT, PYTH_PRICE_UPDATE_ACCOUNT } from "../constants";
-import { collateralValueUsdc, currentLtvBps } from "../loan-math";
+import { currentLtvBps } from "../loan-math";
 import { maturity, payoff as payoffAt } from "../loan-math-v2";
 import { asSigner, type LoanSigner } from "../keypair-wallet";
 import { bnU64, getConnection } from "../program";
 import { submitTransaction } from "../transaction-lifecycle";
 import type { PriceSnapshot } from "../offer-status";
 import type { OfferV2 } from "./offers";
+import { collateralValueAtoms } from "../models/collateral";
+import { feedPriceAccount } from "./collateral-accounts";
 import { PROGRAM_V2_ID, collateralConfigV2Pda, getProgramV2, v2Coder, wsolVaultV2Pda } from "./program";
 
 /** Off until the deployment's `isolated_loan_v2` carries the mandate instructions. */
@@ -87,6 +89,9 @@ export function planMandate(m: Pick<Mandate, "amountPerExec" | "cumulativeCap" |
   return amount === 0n ? "cap-reached" : { amount, fee };
 }
 
+export type MandatePrice = PriceSnapshot & { collateralDecimals?: number };
+export type MandateOperation = "execute" | "rearm";
+
 export type MandateDecision =
   | { due: true; plan: MandatePlan; ltvBps: number | null }
   | { due: false; reason: "not-active" | "expired" | "not-armed" | "not-triggered" | "stale-price" | "cap-reached" | "fee-above-cap" | "needs-asset-price" };
@@ -94,9 +99,9 @@ export type MandateDecision =
 /**
  * Pure: would `execute_mandate` succeed now with the largest fee the bounds allow? `price` is the
  * loan's collateral price (SOL/USD for wSOL). A non-wSOL health trigger without its own price
- * returns `needs-asset-price`; the keeper then relies on simulation, which reads the right feed.
+ * returns `needs-asset-price` and cannot execute until the keeper reads a fresh asset price.
  */
-export function decideMandate(m: Mandate, o: OfferV2, price: PriceSnapshot | null, now: number): MandateDecision {
+export function decideMandate(m: Mandate, o: OfferV2, price: MandatePrice | null, now: number): MandateDecision {
   if (o.status !== "active") return { due: false, reason: "not-active" };
   if (now >= m.expiry) return { due: false, reason: "expired" };
   if (!m.armed) return { due: false, reason: "not-armed" };
@@ -105,7 +110,7 @@ export function decideMandate(m: Mandate, o: OfferV2, price: PriceSnapshot | nul
   if (m.trigger === TRIGGER_HEALTH) {
     if (o.wsolMint !== NATIVE_WSOL_MINT.toBase58() && !price) return { due: false, reason: "needs-asset-price" };
     if (!price?.fresh) return { due: false, reason: "stale-price" };
-    ltvBps = currentLtvBps(owed, collateralValueUsdc(o.collateralLocked, price.price, price.conf, price.exponent));
+    ltvBps = currentLtvBps(owed, collateralValueAtoms(o.collateralLocked, price.collateralDecimals ?? 9, price.price, price.conf, price.exponent));
     if (ltvBps < m.triggerLtvBps) return { due: false, reason: "not-triggered" };
   } else if (now < maturity(o.terms) - m.leadSeconds) return { due: false, reason: "not-triggered" };
   const remainingFeeRoom = m.feeCap - m.feesPaid;
@@ -113,6 +118,17 @@ export function decideMandate(m: Mandate, o: OfferV2, price: PriceSnapshot | nul
   const plan = planMandate(m, fee < 0n ? 0n : fee, m.action === ACTION_REPAY ? owed : null);
   if (typeof plan === "string") return { due: false, reason: plan };
   return { due: true, plan, ltvBps };
+}
+
+/** Rearming is a separate durable job; it never spends allowance or charges a fee. */
+export function decideRearm(m: Mandate, o: OfferV2, price: MandatePrice | null, now: number): { due: boolean; reason: string } {
+  if (o.status !== "active") return { due: false, reason: "not-active" };
+  if (now >= m.expiry) return { due: false, reason: "expired" };
+  if (m.armed || m.trigger !== TRIGGER_HEALTH) return { due: false, reason: "not-rearmable" };
+  if (!price?.fresh) return { due: false, reason: "stale-price" };
+  const value = collateralValueAtoms(o.collateralLocked, price.collateralDecimals ?? 9, price.price, price.conf, price.exponent);
+  const ltv = currentLtvBps(payoffAt(o.terms, o.ledger, now), value);
+  return ltv <= m.triggerLtvBps - REARM_GAP_BPS ? { due: true, reason: "rearm" } : { due: false, reason: "not-recovered" };
 }
 
 type RawMandate = {
@@ -196,15 +212,17 @@ export const MANDATE_JOB_WINDOW_SECONDS = 300;
  * execution and each window, so a job that found nothing to do never blocks a later one, and two
  * scans in one window never queue the same work twice.
  */
-export function mandateJobsDue(mandates: Mandate[], offers: Map<string, OfferV2>, price: PriceSnapshot | null, now: number): { dedupKey: string; payload: { mandate: string } }[] {
+export function mandateJobsDue(mandates: Mandate[], offers: Map<string, OfferV2>, price: PriceSnapshot | null, now: number): { dedupKey: string; payload: { mandate: string; operation: MandateOperation } }[] {
   const window = Math.floor(now / MANDATE_JOB_WINDOW_SECONDS);
-  const jobs: { dedupKey: string; payload: { mandate: string } }[] = [];
+  const jobs: { dedupKey: string; payload: { mandate: string; operation: MandateOperation } }[] = [];
   for (const m of mandates) {
     const o = offers.get(m.offer);
     if (!o) continue;
     const isWsol = o.wsolMint === NATIVE_WSOL_MINT.toBase58();
-    const d = decideMandate(m, o, isWsol ? price : null, now);
-    if (d.due || d.reason === "needs-asset-price") jobs.push({ dedupKey: `mandate:${m.publicKey}:${m.executions}:${window}`, payload: { mandate: m.publicKey } });
+    const operation = !m.armed && m.trigger === TRIGGER_HEALTH ? "rearm" : "execute";
+    const d = operation === "rearm" ? decideRearm(m, o, isWsol ? price : null, now) : decideMandate(m, o, isWsol ? price : null, now);
+    // Missing or stale prices are re-read by the job using this asset's configured feed.
+    if (d.due || d.reason === "needs-asset-price" || d.reason === "stale-price") jobs.push({ dedupKey: `mandate:${m.publicKey}:${operation}:${m.executions}:${window}`, payload: { mandate: m.publicKey, operation } });
   }
   return jobs;
 }
@@ -227,4 +245,27 @@ export async function executeMandateIx(keeper: Keypair, connection: Connection, 
     })
     .remainingAccounts(collateralRemaining(o))
     .instruction();
+}
+
+/** Resolve the actual governance feed, including disabled assets still being serviced. */
+export async function mandateCollateral(connection: Connection, o: OfferV2): Promise<{ priceAccount: PublicKey; decimals: number; feedId?: Buffer }> {
+  if (o.wsolMint === NATIVE_WSOL_MINT.toBase58()) return { priceAccount: PYTH_PRICE_UPDATE_ACCOUNT, decimals: 9 };
+  const info = await connection.getAccountInfo(collateralConfigV2Pda(new PublicKey(o.wsolMint)));
+  if (!info || !info.owner.equals(PROGRAM_V2_ID)) throw new Error("Mandate collateral configuration is unavailable.");
+  const c = v2Coder.decode("collateralConfig", info.data) as { mint: PublicKey; decimals: number; feedId: number[] };
+  if (!c.mint.equals(new PublicKey(o.wsolMint))) throw new Error("Mandate collateral configuration has the wrong mint.");
+  const feedId = Buffer.from(c.feedId);
+  return { priceAccount: feedPriceAccount(feedId.toString("hex")), decimals: c.decimals, feedId };
+}
+
+/** Accounts required even when the fee is zero or a payment will only partially repay. */
+export function mandateTokenPreparation(keeper: PublicKey, m: Mandate, o: OfferV2): TransactionInstruction[] {
+  const pairs = [[keeper, new PublicKey(sourceMint(o, m.action))]];
+  if (m.action === ACTION_REPAY) pairs.push([new PublicKey(o.currentLender), new PublicKey(o.usdcMint)], [new PublicKey(o.borrower!), new PublicKey(o.wsolMint)]);
+  return pairs.map(([owner, mint]) => createAssociatedTokenAccountIdempotentInstruction(keeper, ata(mint, owner), owner, mint));
+}
+
+export async function rearmMandateIx(keeper: Keypair, connection: Connection, m: Mandate, o: OfferV2, priceUpdate: PublicKey): Promise<TransactionInstruction> {
+  const offer = new PublicKey(o.publicKey);
+  return getProgramV2(keeper, connection).methods.rearmMandate().accountsPartial({ signer: keeper.publicKey, offer, mandate: new PublicKey(m.publicKey), wsolVault: wsolVaultV2Pda(offer), priceUpdate }).remainingAccounts(collateralRemaining(o)).instruction();
 }

@@ -48,6 +48,7 @@ pub struct PrivateMandate {
     pub expiry: i64,
     pub armed: bool,
     pub revoked: bool,
+    /// Monotonic revision, advanced by executions and borrower-authorized replacements.
     pub executions: u32,
     pub last_exec_ts: i64,
     pub bump: u8,
@@ -93,6 +94,9 @@ fn route(anchor: &LoanAnchor, anchor_key: &Pubkey, t: &LoanTerms, action: u8) ->
 
 /// Ephemeral rollup. The borrower creates the record, approves the mandate PDA as delegate of
 /// their ATA for exactly `cumulative_cap`, and schedules the crank that evaluates it.
+/// A revoked, expired or stale-lender record can be replaced by the same borrower. Replacement
+/// crank seeds are SHA256("mandate-renew", mandate PDA, next execution/replacement revision LE),
+/// deterministically known before signing. Account layout and initial crank seeds are unchanged.
 pub fn create_private_mandate(ctx: Context<CreatePrivateMandate>, args: PrivateMandateArgs) -> Result<()> {
     let a = &ctx.accounts;
     let t: LoanTerms = load(&a.terms.to_account_info())?;
@@ -113,7 +117,6 @@ pub fn create_private_mandate(ctx: Context<CreatePrivateMandate>, args: PrivateM
     };
     bounds.validate(now, t.liquidation_ltv_bps, t.duration_seconds).map_err(|_| error!(PrivateLoanError::MandateInvalid))?;
     loan_core::oracle::check_sol_usd_account(&a.price_update).map_err(core_error)?;
-    require!(a.mandate.data_is_empty(), PrivateLoanError::MandateInvalid);
     let anchor_key = a.anchor.key();
     let (source, destination) = route(&a.anchor, &anchor_key, &t, args.action);
     require_keys_eq!(a.source.key(), source, PrivateLoanError::WrongTokenAccount);
@@ -123,17 +126,26 @@ pub fn create_private_mandate(ctx: Context<CreatePrivateMandate>, args: PrivateM
     require_keys_eq!(a.mandate.key(), mandate_key, PrivateLoanError::InvalidRecord);
     let seen = TX_LOGS_FLAG | TX_BALANCES_FLAG | TX_MESSAGE_FLAG;
     let mandate_info = a.mandate.to_account_info();
-    create_loan_record(
-        &a.anchor,
-        &mandate_info,
-        &a.mandate_permission.to_account_info(),
-        &[MANDATE_SEED, anchor_key.as_ref(), &action, &[bump]],
-        PrivateMandate::LEN as u32,
-        vec![Member { flags: seen, pubkey: borrower }],
-        &a.vault.to_account_info(),
-        &a.magic_program.to_account_info(),
-        &a.permission_program.to_account_info(),
-    )?;
+    let replacement = !mandate_info.data_is_empty();
+    let revision = if replacement {
+        let previous: PrivateMandate = load(&mandate_info)?;
+        check_address(&mandate_info, &anchor_key, &previous)?;
+        check_replacement(&previous, &borrower, args.action, &destination, now)?;
+        previous.executions.checked_add(1).ok_or(PrivateLoanError::MathOverflow)?
+    } else {
+        create_loan_record(
+            &a.anchor,
+            &mandate_info,
+            &a.mandate_permission.to_account_info(),
+            &[MANDATE_SEED, anchor_key.as_ref(), &action, &[bump]],
+            PrivateMandate::LEN as u32,
+            vec![Member { flags: seen, pubkey: borrower }],
+            &a.vault.to_account_info(),
+            &a.magic_program.to_account_info(),
+            &a.permission_program.to_account_info(),
+        )?;
+        0
+    };
     token::approve(
         CpiContext::new(a.token_program.key(), Approve { to: a.source.to_account_info(), delegate: mandate_info.clone(), authority: a.borrower.to_account_info() }),
         args.cumulative_cap,
@@ -153,7 +165,7 @@ pub fn create_private_mandate(ctx: Context<CreatePrivateMandate>, args: PrivateM
         expiry: args.expiry,
         armed: true,
         revoked: false,
-        executions: 0,
+        executions: revision,
         last_exec_ts: 0,
         bump,
     };
@@ -182,13 +194,28 @@ pub fn create_private_mandate(ctx: Context<CreatePrivateMandate>, args: PrivateM
         &a.vault,
         &a.magic_program,
         &a.hydra_program,
-        mandate_key.to_bytes(),
+        if replacement {
+            // New fixed accounts and a fresh run budget. Old cranks remain harmless: runs read
+            // the current bounds/delegation, and a stale destination returns without spending.
+            solana_sha256_hasher::hashv(&[b"mandate-renew", mandate_key.as_ref(), &revision.to_le_bytes()]).to_bytes()
+        } else {
+            mandate_key.to_bytes()
+        },
         anchor_key,
         WATCH_INTERVAL_SLOTS,
         runs,
         &metas,
         crate::instruction::RunMandate::DISCRIMINATOR,
     )
+}
+
+/// Only the same borrower can replace an inactive mandate. No live allowance is silently reset.
+fn check_replacement(previous: &PrivateMandate, borrower: &Pubkey, action: u8, destination: &Pubkey, now: i64) -> Result<()> {
+    require_keys_eq!(previous.borrower, *borrower, PrivateLoanError::NotBorrower);
+    require!(previous.version == 1 && previous.action == action, PrivateLoanError::MandateInvalid);
+    let stale_lender = action == m::ACTION_REPAY && previous.destination != *destination;
+    require!(previous.revoked || now >= previous.expiry || stale_lender, PrivateLoanError::MandateInvalid);
+    Ok(())
 }
 
 /// The record must be this loan's mandate PDA for its own action.
@@ -221,7 +248,10 @@ pub fn run_mandate(ctx: Context<RunMandate>) -> Result<()> {
         return Ok(());
     }
     require_keys_eq!(a.source.key(), md.source, PrivateLoanError::WrongTokenAccount);
-    require_keys_eq!(a.destination.key(), md.destination, PrivateLoanError::WrongTokenAccount);
+    // A replaced mandate may have a new lender; earlier cranks retain the old destination.
+    if a.destination.key() != md.destination {
+        return Ok(());
+    }
     let clock = Clock::get()?;
     let now = clock.unix_timestamp;
     let bounds = md.bounds();
@@ -386,6 +416,28 @@ pub struct RevokePrivateMandate<'info> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn replacements_require_the_same_borrower_and_an_inactive_or_stale_mandate() {
+        let borrower = Pubkey::new_unique();
+        let destination = Pubkey::new_unique();
+        let mut md = PrivateMandate {
+            version: 1, borrower, action: m::ACTION_REPAY, source: Pubkey::new_unique(), destination,
+            trigger: m::TRIGGER_HEALTH, trigger_ltv_bps: 7_000, lead_seconds: 0, amount_per_exec: 1,
+            cumulative_cap: 2, used: 0, expiry: 100, armed: true, revoked: false, executions: 0,
+            last_exec_ts: 0, bump: 255,
+        };
+        assert!(check_replacement(&md, &borrower, m::ACTION_REPAY, &destination, 99).is_err());
+        assert!(check_replacement(&md, &borrower, m::ACTION_REPAY, &destination, 100).is_ok());
+        assert!(check_replacement(&md, &borrower, m::ACTION_REPAY, &Pubkey::new_unique(), 99).is_ok());
+        md.revoked = true;
+        assert!(check_replacement(&md, &borrower, m::ACTION_REPAY, &destination, 99).is_ok());
+        assert!(check_replacement(&md, &Pubkey::new_unique(), m::ACTION_REPAY, &destination, 100).is_err());
+        assert!(check_replacement(&md, &borrower, m::ACTION_TOP_UP, &destination, 100).is_err());
+        md.revoked = false;
+        md.action = m::ACTION_TOP_UP;
+        assert!(check_replacement(&md, &borrower, m::ACTION_TOP_UP, &Pubkey::new_unique(), 99).is_err());
+    }
 
     #[test]
     fn record_length_matches_its_fields() {

@@ -13,7 +13,7 @@ import { fetchOffersV2 } from "../lib/v2/offers";
 import { mandatesEnabled } from "./lib/handlers";
 
 /**
- * Story 26.3: finds public mandates whose trigger holds and queues one `mandate-execute` job for
+ * Story 26.3: finds public mandates needing execution or health rearming and queues one `mandate-execute` job for
  * each. A no-op unless MANDATES_ENABLED=1 and KEEPER_SECRET is set. Private mandates never appear
  * here: they live in the rollup and run in its crank.
  */

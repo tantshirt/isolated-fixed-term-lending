@@ -15,7 +15,7 @@ import type { PriceSnapshot } from "../offer-status";
 import { KeypairWallet } from "../keypair-wallet";
 import { fetchOfferV2, fetchOffersV2, type OfferV2 } from "./offers";
 import { getProgramV2, wsolVaultV2Pda } from "./program";
-import { decideMandate, TRIGGER_HEALTH, type Mandate } from "./mandates";
+import { decideMandate, decideRearm, TRIGGER_HEALTH, type Mandate, type MandateOperation, type MandatePrice } from "./mandates";
 
 export type KeeperLimits = {
   /** Largest payoff the keeper pays in one action, in USDC atoms. */
@@ -217,7 +217,7 @@ export async function runKeeperOnce(d: KeeperDeps): Promise<{ scanned: number; o
 /** A mandate job that retrying cannot help: bad payload, private loan, or the feature is off. */
 export class MandateJobRefused extends Error {}
 
-export type MandateJobPayload = { mandate: string; private?: boolean };
+export type MandateJobPayload = { mandate: string; private?: boolean; operation?: MandateOperation };
 
 export type MandateJobDeps = {
   /** `MANDATES_ENABLED` and a keeper key on this deployment. */
@@ -225,9 +225,9 @@ export type MandateJobDeps = {
   loadMandate: (key: string) => Promise<Mandate | null>;
   loadOffer: (key: string) => Promise<OfferV2 | null>;
   /** The loan's collateral price; SOL/USD for wSOL, null when this reader has no feed for it. */
-  readPrice: (o: OfferV2) => Promise<PriceSnapshot | null>;
+  readPrice: (o: OfferV2) => Promise<MandatePrice | null>;
   /** Builds and signs `execute_mandate` for `fee`. Signing happens before any send. */
-  sign: (m: Mandate, o: OfferV2, fee: bigint) => Promise<{ tx: Transaction; lastValidBlockHeight: number }>;
+  sign: (m: Mandate, o: OfferV2, fee: bigint, operation: MandateOperation) => Promise<{ tx: Transaction; lastValidBlockHeight: number }>;
   simulate: (tx: Transaction) => Promise<unknown | null>;
   /** The job queue's durable signature record: called before the network send. */
   recordSignature: (signature: string, lastValidBlockHeight: number) => Promise<void>;
@@ -258,19 +258,24 @@ export async function runMandateJob(payload: unknown, d: MandateJobDeps): Promis
   const o = await d.loadOffer(m.offer);
   if (!o) return { result: "no-loan" };
   const price = m.trigger === TRIGGER_HEALTH ? await d.readPrice(o) : null;
-  const decision = decideMandate(m, o, price, d.now());
-  // A non-wSOL health trigger is decided by simulation, which reads the asset's own feed.
-  const simulateOnly = !decision.due && decision.reason === "needs-asset-price";
-  if (!decision.due && !simulateOnly) return { result: decision.reason };
-  const room = m.feeCap - m.feesPaid;
-  const fee = decision.due ? decision.plan.fee : m.feePerExec < room ? m.feePerExec : room;
-  const { tx, lastValidBlockHeight } = await d.sign(m, o, fee);
+  const operation = p?.operation ?? "execute";
+  if (operation !== "execute" && operation !== "rearm") throw new MandateJobRefused("Unknown mandate operation.");
+  let fee = 0n;
+  if (operation === "rearm") {
+    const decision = decideRearm(m, o, price, d.now());
+    if (!decision.due) return { result: decision.reason };
+  } else {
+    const decision = decideMandate(m, o, price, d.now());
+    if (!decision.due) return { result: decision.reason };
+    fee = decision.plan.fee;
+  }
+  const { tx, lastValidBlockHeight } = await d.sign(m, o, fee, operation);
   const err = await d.simulate(tx);
   if (err) return { result: `simulation refused: ${JSON.stringify(err).slice(0, 160)}` };
   if (!tx.signature) throw new Error("Mandate transaction must be signed before it is recorded.");
   const signature = utils.bytes.bs58.encode(tx.signature);
   await d.recordSignature(signature, lastValidBlockHeight);
   const result = await d.send(tx, lastValidBlockHeight);
-  if (result === "failed-chain") throw new Error("execute_mandate failed on chain");
-  return { result: "executed", signature };
+  if (result === "failed-chain") throw new Error(`${operation}_mandate failed on chain`);
+  return { result: operation === "rearm" ? "rearmed" : "executed", signature };
 }

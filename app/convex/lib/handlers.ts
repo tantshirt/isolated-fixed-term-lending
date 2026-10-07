@@ -1,9 +1,8 @@
 import { Keypair, PublicKey, Transaction, type Connection } from "@solana/web3.js";
-import { PYTH_PRICE_UPDATE_ACCOUNT, MAX_PRICE_AGE_SECONDS, NATIVE_WSOL_MINT } from "../../lib/constants";
+import { MAX_PRICE_AGE_SECONDS } from "../../lib/constants";
 import { decodePriceUpdateV2 } from "../../lib/server/price-update-codec";
-import type { PriceSnapshot } from "../../lib/offer-status";
 import { MandateJobRefused, runMandateJob, type MandateJobDeps } from "../../lib/v2/keeper";
-import { decodeMandate, executeMandateIx } from "../../lib/v2/mandates";
+import { decodeMandate, executeMandateIx, rearmMandateIx, mandateTokenPreparation, mandateCollateral, type MandatePrice } from "../../lib/v2/mandates";
 import { fetchOfferV2 } from "../../lib/v2/offers";
 
 /** Thrown by a handler when retrying cannot help (bad payload, rejected by the program). */
@@ -89,19 +88,21 @@ function mandateDeps(connection: Connection, recordSignature: JobContext["record
       return info ? decodeMandate(new PublicKey(key), info.data as Buffer) : null;
     },
     loadOffer: (key) => fetchOfferV2(connection, new PublicKey(key)),
-    // SOL/USD only; another asset's health trigger is decided by simulation against its feed.
-    readPrice: async (o): Promise<PriceSnapshot | null> => {
-      if (o.wsolMint !== NATIVE_WSOL_MINT.toBase58()) return null;
-      const info = await connection.getAccountInfo(PYTH_PRICE_UPDATE_ACCOUNT);
+    // A stale or absent asset feed stops this job; simulation enforces owner, feed and freshness again.
+    readPrice: async (o): Promise<MandatePrice | null> => {
+      const collateral = await mandateCollateral(connection, o);
+      const info = await connection.getAccountInfo(collateral.priceAccount);
       if (!info) return null;
       const d = decodePriceUpdateV2(info.data as Buffer);
+      if (collateral.feedId && !d.feedId.equals(collateral.feedId)) throw new Error("Mandate price account has the wrong feed.");
       const publishTime = Number(d.publishTime);
-      return { price: d.price, conf: d.conf, exponent: d.exponent, publishTime, fresh: Math.floor(Date.now() / 1000) - publishTime <= MAX_PRICE_AGE_SECONDS - 10 };
+      return { collateralDecimals: collateral.decimals, price: d.price, conf: d.conf, exponent: d.exponent, publishTime, fresh: Math.floor(Date.now() / 1000) - publishTime <= MAX_PRICE_AGE_SECONDS - 10 };
     },
-    sign: async (m, o, fee) => {
-      const ix = await executeMandateIx(keeper!, connection, m, o, fee);
+    sign: async (m, o, fee, operation) => {
+      const { priceAccount } = await mandateCollateral(connection, o);
+      const ix = operation === "rearm" ? await rearmMandateIx(keeper!, connection, m, o, priceAccount) : await executeMandateIx(keeper!, connection, m, o, fee, priceAccount);
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: keeper!.publicKey, blockhash, lastValidBlockHeight }).add(ix);
+      const tx = new Transaction({ feePayer: keeper!.publicKey, blockhash, lastValidBlockHeight }).add(...(operation === "execute" ? mandateTokenPreparation(keeper!.publicKey, m, o) : []), ix);
       tx.sign(keeper!);
       return { tx, lastValidBlockHeight };
     },
