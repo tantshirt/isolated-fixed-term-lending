@@ -448,3 +448,33 @@
 
 .figures dd, .headline, .rowActions { overflow-wrap: anywhere; }
 .rowSide { min-width: 0; }
+
+/* Story 24.2: public and private totals are named separately. */
+.totalsTitle {
+  margin: 1.5rem 0 0.5rem;
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+}
+
+.privateTotals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.privateTotals dt {
+  font-size: var(--text-sm);
+  opacity: 0.8;
+}
+
+.privateTotals dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.privateSub {
+  margin-top: 1rem;
+  font-size: var(--text-md);
+}

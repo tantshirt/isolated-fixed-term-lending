@@ -198,7 +198,8 @@ export function MyLoans() {
 
       {error && <p role="alert" className={s.error}>Devnet is not answering. {portfolio ? "These are the last received figures; current balances and loan states are unverified." : "Your loans could not be checked."} This page retries every 15 seconds.</p>}
 
-      <section className={s.totals} aria-label="Totals">
+      <h2 className={s.totalsTitle}>Public loans</h2>
+      <section className={s.totals} aria-label="Public totals">
         <div className={s.total}>
           <span>Lent out</span>
           <strong className="num">{t ? formatUsdc(t.lentOut) : "…"} USDC</strong>

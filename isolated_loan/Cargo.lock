@@ -2576,6 +2576,7 @@ dependencies = [
  "litesvm",
  "loan-core",
  "pyth-solana-receiver-sdk",
+ "serde_json",
  "solana-account 3.4.0",
  "solana-clock 3.2.1",
  "solana-keypair",
