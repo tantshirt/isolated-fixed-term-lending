@@ -2,7 +2,8 @@
 
 import type { Connection, PublicKey } from "@solana/web3.js";
 import { useCallback, useEffect, useState } from "react";
-import { dismissInvite, dismissedInvites, listMyBids, listMyRooms, newInvitations, type Bid, type MyRoom } from "./inbox";
+import { bidState, dismissInvite, dismissedInvites, listMyRooms, listRoomLoans, newInvitations, type Bid, type MyRoom } from "./inbox";
+import { privatePositions, type PrivatePosition } from "./portfolio";
 import { rememberRoom, savedRooms } from "./rooms";
 
 const EVERY_MS = 20_000;
@@ -11,6 +12,7 @@ const EVERY_MS = 20_000;
 export function useMyRooms(er: Connection | null, wallet: PublicKey | null, opts: { bids?: boolean } = {}) {
   const [rooms, setRooms] = useState<MyRoom[] | null>(null);
   const [bids, setBids] = useState<Bid[] | null>(null);
+  const [positions, setPositions] = useState<PrivatePosition[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const key = wallet?.toBase58() ?? null;
@@ -18,6 +20,7 @@ export function useMyRooms(er: Connection | null, wallet: PublicKey | null, opts
   useEffect(() => {
     setRooms(null);
     setBids(null);
+    setPositions(null);
   }, [key]);
 
   useEffect(() => {
@@ -31,8 +34,18 @@ export function useMyRooms(er: Connection | null, wallet: PublicKey | null, opts
         setRooms(list);
         setError(null);
         if (opts.bids) {
-          const b = await listMyBids(er, wallet, list);
-          if (alive) setBids(b);
+          // One read of every room's loans serves both the lender's bids and all private positions.
+          const perRoom = await Promise.all(list.map(async (room) => ({ room, loans: await listRoomLoans(er, room.anchor) })));
+          if (!alive) return;
+          const mine = privatePositions(wallet, perRoom);
+          const order: Record<Bid["state"], number> = { funded: 0, accepted: 1, draft: 2, settled: 3 };
+          setBids(
+            mine
+              .filter((p) => p.side === "lender")
+              .map((p) => ({ room: p.room, loan: { anchor: p.anchor, loanId: perRoom.flatMap((r) => r.loans).find((l) => l.anchor.equals(p.anchor))!.loanId, terms: p.terms }, state: bidState(p.terms) }))
+              .sort((a, b) => order[a.state] - order[b.state]),
+          );
+          setPositions(mine);
         }
       } catch (e) {
         if (alive) setError(e instanceof Error ? e.message : "Could not read your rooms");
@@ -63,5 +76,5 @@ export function useMyRooms(er: Connection | null, wallet: PublicKey | null, opts
     },
     [key]
   );
-  return { rooms, invitations, bids, error, dismiss, accept, refresh: () => setTick((t) => t + 1) };
+  return { rooms, invitations, bids, positions, error, dismiss, accept, refresh: () => setTick((t) => t + 1) };
 }
