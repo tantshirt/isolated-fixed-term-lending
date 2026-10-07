@@ -11,6 +11,7 @@ import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipt
 import { assertDevnet, validateTransaction } from "./tx-validator";
 import { DESK_ROLE, PRIVATE_V2_ID, decodeDeskPolicy, decodeDeskState, decodeLoanTermsV2, v2Pda, type DeskPolicyV2, type DeskStateV2 } from "./v2-codec";
 import type { BookEntry } from "./desk-view";
+import { assertMembershipTransactionFits, deskMembershipAccounts } from "./desk-membership";
 
 const EPHEMERAL_VAULT_ID = new PublicKey("MagicVau1t999999999999999999999999999999999");
 const ER_ONLY = { vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID };
@@ -126,7 +127,13 @@ export async function finishDesk(base: Connection, er: Connection, signer: LoanS
 
 /** Adds, re-roles (roles > 0) or removes (roles = 0) a member. Administrators only. */
 export async function setDeskMember(base: Connection, er: Connection, signer: LoanSigner, anchor: PublicKey, member: PublicKey, roles: number) {
-  const ix = await programFor(base, signer).methods.setDeskMember(member, roles).accountsPartial({ admin: signer.publicKey, ...stateAccounts(anchor) }).instruction();
+  const info = await er.getAccountInfo(v2Pda.deskState(anchor));
+  if (!info) throw new Error("The desk's private membership could not be read. Sign in and try again.");
+  const state = decodeDeskState(info.data);
+  const ix = await programFor(base, signer).methods.setDeskMember(member, roles)
+    .accountsPartial({ admin: signer.publicKey, ...stateAccounts(anchor) })
+    .remainingAccounts(deskMembershipAccounts(anchor, state)).instruction();
+  assertMembershipTransactionFits(ix, signer.publicKey);
   const who = `${member.toBase58().slice(0, 4)}…`;
   return sendEr(er, signer, ix, roles === 0 ? `Remove ${who} from the desk` : `Set ${who}'s desk roles`);
 }

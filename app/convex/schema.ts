@@ -76,7 +76,10 @@ export default defineSchema({
     payoff: v.optional(v.string()),
   })
     .index("by_at", ["at"])
-    .index("by_offer", ["offer"]),
+    .index("by_offer", ["offer"])
+    .index("by_result", ["result"])
+    .index("by_result_at", ["result", "at"])
+    .index("by_signature", ["signature"]),
 
   keeperCapital: defineTable({
     at: v.number(),
@@ -119,6 +122,7 @@ export default defineSchema({
       v.object({ maturity: v.number(), graceEnd: v.optional(v.number()), pricedFrom: v.optional(v.number()), terminalFrom: v.optional(v.number()) }),
     ),
     state: v.optional(v.any()),
+    revision: v.optional(v.number()),
     active: v.boolean(),
     consentedAt: v.number(),
   })
@@ -142,11 +146,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     lastCheckedAt: v.optional(v.number()),
+    nextCheckAt: v.optional(v.number()),
   })
     .index("by_ramps", ["rampsId"])
     .index("by_mgi", ["mgiTransactionId"])
     .index("by_wallet", ["wallet"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_next_check", ["nextCheckAt"]),
 
   /** Webhook deliveries already handled, keyed by MoneyGram id and status (retries replay). */
   moneygramEvents: defineTable({
