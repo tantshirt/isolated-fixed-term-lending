@@ -22,6 +22,11 @@ export type Capability = {
 export const DEVNET_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 export const WSOL = "So11111111111111111111111111111111111111112";
 
+/** Cash-in needs MoneyGram connected and its own switch; either alone is not enough. */
+export function cashInEnabled(moneygram: string | undefined, cashIn: string | undefined): boolean {
+  return moneygram === "1" && cashIn === "1";
+}
+
 export const CAPABILITIES: Capability[] = [
   { provider: "zenlo-public", network: "devnet", mint: DEVNET_USDC, operation: "originate", available: true },
   { provider: "zenlo-public", network: "devnet", mint: DEVNET_USDC, operation: "service", available: true },
@@ -42,8 +47,10 @@ export const CAPABILITIES: Capability[] = [
     network: "devnet",
     mint: DEVNET_USDC,
     operation: "cash-in",
-    available: false,
-    reason: "Cash-in is a later, separate journey.",
+    // A separate switch from cash-out: it waits on confirmation that the sandbox delivers this
+    // Devnet USDC mint. Literal env reads so Next.js inlines them in the browser bundle.
+    available: cashInEnabled(process.env.NEXT_PUBLIC_MONEYGRAM_ENABLED, process.env.NEXT_PUBLIC_MONEYGRAM_CASH_IN_ENABLED),
+    reason: "MoneyGram cash-in is not connected on this deployment yet.",
   },
   {
     provider: "telegram",

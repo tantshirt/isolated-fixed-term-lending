@@ -18,6 +18,7 @@ import type { OfferV2 } from "@/lib/v2/offers";
 import { priceUsd } from "@/lib/risk";
 import { LoanV2Actions } from "./LoanV2Actions";
 import { AlertsPanel } from "./AlertsPanel";
+import { CashPanel } from "@/components/cash/CashPanel";
 import styles from "@/components/offer/OfferView.module.css";
 
 export type V2Role = "lender" | "borrower" | "viewer";
@@ -181,6 +182,10 @@ function Loaded({ offerKey }: { offerKey: string }) {
       <aside className={styles.aside}>
         <LoanV2Actions offer={offer} view={view} role={role} price={price} now={now} balances={balances} onMoved={setMoved} />
         {offer.status === "active" && role !== "viewer" && <AlertsPanel kind="public-v2" loan={offer.publicKey} />}
+        {/* Cash-in only adds USDC to the wallet; the repayment above stays a separate signed step. */}
+        {offer.status === "active" && role === "borrower" && view && (
+          <CashPanel direction="in" usdcBalance={balances?.usdc ?? null} payoffAtoms={view.payoff} compact />
+        )}
       </aside>
     </div>
   );

@@ -130,11 +130,14 @@ export default defineSchema({
     .index("by_active", ["active"]),
 
   /**
-   * MoneyGram cash-outs (Story 24.4). Operational references only: ids, the reviewed transfer,
-   * and provider status. MoneyGram holds the customer's identity details; ZenLo does not.
+   * MoneyGram cash-outs (Story 24.4) and cash-ins (Story 26.5). Operational references only: ids,
+   * the reviewed transfer, and provider status. MoneyGram holds the customer's identity details;
+   * ZenLo does not, and a cash-in row never names the loan it is meant to repay.
    */
   cashTransactions: defineTable({
     wallet: v.string(),
+    /** Missing on rows written before cash-in existed, which are all cash-outs. */
+    direction: v.optional(v.union(v.literal("in"), v.literal("out"))),
     env: v.union(v.literal("sandbox"), v.literal("production")),
     rampsId: v.string(),
     mgiTransactionId: v.optional(v.string()),

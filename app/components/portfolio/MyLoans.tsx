@@ -10,7 +10,7 @@ import { useSigner } from "@/lib/client/signer-context";
 import { formatBpsAsPercent, formatCountdown, formatDeadline, formatUsdc, formatWsol, shortKey } from "@/lib/format";
 import { URGENCY, deadlineIcs, type PortfolioItem, type Side } from "@/lib/portfolio";
 import { PrivateDesk } from "./PrivateDesk";
-import { CashOutPanel } from "@/components/cash/CashOutPanel";
+import { CashPanel } from "@/components/cash/CashPanel";
 import { useBalances, useDevConfig } from "@/lib/client/hooks";
 import { usePortfolio } from "./usePortfolio";
 import s from "./MyLoans.module.css";
@@ -261,7 +261,9 @@ export function MyLoans() {
 
       <PrivateDesk />
 
-      <CashOutPanel usdcBalance={cashBalances?.usdc ?? null} />
+      <CashPanel direction="out" usdcBalance={cashBalances?.usdc ?? null} />
+      {/* Cash-in funds a repayment; repaying stays a separate step on the loan's page. */}
+      {bySide("borrower").length > 0 && <CashPanel direction="in" usdcBalance={cashBalances?.usdc ?? null} />}
 
       <p className={s.note}>
         Closed accounts leave the chain, so settled loans disappear here once they are closed. Your wallet history keeps

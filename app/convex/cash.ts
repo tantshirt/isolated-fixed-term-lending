@@ -1,33 +1,49 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { requireWallet } from "./auth";
-import { CASH_OUT_TERMINAL } from "../lib/cash/moneygram";
+import { isTerminal, nextCashStatus, toBaseUnits, type CashDirection } from "../lib/cash/moneygram";
 
 const env = () => (process.env.MONEYGRAM_ENV === "production" ? ("production" as const) : ("sandbox" as const));
+const directionArg = v.optional(v.union(v.literal("in"), v.literal("out")));
+const dir = (row: { direction?: CashDirection }): CashDirection => row.direction ?? "out";
+const quotedAtoms = (amount: string): string | undefined => {
+  try {
+    const atoms = toBaseUnits(amount, 6);
+    return atoms > 0n ? atoms.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 /** From the widget's onTransactionCreated: persist the stable ids before anything moves. */
 export const recordCreated = mutation({
-  args: { rampsId: v.string(), mgiTransactionId: v.optional(v.string()), amount: v.optional(v.string()) },
+  args: { rampsId: v.string(), mgiTransactionId: v.optional(v.string()), amount: v.optional(v.string()), direction: directionArg },
   handler: async (ctx, a) => {
     const wallet = await requireWallet(ctx);
+    const direction = a.direction ?? "out";
     const existing = await ctx.db.query("cashTransactions").withIndex("by_ramps", (q) => q.eq("rampsId", a.rampsId)).unique();
     if (existing) {
-      if (existing.wallet !== wallet) throw new Error("Not your cash-out");
+      if (existing.wallet !== wallet) throw new Error("Not your MoneyGram transaction");
+      if (dir(existing) !== direction) throw new Error("This MoneyGram transaction is in the other direction");
       if (a.mgiTransactionId && !existing.mgiTransactionId) await ctx.db.patch(existing._id, { mgiTransactionId: a.mgiTransactionId, updatedAt: Date.now() });
       return existing._id;
     }
     const now = Date.now();
-    return ctx.db.insert("cashTransactions", { wallet, env: env(), rampsId: a.rampsId, mgiTransactionId: a.mgiTransactionId, status: "created", createdAt: now, updatedAt: now, nextCheckAt: now });
+    // A cash-in has no signed transfer, so the quoted USDC amount is the only amount shown.
+    const amountAtoms = direction === "in" && a.amount ? quotedAtoms(a.amount) : undefined;
+    return ctx.db.insert("cashTransactions", { wallet, direction, amountAtoms, env: env(), rampsId: a.rampsId, mgiTransactionId: a.mgiTransactionId, status: "created", createdAt: now, updatedAt: now, nextCheckAt: now });
   },
 });
 
-/** After the wallet signed the reviewed transfer: the signature and what was reviewed. */
+/** After the wallet signed the reviewed transfer: the signature and what was reviewed. Cash-out only. */
 export const recordSigned = mutation({
   args: { rampsId: v.string(), signature: v.string(), amountAtoms: v.string(), depositAddress: v.string() },
   handler: async (ctx, a) => {
     const wallet = await requireWallet(ctx);
     const row = await ctx.db.query("cashTransactions").withIndex("by_ramps", (q) => q.eq("rampsId", a.rampsId)).unique();
     if (!row || row.wallet !== wallet) throw new Error("Not your cash-out");
+    // A cash-in never asks the wallet to send anything.
+    if (dir(row) !== "out") throw new Error("Cash-in never sends from your wallet");
     await ctx.db.patch(row._id, { signature: a.signature, amountAtoms: a.amountAtoms, depositAddress: a.depositAddress, status: row.status === "created" ? "awaiting_funds" : row.status, updatedAt: Date.now() });
   },
 });
@@ -37,22 +53,26 @@ export const recordReference = mutation({
   handler: async (ctx, a) => {
     const wallet = await requireWallet(ctx);
     const row = await ctx.db.query("cashTransactions").withIndex("by_ramps", (q) => q.eq("rampsId", a.rampsId)).unique();
-    if (!row || row.wallet !== wallet) throw new Error("Not your cash-out");
+    if (!row || row.wallet !== wallet) throw new Error("Not your MoneyGram transaction");
     await ctx.db.patch(row._id, { referenceNumber: a.referenceNumber.slice(0, 64), updatedAt: Date.now() });
   },
 });
 
+/** The signed-in wallet's MoneyGram history in one direction (cash-out when omitted). */
 export const myCashOuts = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { direction: directionArg },
+  handler: async (ctx, { direction = "out" }) => {
     let wallet: string;
     try {
       wallet = await requireWallet(ctx);
     } catch {
       return null;
     }
-    const rows = await ctx.db.query("cashTransactions").withIndex("by_wallet", (q) => q.eq("wallet", wallet)).order("desc").take(20);
-    return rows.map((r) => ({ rampsId: r.rampsId, status: r.status, amountAtoms: r.amountAtoms ?? null, referenceNumber: r.referenceNumber ?? null, signature: r.signature ?? null, updatedAt: r.updatedAt }));
+    const rows = await ctx.db.query("cashTransactions").withIndex("by_wallet", (q) => q.eq("wallet", wallet)).order("desc").take(40);
+    return rows
+      .filter((r) => dir(r) === direction)
+      .slice(0, 20)
+      .map((r) => ({ rampsId: r.rampsId, status: r.status, amountAtoms: r.amountAtoms ?? null, referenceNumber: r.referenceNumber ?? null, signature: r.signature ?? null, updatedAt: r.updatedAt }));
   },
 });
 
@@ -76,22 +96,31 @@ export const byRamps = internalQuery({
   handler: (ctx, { rampsId }) => ctx.db.query("cashTransactions").withIndex("by_ramps", (q) => q.eq("rampsId", rampsId)).unique(),
 });
 
+/** Stores a reconciled status. A finished cash-in is never reopened by a late or replayed status. */
 export const setStatus = internalMutation({
   args: { rampsId: v.string(), status: v.string(), referenceNumber: v.optional(v.string()) },
   handler: async (ctx, a) => {
     const row = await ctx.db.query("cashTransactions").withIndex("by_ramps", (q) => q.eq("rampsId", a.rampsId)).unique();
     if (!row) return;
     const now = Date.now();
-    await ctx.db.patch(row._id, { status: a.status, lastCheckedAt: now, nextCheckAt: CASH_OUT_TERMINAL.has(a.status) ? Number.MAX_SAFE_INTEGER : now + 180_000, updatedAt: a.status === row.status ? row.updatedAt : now, ...(a.referenceNumber ? { referenceNumber: a.referenceNumber } : {}) });
+    const direction = dir(row);
+    const status = nextCashStatus(direction, row.status, a.status) ?? row.status;
+    await ctx.db.patch(row._id, {
+      status,
+      lastCheckedAt: now,
+      nextCheckAt: isTerminal(direction, status) ? Number.MAX_SAFE_INTEGER : now + 180_000,
+      updatedAt: status === row.status ? row.updatedAt : now,
+      ...(a.referenceNumber ? { referenceNumber: a.referenceNumber } : {}),
+    });
   },
 });
 
-/** Cash-outs still in flight, for the fallback poll and the stuck-session monitor. */
+/** MoneyGram transactions still in flight, for the fallback poll and the stuck-session monitor. */
 export const open = internalQuery({
   args: {},
   handler: async (ctx) => {
     const rows = await ctx.db.query("cashTransactions").order("desc").take(200);
-    return rows.filter((r) => !CASH_OUT_TERMINAL.has(r.status));
+    return rows.filter((r) => !isTerminal(dir(r), r.status));
   },
 });
 
@@ -104,7 +133,7 @@ export const claimPollBatch = internalMutation({
     const due = await ctx.db.query("cashTransactions").withIndex("by_next_check", (q) => q.lte("nextCheckAt", now)).take(100);
     const out = [];
     for (const row of due) {
-      if (CASH_OUT_TERMINAL.has(row.status)) {
+      if (isTerminal(dir(row), row.status)) {
         await ctx.db.patch(row._id, { nextCheckAt: Number.MAX_SAFE_INTEGER });
       } else if (out.length < 20) {
         await ctx.db.patch(row._id, { nextCheckAt: now + 180_000 });
