@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { capabilityFor, WSOL } from "@/lib/capabilities";
 import { useChainNow } from "@/lib/client/hooks";
 import { useSigner } from "@/lib/client/signer-context";
-import { fetchArciumTier, type ArciumTierStatus } from "@/lib/credit/arcium";
+import { fetchArciumTier, tierStatus, type ArciumTierStatus } from "@/lib/credit/arcium";
 import { TIER_CAPS, tierLabel } from "@/lib/credit/bands";
 import { formatBpsAsPercent, formatDeadline } from "@/lib/format";
 import { getConnection } from "@/lib/program";
@@ -20,12 +20,19 @@ import styles from "./Credit.module.css";
  */
 export function ArciumTierPanel() {
   const { publicKey } = useSigner();
+  return <WalletArciumTierPanel key={publicKey?.toBase58() ?? "disconnected"} />;
+}
+
+function WalletArciumTierPanel() {
+  const { publicKey } = useSigner();
   const now = useChainNow();
   const cap = capabilityFor("arcium", "devnet", WSOL, "credential");
-  const [status, setStatus] = useState<ArciumTierStatus | null>(null);
+  const [read, setStatus] = useState<ArciumTierStatus | null>(null);
   const [failed, setFailed] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const wallet = publicKey?.toBase58() ?? null;
+  // The clock advances without another RPC read; validity must advance with it.
+  const status = read && "result" in read && wallet && now !== null ? tierStatus(read.result, wallet, now) : read;
 
   useEffect(() => {
     if (!publicKey || now === null || !cap.available) return;

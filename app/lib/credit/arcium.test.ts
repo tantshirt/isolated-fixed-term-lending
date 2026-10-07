@@ -53,3 +53,11 @@ test("the Arcium option is off unless the flag and the credit pilot are on", () 
   // Neither flag is set in the test environment.
   assert.equal(capabilityFor("arcium", "devnet", WSOL, "credential").available, false);
 });
+
+test("a cached result stops granting a tier when the clock reaches credential expiry", () => {
+  const wallet = Keypair.generate().publicKey;
+  const result = decodeTierResult(bytes(wallet, 2, NOW - 10, NOW - 60, NOW + 5))!;
+  assert.equal(tierStatus(result, wallet.toBase58(), NOW + 4).state, "valid");
+  assert.equal(tierStatus(result, wallet.toBase58(), NOW + 5).state, "unusable");
+  assert.equal(tierStatus(result, Keypair.generate().publicKey.toBase58(), NOW).state, "unusable");
+});
