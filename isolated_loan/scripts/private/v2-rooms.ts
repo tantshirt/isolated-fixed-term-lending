@@ -330,7 +330,7 @@ async function main() {
   const notDeskLender = await rejects("NotDeskLender", () => attach(lender, adminLoan));
   expect("non-desk-lender-cannot-originate-under-the-desk", notDeskLender.ok, notDeskLender.detail);
   const tooPricey = await createLoan(lender2);
-  await propose(lender2, tooPricey, { ...termsArgs(3), interestBps: 600, annualCeilingBps: 60_000 });
+  await propose(lender2, tooPricey, { ...termsArgs(3, 20 * 86_400), interestBps: 600, annualCeilingBps: 60_000 });
   const violation = await rejects("PolicyViolation", () => attach(lender2, tooPricey));
   expect("terms-outside-the-policy-rejected", violation.ok, violation.detail);
   const D = await createLoan(lender2);
