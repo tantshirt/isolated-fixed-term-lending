@@ -83,3 +83,21 @@
   font-size: var(--text-sm);
   line-height: 1.5;
 }
+
+.deadlines {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.deadlines div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.deadlines dd {
+  margin: 0;
+}

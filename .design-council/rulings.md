@@ -286,3 +286,16 @@ Reviewed at 390, 820 and 1440 px: Learn simulator, wizard step 2 with repayment 
 - The late-fee readout no longer wraps at 390 px.
 - "Running" became "Waiting for repayment".
 - Percentages now have thousands separators.
+
+## Alerts, cash-out and private totals (2026-10-07)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Private totals read "Locked" until private sign-in, then "Reading…", then figures; never zero | Fovea / Plumb | An unknown must not look like an empty book. |
+| The MoneyGram panel opens with "This step is not private", and the review dialog repeats it next to the signature | Sol / Kestrel | MoneyGram is outside the private-loan privacy boundary. |
+| Every MoneyGram transfer is checked (network, mint, decimals, balance) and shown in a ZenLo review before the wallet signs; a refusal is shown, not silent | Plumb / Hollis | The widget never drives a signature unseen. |
+| Alerts are opt-in per loan; private notices are generic; the Telegram warning sits above "Connect Telegram", and the button is gated by capability | Sol / Fovea | Consent and its limits are stated where the choice is made. |
+| Sandbox cash-out statuses never say cash is ready or collected | Sol / Wren | Sandbox references never imply real cash. |
+| The pilot gate says "Met" / "Not met" in words; threshold comes from `GATE` | Fovea | The ops screen still has to work with a screen reader. |
+
+Applied must-fixes: sandbox status words and reference label; dialog focus, Escape and focus return; visible refusal and unloaded-balance message; Telegram disclosure and capability gate; reachable "Reading…" state; private deadlines listed; gate text and row layout; widget height `min(560px, 80dvh)`. Applied nice-to-haves: extra spacing above cash-out, `aria-live` history. Deferred: borrower-specific payoff warning on cash-out.

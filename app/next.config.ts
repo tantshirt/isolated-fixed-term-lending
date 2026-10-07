@@ -14,11 +14,12 @@ const enforced = [
 
 const reportOnly = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' https://playground.xramps.moneygram.com https://xramps.moneygram.com",
+  "frame-src https://playground.xramps.moneygram.com https://xramps.moneygram.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.devnet.solana.com wss://api.devnet.solana.com https://devnet-tee.magicblock.app wss://devnet-tee.magicblock.app https://*.onfinality.io wss://*.onfinality.io https://*.convex.cloud wss://*.convex.cloud https://*.convex.site",
+  "connect-src 'self' https://api.devnet.solana.com wss://api.devnet.solana.com https://devnet-tee.magicblock.app wss://devnet-tee.magicblock.app https://*.onfinality.io wss://*.onfinality.io https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://playground.xramps.moneygram.com https://xramps.moneygram.com",
 ].join("; ");
 
 const securityHeaders = [

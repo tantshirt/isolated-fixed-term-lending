@@ -13,4 +13,6 @@ crons.daily("purge old observations", { hourUTC: 3, minuteUTC: 41 }, internal.op
 crons.interval("reference liquidator", { minutes: 1 }, internal.keeper.run);
 // Consented loan alerts; sends nothing until a chat is linked and the bot token is set.
 crons.interval("loan alerts", { minutes: 1 }, internal.alertsNode.scan);
+// MoneyGram fallback reconciliation; a no-op without RAMPS_SECRET_KEY.
+crons.interval("moneygram reconcile", { minutes: 3 }, internal.cashNode.poll);
 export default crons;

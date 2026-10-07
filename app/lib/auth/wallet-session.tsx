@@ -21,6 +21,8 @@ type SessionState = {
   error: string | null;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** POSTs to a Convex HTTP route with this wallet's session token. */
+  authorizedPost: (path: string, body?: unknown) => Promise<Response>;
 };
 
 const SessionContext = createContext<SessionState | null>(null);
@@ -136,7 +138,16 @@ function SessionProvider({ children, onToken }: { children: ReactNode; onToken: 
     }
   }, [key]);
 
-  const value = useMemo(() => ({ status, wallet: key, error, signIn, signOut }), [status, key, error, signIn, signOut]);
+  const authorizedPost = useCallback(
+    async (path: string, body: unknown = {}) => {
+      const live = current.current;
+      if (!live || live.wallet !== key) throw new Error("Sign in first.");
+      return post(path, body, live.token);
+    },
+    [key],
+  );
+
+  const value = useMemo(() => ({ status, wallet: key, error, signIn, signOut, authorizedPost }), [status, key, error, signIn, signOut, authorizedPost]);
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 

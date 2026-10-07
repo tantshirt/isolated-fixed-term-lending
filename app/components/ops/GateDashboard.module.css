@@ -1,0 +1,16 @@
+.rows {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.rows div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.rows dd {
+  margin: 0;
+}
