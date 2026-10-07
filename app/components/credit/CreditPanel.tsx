@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ProviderLogo } from "@/components/brand/ProviderLogo";
 import { Button } from "@/components/ui/Button";
 import { capabilityFor, WSOL } from "@/lib/capabilities";
 import { useChainNow } from "@/lib/client/hooks";
 import { useSigner } from "@/lib/client/signer-context";
-import { TIER_CAPS, tierLabel, type CreditTier } from "@/lib/credit/bands";
+import { TIER_CAPS, tierLabel } from "@/lib/credit/bands";
 import { fetchMyCredit } from "@/lib/credit/chain";
 import { CREDIT_PILOT_ENABLED } from "@/lib/credit/flag";
 import type { CreditStatus } from "@/lib/credit/sas";
+import type { IssuanceRequest } from "@/lib/credit/verify-income";
+import { issuanceHandoff } from "@/lib/credit/issuance-handoff";
+import { AsyncScope } from "@/lib/async-scope";
 import { formatBpsAsPercent, formatDeadline, shortKey } from "@/lib/format";
 import { getConnection } from "@/lib/program";
 import { HistoryPanel } from "./HistoryPanel";
@@ -21,7 +24,7 @@ type Step =
   | { kind: "starting" }
   | { kind: "waiting"; url: string }
   | { kind: "checking" }
-  | { kind: "eligible"; tier: CreditTier; expiry: number; attestation: string }
+  | { kind: "eligible"; issuance: IssuanceRequest }
   | { kind: "ineligible" }
   | { kind: "error"; message: string };
 
@@ -32,6 +35,11 @@ type Step =
  * the proof or an income figure, in the browser or anywhere else.
  */
 export function CreditPanel() {
+  const { publicKey } = useSigner();
+  return <WalletCreditPanel key={publicKey?.toBase58() ?? "disconnected"} />;
+}
+
+function WalletCreditPanel() {
   const { publicKey, setConnectOpen } = useSigner();
   const now = useChainNow();
   const sas = capabilityFor("sas", "devnet", WSOL, "credential");
@@ -40,6 +48,11 @@ export function CreditPanel() {
   const [refresh, setRefresh] = useState(0);
   const [step, setStep] = useState<Step>({ kind: "idle" });
   const wallet = publicKey?.toBase58() ?? null;
+  const scope = useRef(new AsyncScope());
+  useEffect(() => {
+    const current = scope.current;
+    return () => current.invalidate();
+  }, []);
 
   useEffect(() => {
     if (!publicKey || now === null || !sas.available) return;
@@ -56,36 +69,44 @@ export function CreditPanel() {
 
   async function getVerified() {
     if (!wallet) return;
+    const operation = scope.current.capture();
     setStep({ kind: "starting" });
     try {
       const res = await fetch("/api/credit/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ wallet }) });
       const body = (await res.json()) as { request?: string; error?: string };
+      operation.assertActive();
       if (!res.ok || !body.request) throw new Error(body.error ?? "Reclaim could not start a session.");
       const { ReclaimProofRequest } = await import("@reclaimprotocol/js-sdk");
+      operation.assertActive();
       const req = await ReclaimProofRequest.fromJsonString(body.request);
       const url = await req.getRequestUrl();
+      operation.assertActive();
       setStep({ kind: "waiting", url });
       await req.startSession({
         // The proof is forwarded once, as is, and never kept in state or storage here.
         onSuccess: (proof) => {
+          if (!operation.active()) return;
           setStep({ kind: "checking" });
-          void submitProof(wallet, Array.isArray(proof) ? proof[0] : proof);
+          void submitProof(wallet, Array.isArray(proof) ? proof[0] : proof, operation);
         },
-        onError: () => setStep({ kind: "error", message: "Reclaim did not finish the proof. You can start again." }),
+        onError: () => { if (operation.active()) setStep({ kind: "error", message: "Reclaim did not finish the proof. You can start again." }); },
       });
     } catch (e) {
+      if (!operation.active()) return;
       setStep({ kind: "error", message: e instanceof Error ? e.message : "Could not start verification." });
     }
   }
 
-  async function submitProof(subject: string, proof: unknown) {
+  async function submitProof(subject: string, proof: unknown, operation: ReturnType<AsyncScope["capture"]>) {
     try {
       const res = await fetch("/api/credit/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ wallet: subject, proof }) });
-      const body = (await res.json()) as { eligible?: boolean; issuance?: { tier: CreditTier; expiry: number; attestation: string }; error?: string };
+      const body = (await res.json()) as { eligible?: boolean; issuance?: IssuanceRequest; error?: string };
+      operation.assertActive();
       if (!res.ok) throw new Error(body.error ?? "The proof could not be verified.");
-      if (body.eligible && body.issuance) setStep({ kind: "eligible", tier: body.issuance.tier, expiry: body.issuance.expiry, attestation: body.issuance.attestation });
+      if (body.eligible && body.issuance) setStep({ kind: "eligible", issuance: body.issuance });
       else setStep({ kind: "ineligible" });
     } catch (e) {
+      if (!operation.active()) return;
       setStep({ kind: "error", message: e instanceof Error ? e.message : "The proof could not be verified." });
     }
   }
@@ -232,10 +253,22 @@ function VerifyStep({ step, onStart, wallet }: { step: Step; onStart: () => void
       return <p className={styles.note}>The proven income is below the pilot&apos;s lowest band. Your loans keep the standard caps.</p>;
     case "eligible":
       return (
-        <p className={styles.good}>
-          Eligible for {tierLabel(step.tier)} until {formatDeadline(step.expiry)}. ZenLo&apos;s issuer writes the credential for{" "}
-          <span className="mono">{shortKey(wallet)}</span> at <span className="mono">{shortKey(step.attestation)}</span>; it appears above once it is on chain.
-        </p>
+        <>
+          <p className={styles.good}>
+            Eligible for {tierLabel(step.issuance.tier)} until {formatDeadline(step.issuance.expiry)}. Credential issuance is pending for{" "}
+            <span className="mono">{shortKey(wallet)}</span>.
+          </p>
+          <p className={styles.note}>Download the signed request and give it to the pilot issuer. This deployment does not submit it automatically. Standard caps apply until the issuer publishes the credential and it appears above.</p>
+          <Button variant="secondary" onClick={() => {
+            const url = URL.createObjectURL(new Blob([issuanceHandoff(step.issuance)], { type: "application/json" }));
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `zenlo-credit-request-${wallet.slice(0, 8)}.json`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }}>Download signed issuance request</Button>
+          <p className={styles.note}>Only public credential fields and the issuer signature are included; no proof or income figure.</p>
+        </>
       );
   }
 }
