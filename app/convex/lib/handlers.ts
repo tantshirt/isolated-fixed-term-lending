@@ -7,6 +7,7 @@ export type JobContext = {
   attempt: number;
   payload: unknown;
   rpc: () => Connection;
+  canSendAlert: (subscriptionId: string, chatLinkId: string, chatId: string) => Promise<"allowed" | "revoked" | "paused">;
   /** Call before awaiting confirmation of any transaction the job sends. */
   recordSignature: (signature: string, lastValidBlockHeight: number) => Promise<void>;
 };
@@ -19,10 +20,15 @@ export type JobHandler = (ctx: JobContext) => Promise<unknown>;
  */
 export const HANDLERS: Record<string, JobHandler> = {
   /** Telegram Bot API sendMessage. Text is already generic for private loans. */
-  "telegram-send": async ({ payload }) => {
+  "telegram-send": async ({ payload, canSendAlert }) => {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (!token) throw new PermanentError("TELEGRAM_BOT_TOKEN is not set on this deployment.");
-    const { chatId, text } = payload as { chatId: string; text: string };
+    const { chatId, text, subscriptionId, chatLinkId } = payload as { chatId: string; text: string; subscriptionId?: string; chatLinkId?: string };
+    if (subscriptionId) {
+      const permission = chatLinkId ? await canSendAlert(subscriptionId, chatLinkId, chatId) : "revoked";
+      if (permission === "revoked") return { skipped: true };
+      if (permission === "paused") throw new Error("Telegram delivery is paused.");
+    }
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

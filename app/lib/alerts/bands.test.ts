@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { dueReminders, liquidationPrice, nextLevel, rawLevel, remindersFor, step } from "./bands";
+import { dueReminders, liquidationPrice, nextLevel, rawLevel, remindersFor, step, riskNotificationKey } from "./bands";
 
 const base = { baseline: 150, liquidationPrice: 100, eligible: false };
 
@@ -11,7 +11,7 @@ test("levels follow buffer use, then absolute distance, then eligibility", () =>
   assert.equal(rawLevel({ ...base, price: 112.5 }), 3);
   assert.equal(rawLevel({ ...base, price: 105 }), 4);
   assert.equal(rawLevel({ ...base, price: 102 }), 5);
-  assert.equal(rawLevel({ ...base, price: 99 }), 6);
+  assert.equal(rawLevel({ ...base, price: 99 }), 5);
   assert.equal(rawLevel({ ...base, price: 140, eligible: true }), 6);
 });
 
@@ -56,4 +56,21 @@ test("reminders cover the deadline and every V2 window, each once and not stale"
   assert.deepEqual(dueReminders(all, [], 1_000_000 - 3_600).map((r) => r.key), ["maturity-24h", "maturity-1h"]);
   assert.deepEqual(dueReminders(all, ["maturity-24h", "maturity-1h"], 1_000_000).map((r) => r.key), ["grace-start"]);
   assert.deepEqual(dueReminders(all, [], 1_200_000).map((r) => r.key), ["priced-recovery"], "reminders more than a day late are skipped");
+});
+
+
+test("recovered and rebased warnings get new delivery keys", () => {
+  let r = step(null, { price: 150, liquidationPrice: 100, eligible: false, basis: "b" });
+  r = step(r.state, { price: 125, liquidationPrice: 100, eligible: false, basis: "b" });
+  const first = riskNotificationKey(r.state, r.send!);
+  r = step(r.state, { price: 150, liquidationPrice: 100, eligible: false, basis: "b" });
+  r = step(r.state, { price: 125, liquidationPrice: 100, eligible: false, basis: "b" });
+  assert.equal(r.send, 2);
+  assert.notEqual(riskNotificationKey(r.state, r.send!), first);
+});
+
+test("a crossed spot line is not liquidation eligibility when EMA or phase blocks settlement", () => {
+  assert.equal(rawLevel({ ...base, price: 99 }), 5);
+  assert.equal(nextLevel(6, { ...base, price: 99 }), 5);
+  assert.equal(rawLevel({ ...base, price: 99, eligible: true }), 6);
 });

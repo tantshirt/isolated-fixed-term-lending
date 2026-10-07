@@ -7,6 +7,7 @@ import {
 } from "@solana/web3.js";
 import { NETWORK, DEVNET_GENESIS_HASH, PROGRAM_ID } from "./constants";
 import type { LoanSigner } from "./keypair-wallet";
+import { assertOriginationAllowed } from "./ops-transaction";
 
 export type SubmissionState =
   | "rejected"
@@ -156,7 +157,8 @@ export async function submitTransaction(
   connection: Connection,
   signer: LoanSigner,
   tx: Transaction,
-  ephemeralSigners: Signer[] = []
+  ephemeralSigners: Signer[] = [],
+  onSigned?: (pending: Pending) => Promise<void>
 ): Promise<string> {
   const intent = tx.instructions
     .map((i) =>
@@ -213,6 +215,7 @@ export async function submitTransaction(
         "simulation-failed"
       );
     if (ephemeralSigners.length) tx.partialSign(...ephemeralSigners);
+    await assertOriginationAllowed(tx);
     let signed: Transaction;
     try {
       signed = await signer.signTransaction(tx);
@@ -227,6 +230,7 @@ export async function submitTransaction(
     const signature = utils.bytes.bs58.encode(signed.signature);
     const record = { signature, ...lifetime, intent };
     save(key, record);
+    await onSigned?.(record);
     try {
       await connection.sendRawTransaction(signed.serialize(), {
         skipPreflight: false,
