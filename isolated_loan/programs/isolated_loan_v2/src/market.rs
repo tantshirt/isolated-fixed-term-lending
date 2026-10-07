@@ -5,10 +5,10 @@
 //! - `list_position(price, expiry)`: the current lender, while the loan is Active and in its
 //!   Active or Grace phase. One listing per loan (`["listing", offer]`); listing again updates it.
 //! - `cancel_listing`: the seller closes it and reclaims the rent.
-//! - `buy_position(expected_price)`: the buyer pays exactly the listed price to the seller and
+//! - `buy_position(expected_price, expected_paid)`: the buyer pays exactly the listed price to the seller and
 //!   becomes `current_lender`; the listing closes (rent to the seller). Rejects a stale listing
 //!   (seller no longer the current lender), an expired one, a settled loan, an overdue loan, and
-//!   a price that differs from the one the buyer signed.
+//!   a price or cumulative payment state that differs from what the buyer signed.
 //! - `close_listing`: anyone, once the listing is void (loan settled or closed, seller no longer
 //!   the current lender, or expired); the rent returns to the seller.
 
@@ -66,13 +66,22 @@ pub fn cancel_listing(ctx: Context<CancelListing>) -> Result<()> {
     Ok(())
 }
 
-pub fn buy_position(ctx: Context<BuyPosition>, expected_price: u64) -> Result<()> {
+/// Cumulative payment state reviewed by the buyer. Accrual alone cannot change it, but every
+/// nonzero repayment (including interest-only and late-fee-only payments) does. No account layout
+/// change is needed; u128 avoids overflow when summing the ledger's u64 counters.
+pub fn paid_snapshot(o: &OfferV2) -> Result<u128> {
+    let principal_paid = o.terms.principal.checked_sub(o.ledger.outstanding_principal).ok_or(LoanV2Error::InvalidListing)?;
+    Ok(u128::from(principal_paid) + u128::from(o.ledger.interest_paid) + u128::from(o.ledger.late_fee_paid))
+}
+
+pub fn buy_position(ctx: Context<BuyPosition>, expected_price: u64, expected_paid: u128) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
     let (l, o) = (&ctx.accounts.listing, &ctx.accounts.offer);
     sellable(o, now)?;
     require_keys_eq!(l.seller, o.current_lender, LoanV2Error::StaleListing);
     require!(now < l.expiry, LoanV2Error::ListingExpired);
     require!(l.price == expected_price, LoanV2Error::ListingPriceChanged);
+    require!(paid_snapshot(o)? == expected_paid, LoanV2Error::InvalidListing);
     let buyer = ctx.accounts.buyer.key();
     require!(buyer != o.borrower, LoanV2Error::SameBorrowerAndLender);
     require!(buyer != l.seller, LoanV2Error::InvalidListing);
@@ -102,6 +111,7 @@ pub fn close_listing(ctx: Context<CloseListing>) -> Result<()> {
     } else {
         let o = OfferV2::try_deserialize(&mut &info.try_borrow_data()?[..])?;
         o.status.is_settled() || o.current_lender != l.seller || now >= l.expiry
+            || (o.status == StatusV2::Active && !matches!(acc::phase(&o.terms.core()?, now), Phase::Active | Phase::Grace))
     };
     require!(void, LoanV2Error::ListingStillValid);
     emit!(ListingClosedV2 { offer: l.offer, seller: l.seller, cancelled: false });

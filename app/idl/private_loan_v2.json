@@ -6061,6 +6061,10 @@
           "type": {
             "vec": "pubkey"
           }
+        },
+        {
+          "name": "expected_ledger_revision",
+          "type": "u32"
         }
       ]
     },

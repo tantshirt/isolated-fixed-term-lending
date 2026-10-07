@@ -737,8 +737,8 @@ pub mod isolated_loan_v2 {
     }
 
     /// Buyer: pays exactly `expected_price` to the seller and becomes `current_lender`, atomically.
-    pub fn buy_position(ctx: Context<BuyPosition>, expected_price: u64) -> Result<()> {
-        market::buy_position(ctx, expected_price)
+    pub fn buy_position(ctx: Context<BuyPosition>, expected_price: u64, expected_paid: u128) -> Result<()> {
+        market::buy_position(ctx, expected_price, expected_paid)
     }
 
     /// Anyone: closes a void listing (settled or closed loan, stale seller, or expired); rent to the seller.

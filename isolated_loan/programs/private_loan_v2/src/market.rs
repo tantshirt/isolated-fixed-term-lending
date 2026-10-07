@@ -21,8 +21,9 @@ use loan_core::accounting::{self as acc, Phase};
 
 /// Checks a transfer of `t` from `seller` to `buyer` at `now` for `price`. Pure, so the rules are
 /// unit-tested without the ER permission program.
-pub fn check_transfer(t: &LoanTerms, seller: &Pubkey, buyer: &Pubkey, price: u64, now: i64) -> Result<()> {
+pub fn check_transfer(t: &LoanTerms, seller: &Pubkey, buyer: &Pubkey, price: u64, now: i64, expected_ledger_revision: u32) -> Result<()> {
     require_keys_eq!(t.current_lender, *seller, PrivateLoanError::NotLender);
+    require!(t.ledger_revision == expected_ledger_revision, PrivateLoanError::StaleRevision);
     require!(t.status == STATUS_ACTIVE, PrivateLoanError::WrongStatus);
     require!(matches!(acc::phase(&t.core_terms()?, now), Phase::Active | Phase::Grace), PrivateLoanError::PositionNotSellable);
     require!(price > 0, PrivateLoanError::ZeroAmount);
@@ -32,12 +33,12 @@ pub fn check_transfer(t: &LoanTerms, seller: &Pubkey, buyer: &Pubkey, price: u64
 
 /// Seller and buyer together, in the rollup. `current` is the loan's consented reader list, which
 /// must hash to the recorded `auditor_hash`; it is carried over unchanged.
-pub fn transfer_position(ctx: Context<TransferPosition>, price: u64, current: Vec<Pubkey>) -> Result<()> {
+pub fn transfer_position(ctx: Context<TransferPosition>, price: u64, current: Vec<Pubkey>, expected_ledger_revision: u32) -> Result<()> {
     let a = &ctx.accounts;
     let info = a.terms.to_account_info();
     let mut t: LoanTerms = load(&info)?;
     let (seller, buyer) = (a.seller.key(), a.buyer.key());
-    check_transfer(&t, &seller, &buyer, price, Clock::get()?.unix_timestamp)?;
+    check_transfer(&t, &seller, &buyer, price, Clock::get()?.unix_timestamp, expected_ledger_revision)?;
     let readers = current_readers(&t, current)?;
     let usdc = a.anchor.usdc_mint;
     require_ata(&a.seller_usdc, &seller, &usdc)?;
@@ -122,9 +123,9 @@ mod tests {
         let (seller, borrower, buyer, auditor) = (Pubkey::new_unique(), Pubkey::new_unique(), Pubkey::new_unique(), Pubkey::new_unique());
         let t = terms(seller, borrower);
         let grace_end = t.core_terms().unwrap().grace_end();
-        check_transfer(&t, &seller, &buyer, 1, START + DAY).unwrap();
-        check_transfer(&t, &seller, &buyer, 1, grace_end - 1).unwrap();
-        assert_eq!(code(check_transfer(&t, &seller, &buyer, 1, grace_end)), err(PrivateLoanError::PositionNotSellable));
+        check_transfer(&t, &seller, &buyer, 1, START + DAY, t.ledger_revision).unwrap();
+        check_transfer(&t, &seller, &buyer, 1, grace_end - 1, t.ledger_revision).unwrap();
+        assert_eq!(code(check_transfer(&t, &seller, &buyer, 1, grace_end, t.ledger_revision)), err(PrivateLoanError::PositionNotSellable));
 
         // The reader swap: the seller drops out, the buyer is added, auditors stay.
         let mut t = t;
@@ -142,15 +143,30 @@ mod tests {
         let (seller, borrower, buyer) = (Pubkey::new_unique(), Pubkey::new_unique(), Pubkey::new_unique());
         let mut t = terms(seller, borrower);
         let now = START + DAY;
-        assert_eq!(code(check_transfer(&t, &buyer, &buyer, 1, now)), err(PrivateLoanError::NotLender));
-        assert_eq!(code(check_transfer(&t, &seller, &borrower, 1, now)), err(PrivateLoanError::BuyerNotAllowed));
-        assert_eq!(code(check_transfer(&t, &seller, &seller, 1, now)), err(PrivateLoanError::BuyerNotAllowed));
-        assert_eq!(code(check_transfer(&t, &seller, &buyer, 0, now)), err(PrivateLoanError::ZeroAmount));
+        assert_eq!(code(check_transfer(&t, &buyer, &buyer, 1, now, t.ledger_revision)), err(PrivateLoanError::NotLender));
+        assert_eq!(code(check_transfer(&t, &seller, &borrower, 1, now, t.ledger_revision)), err(PrivateLoanError::BuyerNotAllowed));
+        assert_eq!(code(check_transfer(&t, &seller, &seller, 1, now, t.ledger_revision)), err(PrivateLoanError::BuyerNotAllowed));
+        assert_eq!(code(check_transfer(&t, &seller, &buyer, 0, now, t.ledger_revision)), err(PrivateLoanError::ZeroAmount));
         // After a sale the old lender can no longer sell.
         t.current_lender = buyer;
-        assert_eq!(code(check_transfer(&t, &seller, &Pubkey::new_unique(), 1, now)), err(PrivateLoanError::NotLender));
+        assert_eq!(code(check_transfer(&t, &seller, &Pubkey::new_unique(), 1, now, t.ledger_revision)), err(PrivateLoanError::NotLender));
         // A settled loan cannot be sold.
         t.status = STATUS_REPAID;
-        assert_eq!(code(check_transfer(&t, &buyer, &Pubkey::new_unique(), 1, now)), err(PrivateLoanError::WrongStatus));
+        assert_eq!(code(check_transfer(&t, &buyer, &Pubkey::new_unique(), 1, now, t.ledger_revision)), err(PrivateLoanError::WrongStatus));
     }
+    #[test]
+    fn a_transfer_signed_before_an_interest_only_payment_is_stale() {
+        let (seller, borrower, buyer) = (Pubkey::new_unique(), Pubkey::new_unique(), Pubkey::new_unique());
+        let mut t = terms(seller, borrower);
+        let expected = t.ledger_revision;
+        let now = START + DAY;
+        let (ledger, payment) = acc::apply_payment(&t.core_terms().unwrap(), &t.ledger.into(), now, 1).unwrap();
+        assert_eq!(payment.principal, 0);
+        assert_eq!(payment.interest, 1);
+        t.ledger = ledger.into();
+        t.ledger_revision += 1; // Every repay and mandate payment advances this revision.
+        assert_eq!(code(check_transfer(&t, &seller, &buyer, 90_000_000, now, expected)), err(PrivateLoanError::StaleRevision));
+        check_transfer(&t, &seller, &buyer, 90_000_000, now, t.ledger_revision).unwrap();
+    }
+
 }

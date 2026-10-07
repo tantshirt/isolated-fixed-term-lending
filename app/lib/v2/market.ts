@@ -6,7 +6,7 @@
  */
 import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey, SystemProgram, type Connection, type Keypair } from "@solana/web3.js";
-import type { BN } from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { phase } from "../loan-math-v2";
 import { asSigner, type LoanSigner } from "../keypair-wallet";
 import { bnU64, getConnection } from "../program";
@@ -105,6 +105,13 @@ export async function sendCancelListingV2(signerLike: AnySigner, l: Listing, con
   return submitTransaction(connection, signer, tx);
 }
 
+/** Payment state the buyer reviewed; accruing interest alone does not invalidate a signature. */
+export function positionPaidSnapshot(o: OfferV2): bigint {
+  const principalPaid = o.terms.principal - o.ledger.outstandingPrincipal;
+  if (principalPaid < 0n) throw new Error("Position has an invalid payment ledger.");
+  return principalPaid + o.ledger.interestPaid + o.ledger.lateFeePaid;
+}
+
 /** Buyer: pays exactly the listed price and becomes the current lender, in one instruction. */
 export async function sendBuyPositionV2(signerLike: AnySigner, o: OfferV2, l: Listing, connection = getConnection()): Promise<string> {
   const signer = asSigner(signerLike);
@@ -112,7 +119,7 @@ export async function sendBuyPositionV2(signerLike: AnySigner, o: OfferV2, l: Li
   const offer = new PublicKey(o.publicKey);
   const seller = new PublicKey(l.seller);
   const tx = await getProgramV2(signer, connection)
-    .methods.buyPosition(bnU64(l.price))
+    .methods.buyPosition(bnU64(l.price), new BN(positionPaidSnapshot(o).toString()))
     .accountsPartial({
       buyer, offer, listing: new PublicKey(l.publicKey), seller, sellerUsdc: ata(o.usdcMint, seller), buyerUsdc: ata(o.usdcMint, buyer), tokenProgram: TOKEN_PROGRAM_ID,
     })

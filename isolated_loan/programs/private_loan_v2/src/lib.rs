@@ -288,8 +288,8 @@ pub mod private_loan_v2 {
     /// Ephemeral rollup. Seller (current lender) and buyer together: the buyer pays `price` from
     /// their private USDC balance, becomes the current lender, and the read permission swaps from
     /// seller to buyer (Story 26.8). Follow with `rebind_watch`.
-    pub fn transfer_position(ctx: Context<TransferPosition>, price: u64, current: Vec<Pubkey>) -> Result<()> {
-        market::transfer_position(ctx, price, current)
+    pub fn transfer_position(ctx: Context<TransferPosition>, price: u64, current: Vec<Pubkey>, expected_ledger_revision: u32) -> Result<()> {
+        market::transfer_position(ctx, price, current, expected_ledger_revision)
     }
 
     /// Ephemeral rollup. A liquidator funds the current quote revision.

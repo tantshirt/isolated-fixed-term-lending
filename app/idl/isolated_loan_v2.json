@@ -480,6 +480,10 @@
         {
           "name": "expected_price",
           "type": "u64"
+        },
+        {
+          "name": "expected_paid",
+          "type": "u128"
         }
       ]
     },

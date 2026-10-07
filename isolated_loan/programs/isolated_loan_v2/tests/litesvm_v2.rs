@@ -1754,7 +1754,7 @@ mod credit_tests;
 
 // ---- Story 26.8: secondary market ------------------------------------------------------------
 
-use isolated_loan_v2::market::{Listing, LISTING_SEED};
+use isolated_loan_v2::market::{paid_snapshot, Listing, LISTING_SEED};
 
 const PRICE: u64 = 95_000_000;
 const ADDRESS: &str = "Custom(2012)"; // ConstraintAddress: a payment account for the wrong lender
@@ -1789,21 +1789,25 @@ impl Env {
 
     /// `seller` is the wallet the buyer pays; normally the listing's seller.
     fn buy(&mut self, offer: Pubkey, buyer: &Keypair, seller: Pubkey, expected_price: u64) -> Result<(), String> {
-        let ix = Instruction {
+        let expected_paid = paid_snapshot(&self.offer(offer)).unwrap();
+        self.send(self.buy_ix(offer, buyer.pubkey(), seller, expected_price, expected_paid), buyer)
+    }
+
+    fn buy_ix(&self, offer: Pubkey, buyer: Pubkey, seller: Pubkey, expected_price: u64, expected_paid: u128) -> Instruction {
+        Instruction {
             program_id: ID,
             accounts: isolated_loan_v2::accounts::BuyPosition {
-                buyer: buyer.pubkey(),
+                buyer,
                 offer,
                 listing: listing_pda(offer),
                 seller,
                 seller_usdc: ata(seller, USDC_MINT),
-                buyer_usdc: ata(buyer.pubkey(), USDC_MINT),
+                buyer_usdc: ata(buyer, USDC_MINT),
                 token_program: TOKEN_PROGRAM,
             }
             .to_account_metas(None),
-            data: isolated_loan_v2::instruction::BuyPosition { expected_price }.data(),
-        };
-        self.send(ix, buyer)
+            data: isolated_loan_v2::instruction::BuyPosition { expected_price, expected_paid }.data(),
+        }
     }
 
     fn close_listing(&mut self, offer: Pubkey, seller: Pubkey, payer: &Keypair) -> Result<(), String> {
@@ -1893,6 +1897,57 @@ fn a_purchase_racing_a_repayment_has_one_outcome() {
 }
 
 #[test]
+fn a_signed_purchase_rejects_partial_payments_even_after_a_same_price_relist() {
+    for amount in [1, 10_000_000] {
+        let mut env = Env::new();
+        let o = env.open_loan(1, 1);
+        let (seller, borrower, buyer) = (env.lender.insecure_clone(), env.borrower.insecure_clone(), env.stranger.insecure_clone());
+        env.at(START + 5 * DAY);
+        env.list(o, &seller, PRICE, START + 10 * DAY).unwrap();
+        let snapshot = paid_snapshot(&env.offer(o)).unwrap();
+        let buy_ix = env.buy_ix(o, buyer.pubkey(), seller.pubkey(), PRICE, snapshot);
+        // Sign now, before the borrower pays. All three transactions use this live blockhash;
+        // direct submission avoids Env::send intentionally expiring it between transactions.
+        let blockhash = env.svm.latest_blockhash();
+        let signed_buy = Transaction::new(&[&buyer], Message::new(&[buy_ix], Some(&buyer.pubkey())), blockhash);
+        let repay_ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::Repay {
+                borrower: borrower.pubkey(), offer: o, wsol_vault: pda(&[WSOL_VAULT_SEED, o.as_ref()]),
+                borrower_usdc: ata(borrower.pubkey(), USDC_MINT), lender: seller.pubkey(),
+                lender_usdc: ata(seller.pubkey(), USDC_MINT), borrower_wsol: ata(borrower.pubkey(), WSOL_MINT), token_program: TOKEN_PROGRAM,
+            }.to_account_metas(None),
+            data: isolated_loan_v2::instruction::Repay { amount }.data(),
+        };
+        let repay = Transaction::new(&[&borrower], Message::new(&[repay_ix], Some(&borrower.pubkey())), blockhash);
+        env.svm.send_transaction(repay).unwrap();
+        let after_payment = env.offer(o);
+        assert_eq!(after_payment.status, StatusV2::Active);
+        assert_eq!(paid_snapshot(&after_payment).unwrap(), snapshot + u128::from(amount));
+        if amount == 1 {
+            assert_eq!(after_payment.ledger.outstanding_principal, PRINCIPAL, "interest-only payments must invalidate the purchase too");
+        }
+        let relist_ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::ListPosition { seller: seller.pubkey(), offer: o, listing: listing_pda(o), system_program: SYSTEM_PROGRAM }.to_account_metas(None),
+            data: isolated_loan_v2::instruction::ListPosition { price: PRICE, expiry: START + 11 * DAY }.data(),
+        };
+        let relist = Transaction::new(&[&seller], Message::new(&[relist_ix], Some(&seller.pubkey())), blockhash);
+        env.svm.send_transaction(relist).unwrap();
+        let (buyer_before, seller_before) = (env.usdc(&buyer), env.usdc(&seller));
+        let result = env.svm.send_transaction(signed_buy).map(|_| ()).map_err(|e| format!("{:?} {:?}", e.err, e.meta.logs));
+        assert_err(result, LoanV2Error::InvalidListing);
+        assert_eq!((env.usdc(&buyer), env.usdc(&seller)), (buyer_before, seller_before));
+        assert_eq!(env.offer(o).current_lender, seller.pubkey());
+        assert!(env.exists(listing_pda(o)));
+        // Refreshing the quoted ledger creates a new consent that may buy the remaining debt.
+        env.buy(o, &buyer, seller.pubkey(), PRICE).unwrap();
+        assert_eq!(env.offer(o).current_lender, buyer.pubkey());
+        assert_eq!(buyer_before - env.usdc(&buyer), PRICE);
+    }
+}
+
+#[test]
 fn a_stale_listing_cannot_be_bought_after_a_sale_or_a_settlement() {
     let mut env = Env::new();
     let (l, first) = (env.lender.insecure_clone(), env.stranger.insecure_clone());
@@ -1959,7 +2014,7 @@ fn an_expired_listing_or_an_overdue_loan_cannot_be_bought() {
     env.at(t.grace_end());
     assert_err(env.buy(o, &buyer, l.pubkey(), PRICE), LoanV2Error::PositionNotSellable);
     assert_err(env.list(o, &l, PRICE, t.grace_end() + DAY), LoanV2Error::PositionNotSellable);
-    env.cancel_listing(o, &l).unwrap();
+    env.close_listing(o, l.pubkey(), &anyone).unwrap();
     assert!(!env.exists(listing_pda(o)));
 }
 

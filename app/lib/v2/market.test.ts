@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Keypair } from "@solana/web3.js";
-import { buyBlocker, canList, listingState, RESALE_NOTICE, type Listing } from "./market";
+import { buyBlocker, canList, listingState, positionPaidSnapshot, RESALE_NOTICE, type Listing } from "./market";
 import { EarlyRepayment, graceEnd, maturity, openLedger, type TermsV2 } from "../loan-math-v2";
 import type { OfferV2 } from "./offers";
 import { capabilityFor, DEVNET_USDC } from "../capabilities";
@@ -45,4 +45,31 @@ test("selling and export follow their deployment flags", () => {
   assert.equal(capabilityFor("zenlo-public", "devnet", DEVNET_USDC, "resell").available, on);
   assert.equal(capabilityFor("zenlo-private", "devnet", DEVNET_USDC, "resell").available, on);
   assert.equal(capabilityFor("zenlo-public", "devnet", "any-mint", "export").available, process.env.NEXT_PUBLIC_EXPORT_ENABLED === "1");
+});
+
+
+test("purchase snapshot detects principal, interest-only and late-fee payments but permits accrual", () => {
+  const o = offer();
+  const snapshot = positionPaidSnapshot(o);
+  assert.equal(snapshot, 0n);
+  const ledger = o.ledger;
+  assert.equal(positionPaidSnapshot({ ...o, ledger: { ...ledger, interestAccrued: 200n, lastAccrualTs: NOW + 1 } }), snapshot);
+  assert.equal(positionPaidSnapshot({ ...o, ledger: { ...ledger, interestPaid: 1n } }), 1n);
+  assert.equal(positionPaidSnapshot({ ...o, ledger: { ...ledger, lateFeePaid: 1n } }), 1n);
+  assert.equal(positionPaidSnapshot({ ...o, ledger: { ...ledger, outstandingPrincipal: ledger.outstandingPrincipal - 1n } }), 1n);
+  const max = (1n << 64n) - 1n;
+  assert.equal(positionPaidSnapshot({ ...o, terms: { ...terms, principal: max }, ledger: { ...ledger, outstandingPrincipal: 0n, interestPaid: max, lateFeePaid: max } }), 3n * max, "sum must not truncate to u64");
+});
+
+test("market IDLs require the signed payment snapshot or private ledger revision", async () => {
+  const { BorshInstructionCoder, BN } = await import("@coral-xyz/anchor");
+  const publicIdl = (await import("../../idl/isolated_loan_v2.json")).default;
+  const privateIdl = (await import("../../idl/private_loan_v2.json")).default;
+  const coder = new BorshInstructionCoder(publicIdl as never);
+  const expectedPaid = 1n << 65n;
+  const bytes = coder.encode("buy_position", { expected_price: new BN(1), expected_paid: new BN(expectedPaid.toString()) });
+  const decoded = coder.decode(bytes)!.data as { expected_paid: { toString(): string } };
+  assert.equal(decoded.expected_paid.toString(), expectedPaid.toString());
+  const transfer = privateIdl.instructions.find((ix) => ix.name === "transfer_position")!;
+  assert.deepEqual(transfer.args.at(-1), { name: "expected_ledger_revision", type: "u32" });
 });
