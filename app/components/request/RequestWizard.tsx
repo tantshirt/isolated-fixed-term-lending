@@ -24,6 +24,7 @@ import { RequestService } from "@/lib/request-service";
 import { hasOwnFeed } from "@/lib/models/collateral";
 import { V2_LIVE } from "@/lib/v2/program";
 import { rulesProblem } from "@/lib/v2/rules";
+import { draftReceipt, type DraftReceipt } from "@/lib/draft-receipt";
 import { requestV2Href } from "@/lib/v2/offers";
 import { requestHref } from "@/lib/requests";
 import { SubmissionError, signatureUrl } from "@/lib/transaction-lifecycle";
@@ -49,7 +50,7 @@ const TIPS = [
   "Lenders read exactly this before they fund.",
 ] as const;
 
-type Posted = { href: string; principal: bigint; collateral: bigint };
+type Posted = DraftReceipt & { href: string; principal: bigint; collateral: bigint };
 
 /** Step 0 picks public or private; public continues through the four-step wizard. */
 export function RequestWizard() {
@@ -181,12 +182,14 @@ function PublicWizard() {
     }
     setBusy("post");
     try {
+      const receipt = draftReceipt({ draft, asset, owed, price });
       const result = await new RequestService(signer, config).create(draft);
       setSignature(result.signature || null);
       setPosted({
         href: (V2_LIVE ? requestV2Href : requestHref)({ borrower: publicKey.toBase58(), requestId: BigInt(result.requestId) }),
         principal: parsed.principal,
         collateral: parsed.collateralAmount,
+        ...receipt,
       });
       toast({ tone: "success", title: "Request is live", detail: `You locked ${formatWsol(parsed.collateralAmount)} ${unit}.` });
       bumpRefresh();
@@ -243,7 +246,7 @@ function PublicWizard() {
             >
               <h1 className={styles.question}>Your request is live</h1>
               <p className={styles.moved}>
-                You locked <span className="num">{formatWsol(posted.collateral)}</span> {unit}. Lenders on Discover can see it now;
+                You locked <span className="num">{formatWsol(posted.collateral)}</span> {posted.asset.label}. Lenders on Discover can see it now;
                 the first to fund it sends you <span className="num">{formatUsdc(posted.principal)}</span> USDC at once.
               </p>
               <div className={styles.doneActions}>
@@ -357,7 +360,7 @@ function PublicWizard() {
         )}
       </div>
       <aside className={styles.aside} aria-label="Lender's view of this request">
-        <OfferPreview asset={asset} draft={draft} owed={owed} price={price} live={Boolean(posted)} perspective="borrower" />
+        <OfferPreview asset={posted?.asset ?? asset} draft={posted?.draft ?? draft} owed={posted ? posted.owed : owed} price={posted ? posted.price : price} live={Boolean(posted)} perspective="borrower" />
         {step > 0 && <Tip>{posted ? "Posted. Lenders can fund it from Discover." : TIPS[step - 1]}</Tip>}
       </aside>
     </div>

@@ -29,6 +29,7 @@ import { StepTerms } from "./StepTerms";
 import { useDraft } from "./useDraft";
 import { V2_LIVE } from "@/lib/v2/program";
 import { rulesProblem } from "@/lib/v2/rules";
+import { draftReceipt, type DraftReceipt } from "@/lib/draft-receipt";
 import styles from "./CreateWizard.module.css";
 
 const STEPS = [
@@ -48,11 +49,9 @@ const TIPS = [
   "This preview is exactly what borrowers will read.",
 ] as const;
 
-type Created = {
+type Created = DraftReceipt & {
   href: string;
   principal: bigint;
-  draft: ReturnType<typeof useDraft>["draft"];
-  owed: bigint | null;
 };
 
 export function CreateWizard() {
@@ -138,6 +137,7 @@ export function CreateWizard() {
     }
     setBusy(true);
     try {
+      const receipt = draftReceipt({ draft, asset, owed, price });
       const result = await new DevnetLoanService(signer, config).execute({
         action: "create",
         draft,
@@ -149,8 +149,7 @@ export function CreateWizard() {
       setCreated({
         href: V2_LIVE ? `/devnet/loans/${publicKey.toBase58()}/${offerId}` : `/devnet/offers/${publicKey.toBase58()}/${offerId}`,
         principal: parsed.principal,
-        draft,
-        owed,
+        ...receipt,
       });
       toast({
         tone: "success",
@@ -358,10 +357,10 @@ export function CreateWizard() {
         aria-label="Borrower's view of this offer"
       >
         <OfferPreview
-          asset={asset}
+          asset={created?.asset ?? asset}
           draft={created?.draft ?? draft}
           owed={created ? created.owed : owed}
-          price={price}
+          price={created ? created.price : price}
           live={Boolean(created)}
         />
         <Tip>
