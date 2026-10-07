@@ -90,6 +90,41 @@ export default defineSchema({
     error: v.optional(v.string()),
   }).index("by_at", ["at"]),
 
+  /** One-use links that connect a Telegram chat to a signed-in wallet (Story 24.3). */
+  telegramLinkTokens: defineTable({
+    nonce: v.string(),
+    wallet: v.string(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+  }).index("by_nonce", ["nonce"]),
+
+  telegramChats: defineTable({
+    wallet: v.string(),
+    chatId: v.string(),
+    linkedAt: v.number(),
+  })
+    .index("by_wallet", ["wallet"])
+    .index("by_chat", ["chatId"]),
+
+  /**
+   * Consented monitoring. Public loans are read from chain by key. For private loans the server
+   * stores only the deadlines the wallet chose to share, and sends generic text.
+   */
+  alertSubscriptions: defineTable({
+    wallet: v.string(),
+    kind: v.union(v.literal("public-v1"), v.literal("public-v2"), v.literal("private")),
+    loan: v.string(),
+    risk: v.boolean(),
+    deadlines: v.optional(
+      v.object({ maturity: v.number(), graceEnd: v.optional(v.number()), pricedFrom: v.optional(v.number()), terminalFrom: v.optional(v.number()) }),
+    ),
+    state: v.optional(v.any()),
+    active: v.boolean(),
+    consentedAt: v.number(),
+  })
+    .index("by_wallet", ["wallet"])
+    .index("by_active", ["active"]),
+
   authFailures: defineTable({
     reason: v.string(),
     at: v.number(),

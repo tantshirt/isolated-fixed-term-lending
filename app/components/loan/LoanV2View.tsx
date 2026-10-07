@@ -16,6 +16,7 @@ import { offerV2Pda } from "@/lib/v2/program";
 import type { OfferV2 } from "@/lib/v2/offers";
 import { priceUsd } from "@/lib/risk";
 import { LoanV2Actions } from "./LoanV2Actions";
+import { AlertsPanel } from "./AlertsPanel";
 import styles from "@/components/offer/OfferView.module.css";
 
 export type V2Role = "lender" | "borrower" | "viewer";
@@ -179,6 +180,7 @@ function Loaded({ offerKey }: { offerKey: string }) {
       </div>
       <aside className={styles.aside}>
         <LoanV2Actions offer={offer} view={view} role={role} price={price} now={now} balances={balances} onMoved={setMoved} />
+        {offer.status === "active" && role !== "viewer" && <AlertsPanel kind="public-v2" loan={offer.publicKey} />}
       </aside>
     </div>
   );

@@ -73,3 +73,44 @@ Vercel Cron (`/api/cron/crank`) stays the only scheduler that sends transactions
 - The cutover moves sending into Convex. It happens only after 7 consecutive days with no misses, and the Vercel cron is removed in the same change so only one scheduler is ever active.
 
 First local run (2026-10-07): the shadow saw 4 Devnet watches due. A simulated live report triggered one of them, and parity listed the other three as missed. That is the kind of difference the 7-day window has to clear before cutover.
+
+## Alerts and Telegram (Story 24.3)
+
+**What is monitored.** Nothing, until a signed-in wallet consents per loan with `alerts:subscribe`.
+- Public loans (V1 or V2) are read from chain by key.
+- Private loans are never read: the wallet shares only the deadlines it chooses, and every message about them is the same generic line. Convex never stores private terms or bands.
+
+**Risk bands** (`app/lib/alerts/bands.ts`, pure and tested):
+- alerts fire as 25%, 50% and 75% of the buffer between the baseline price and the liquidation price is used;
+- then when the remaining distance is within 5% and 2% of the current price;
+- then at liquidation eligibility.
+
+Each level is announced once. Levels rise immediately and fall only after a recovery of 5% of the buffer. A change in principal or collateral rebases the baseline on the next valid price. With a stale price, no band decision is made.
+
+**Reminders:**
+- 24 hours and 1 hour before the deadline;
+- grace start and 1 hour before grace ends;
+- priced recovery opening;
+- 24 hours before the terminal claim, and at the terminal claim.
+
+Each is sent once, and anything more than a day late is skipped.
+
+**Telegram.**
+- `alerts:createTelegramLink` gives the signed-in wallet a one-use `t.me/<bot>?start=<nonce>` link, valid for 10 minutes.
+- `/telegram/webhook` accepts only requests carrying `X-Telegram-Bot-Api-Secret-Token`, and links the chat on `/start <nonce>`. A replayed nonce is refused.
+- Messages go out through the job queue as `telegram-send`, with a dedup key per level or reminder, so a retried scan never sends twice.
+
+**Deployment env:**
+- `TELEGRAM_BOT_USERNAME` and `TELEGRAM_BOT_TOKEN` (from BotFather);
+- `TELEGRAM_WEBHOOK_SECRET`, registered with `setWebhook` (`secret_token`) pointing at `{CONVEX_SITE_URL}/telegram/webhook`.
+
+Without the token, sends fail permanently with that reason and nothing else breaks.
+
+**Proof on local Convex** (`app/scripts/alerts-e2e.mjs` plus `alertsNode:scan` against a live Devnet V2 fixture):
+- consent;
+- private loans refused without shared deadlines;
+- one-use link;
+- wrong webhook secret gives 401 and the real one gives 200;
+- chat linked to the signed-in wallet;
+- a replayed link sent no second message;
+- the scan queued "1 hour before deadline" and "grace started" reminders, each once.

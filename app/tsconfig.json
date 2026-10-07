@@ -31,6 +31,7 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next-bisect/types/**/*.ts",
     ".next-dev/types/**/*.ts",
     ".next-final/types/**/*.ts",
     ".next-polish/types/**/*.ts",
@@ -38,7 +39,7 @@
     ".next-security/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-bisect/types/**/*.ts"
+    ".next-check/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

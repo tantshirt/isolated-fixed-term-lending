@@ -158,6 +158,34 @@ http.route({
   }),
 });
 
+/**
+ * Telegram webhook (Story 24.3). Telegram sends the secret set with setWebhook in the
+ * `X-Telegram-Bot-Api-Secret-Token` header; anything else is refused. Only `/start <nonce>` does
+ * anything: it links that chat to the wallet that created the one-use link.
+ */
+http.route({
+  path: "/telegram/webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    const given = req.headers.get("X-Telegram-Bot-Api-Secret-Token") ?? "";
+    if (!secret || given.length !== secret.length || [...secret].reduce((d, c, i) => d | (c.charCodeAt(0) ^ given.charCodeAt(i)), 0) !== 0) {
+      return new Response(null, { status: 401 });
+    }
+    const update = (await req.json().catch(() => null)) as { message?: { chat?: { id?: number }; text?: string } } | null;
+    const text = update?.message?.text ?? "";
+    const chatId = update?.message?.chat?.id;
+    const match = /^\/start ([1-9A-HJ-NP-Za-km-z]{8,64})$/.exec(text.trim());
+    if (!match || chatId === undefined) return new Response(null, { status: 200 });
+    const wallet = await ctx.runMutation(internal.alerts.consumeTelegramNonce, { nonce: match[1], chatId: String(chatId) });
+    const reply = wallet
+      ? "ZenLo alerts are on for this chat. Private loans only ever send a generic notice."
+      : "This link has expired or was already used. Create a new one in ZenLo.";
+    await ctx.runMutation(internal.jobs.enqueue, { kind: "telegram-send", dedupKey: `link:${match[1]}`, payload: { chatId: String(chatId), text: reply } });
+    return new Response(null, { status: 200 });
+  }),
+});
+
 http.route({
   path: "/ops/health",
   method: "GET",

@@ -32,6 +32,7 @@ import { offerPda } from "@/lib/pda";
 import { priceUsd, solPriceAtLtv } from "@/lib/risk";
 import { PublicKey } from "@solana/web3.js";
 import { ActionPanel } from "./ActionPanel";
+import { AlertsPanel } from "@/components/loan/AlertsPanel";
 import { HealthMeter } from "./HealthMeter";
 import { TermRing } from "./TermRing";
 import { roleFor, type OfferRole } from "./useOfferRole";
@@ -204,6 +205,7 @@ function Loaded({ offerKey }: { offerKey: string }) {
           balances={balances}
           onMoved={setMoved}
         />
+        {offer.status === "filled" && (role === "lender" || role === "borrower") && <AlertsPanel kind="public-v1" loan={offer.publicKey} />}
       </aside>
     </div>
   );
