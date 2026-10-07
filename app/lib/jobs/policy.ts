@@ -41,3 +41,15 @@ export function afterError(attempts: number, maxAttempts = MAX_ATTEMPTS): Extrac
 export function afterLeaseExpired(hasSignature: boolean): Extract<JobStatus, "queued" | "uncertain"> {
   return hasSignature ? "uncertain" : "queued";
 }
+
+/** Processed transactions may still confirm even after their blockhash stops accepting new sends. */
+export function signatureState(
+  status: { err: unknown; confirmationStatus?: string | null } | null,
+  finalizedHeight: number,
+  lastValidBlockHeight?: number,
+): SignatureState {
+  if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") {
+    return status.err ? { kind: "failed", error: JSON.stringify(status.err) } : { kind: "confirmed" };
+  }
+  return { kind: "unknown", blockhashExpired: status === null && lastValidBlockHeight !== undefined && finalizedHeight > lastValidBlockHeight };
+}
