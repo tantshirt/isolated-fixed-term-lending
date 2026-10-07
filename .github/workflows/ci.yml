@@ -14,6 +14,8 @@ jobs:
         working-directory: isolated_loan
     steps:
       - uses: actions/checkout@v4
+      - name: Verify build diagnostic guards
+        run: python3 ../.github/scripts/test-sbf-checks.py
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -78,7 +80,7 @@ jobs:
           runner-arch-os: x86_64_linux
           arcium-version: "0.15.0"
           anchor-version: "1.0.2"
-          solana-cli-version: "3.1.10"
+          solana-cli-version: "4.2.2"
           node-version: "24.10.0"
       - uses: Swatinem/rust-cache@v2
         with:
@@ -87,7 +89,7 @@ jobs:
       - name: Build canonical MXE and circuit
         run: |
           arcium build --skip-program --skip-keys-sync
-          bash ../../../.github/scripts/check-sbf.sh anchor build --ignore-keys
+          python3 ../../../.github/scripts/check-mxe-sbf.py anchor build --ignore-keys
       - name: MXE unit and LiteSVM tests
         run: cargo test --locked
       - name: Arcium localnet integration
@@ -96,7 +98,7 @@ jobs:
           # Rebuild with the local key after checking the canonical-ID Rust fixtures.
           sudo prlimit --pid $$ --nofile=1048576:1048576
           npm run fixtures
-          bash ../../../.github/scripts/check-sbf.sh arcium build
+          python3 ../../../.github/scripts/check-mxe-sbf.py arcium build
           arcium test --skip-build --cluster localnet
 
   app:
