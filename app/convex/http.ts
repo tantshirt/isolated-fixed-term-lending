@@ -130,4 +130,45 @@ http.route({
   ),
 });
 
+function opsSecretOk(req: Request): boolean {
+  const secret = process.env.OPS_REPORT_SECRET;
+  const given = bearer(req);
+  if (!secret || !given || given.length !== secret.length) return false;
+  let diff = 0;
+  for (let i = 0; i < secret.length; i++) diff |= secret.charCodeAt(i) ^ given.charCodeAt(i);
+  return diff === 0;
+}
+
+/** The live Vercel Cron cranker reports what it triggered, for shadow parity. */
+http.route({
+  path: "/ops/crank-report",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!opsSecretOk(req)) return new Response(null, { status: 401 });
+    const body = (await req.json().catch(() => null)) as { slot?: string; triggered?: string[]; error?: string } | null;
+    if (!body || typeof body.slot !== "string" || !Array.isArray(body.triggered)) return new Response(null, { status: 400 });
+    await ctx.runMutation(internal.ops.recordCrank, {
+      source: "live",
+      slot: body.slot,
+      due: [],
+      triggered: body.triggered.filter((t) => typeof t === "string").slice(0, 100),
+      error: typeof body.error === "string" ? body.error.slice(0, 300) : undefined,
+    });
+    return new Response(null, { status: 204 });
+  }),
+});
+
+http.route({
+  path: "/ops/health",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!opsSecretOk(req)) return new Response(null, { status: 401 });
+    const [health, parity] = await Promise.all([
+      ctx.runQuery(internal.ops.health, {}),
+      ctx.runQuery(internal.ops.parity, { sinceMs: 7 * 86_400_000 }),
+    ]);
+    return new Response(JSON.stringify({ ...health, parity }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  }),
+});
+
 export default http;

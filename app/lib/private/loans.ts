@@ -4,6 +4,7 @@ import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import idl from "@/idl/private_loan.json";
 import { DEVNET_USDC_MINT, NATIVE_WSOL_MINT, PYTH_PRICE_UPDATE_ACCOUNT } from "@/lib/constants";
 import type { LoanSigner } from "@/lib/keypair-wallet";
+import { assertOriginationAllowed } from "../ops-transaction";
 import { DELEGATION_PROGRAM_ID, ESPL_PROGRAM_ID, MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID, ata, eataPda, permissionPda } from "./espl";
 import { decodeLoanTerms, loanAnchorPda, loanTermsPda, type LoanTerms } from "./loan-codec";
 import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
@@ -68,6 +69,7 @@ async function sendEr(er: Connection, signer: LoanSigner, ix: Awaited<ReturnType
   tx.feePayer = signer.publicKey;
   validateTransaction(tx, { feePayer: signer.publicKey });
   tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
+  await assertOriginationAllowed(tx);
   const signed = await signer.signTransaction(tx);
   const wallet = signer.publicKey.toBase58();
   const receipt = newReceipt(intent, "er", revision);

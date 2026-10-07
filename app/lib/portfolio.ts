@@ -1,6 +1,7 @@
 import type { Connection, GetProgramAccountsFilter, MemcmpFilter, PublicKey } from "@solana/web3.js";
 import { debt } from "./loan-math";
-import { debtOf, computeHealth, type PriceSnapshot } from "./offer-status";
+import { debtOf, type PriceSnapshot } from "./offer-status";
+import { legacyLoanView } from "./models/loan-view";
 import { readOnlyProgram, supportedOfferMints, toOffer, type Offer } from "./offers";
 import type { OfferAccount, RequestAccount } from "./program";
 import { requestHref, toRequest, type LoanRequest } from "./requests";
@@ -142,14 +143,14 @@ function offerItem(o: Offer, me: string, price: PriceSnapshot | null, now: numbe
     };
   }
   if (o.status === "filled") {
-    const health = price ? computeHealth(o, price) : null;
-    const ltvBps = health?.currentLtvBps ?? null;
-    const past = now >= o.expiryTs;
-    const overLine = !past && !!price?.fresh && ltvBps !== null && ltvBps >= o.liquidationLtvBps;
-    const near = !past && health !== null && health.healthBps <= NEAR_HEALTH_BPS;
+    const view = legacyLoanView(o, price, now);
+    const ltvBps = view.risk?.ltvBps ?? null;
+    const past = !view.actions.some((a) => a.action === "repay" && a.available);
+    const overLine = !!view.risk?.liquidatable;
+    const near = !past && view.risk !== null && view.risk.healthBps <= NEAR_HEALTH_BPS;
     const soon = !past && o.expiryTs - now <= DAY;
     const counterparty = side === "lender" ? o.borrower : o.lender;
-    const common = { ...base, kind: "loan" as const, dueTs: o.expiryTs, counterparty, ltvBps };
+    const common = { ...base, owed: view.payoff, kind: "loan" as const, dueTs: o.expiryTs, counterparty, ltvBps };
     if (past)
       return side === "lender"
         ? { ...common, urgency: URGENCY.pastDue, headline: "Deadline passed. The collateral is yours to claim.", action: "Claim collateral" }

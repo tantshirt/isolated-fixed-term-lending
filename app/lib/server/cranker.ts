@@ -52,13 +52,19 @@ export async function teeAs(kp: Keypair): Promise<Connection> {
 }
 
 /** Triggers every due ZenLo watch. Returns what happened per crank. */
-export async function runCranker(er: Connection, kp: Keypair, max = 15) {
+/** Due ZenLo watches at the rollup's current slot. Read-only, so the shadow scheduler can call it. */
+export async function findDueCranks(er: Connection, max = 15): Promise<{ slot: bigint; scanned: number; due: DueCrank[] }> {
   const slot = BigInt(await er.getSlot());
   const accounts = await er.getProgramAccounts(HYDRA_EPHEMERAL);
   const due = accounts
     .map((a) => parseCrank(a.pubkey, a.account.data as Buffer))
     .filter((c): c is DueCrank => !!c && c.remaining > 0n && c.nextSlot <= slot)
     .slice(0, max);
+  return { slot, scanned: accounts.length, due };
+}
+
+export async function runCranker(er: Connection, kp: Keypair, max = 15) {
+  const { slot, scanned, due } = await findDueCranks(er, max);
   const results: { crank: string; signature?: string; error?: string }[] = [];
   for (const c of due) {
     try {
@@ -86,5 +92,5 @@ export async function runCranker(er: Connection, kp: Keypair, max = 15) {
       results.push({ crank: c.crank.toBase58(), error: String(e).slice(0, 200) });
     }
   }
-  return { slot: slot.toString(), scanned: accounts.length, due: due.length, results };
+  return { slot: slot.toString(), scanned, due: due.length, results };
 }

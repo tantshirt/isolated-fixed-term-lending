@@ -34,3 +34,42 @@ Deployment env vars, set with `npx convex env set` on each deployment and never 
 
 - `npm test` in `app/` covers the challenge rules: replayed or used nonce, wrong domain, exact expiry, wrong signer, forged nonce, and the domain patterns.
 - `node scripts/auth-e2e.mjs` runs the full HTTP flow against a running deployment: disallowed origin, forged signature, valid sign-in, replay, Convex identity, refresh, and sign-out followed by refresh.
+
+## Durable jobs (Story 19.3)
+
+`convex/jobs.ts` is the queue and `convex/jobRunner.ts` runs it. Rules live in `app/lib/jobs/policy.ts` so tests cover them.
+
+- **Enqueue once.** Each job has a `dedupKey`; enqueueing an existing key returns the existing job.
+- **Dispatch.** A dispatcher runs every 30 seconds and leases up to 20 due jobs for 2 minutes. A lease that expires without a recorded signature puts the job back in the queue; with a signature, the job becomes **uncertain**.
+- **Retries.** Retries are bounded (6 attempts by default) with exponential backoff from 15 seconds up to 30 minutes, plus jitter. A handler throws `PermanentError` when a retry cannot help.
+- **Signatures.** A handler that sends a transaction calls `recordSignature(signature, lastValidBlockHeight)` before it waits for confirmation.
+- **Uncertain jobs are never resent blindly.** `reconcileOne` looks up the signature. If it confirmed, the job succeeded. If it failed on chain, or its blockhash expired unconfirmed, the job retries. Otherwise it keeps waiting.
+- **Handlers.** Kinds are registered in `convex/lib/handlers.ts`. `selftest` and `selftest-uncertain` exercise the retry and reconcile paths on any deployment.
+
+## Capabilities and pauses
+
+- `app/lib/capabilities.ts` holds the provider capabilities as code, keyed by provider, network, mint and operation. An unavailable capability carries the reason to show users, and whether only a labelled simulation exists.
+- `opsFlags` in Convex can pause `originations` or a single provider. Only signed-in wallets listed in `OPS_ADMIN_WALLETS` can change a flag.
+- `app/lib/ops-flags.ts` decides what a pause blocks. It blocks only originating actions (create, accept, fund, propose) and never repay, add collateral, liquidate, claim, cancel, close or withdraw.
+
+## Operations monitoring
+
+`GET {CONVEX_SITE_URL}/ops/health` requires `Authorization: Bearer $OPS_REPORT_SECRET` and returns:
+
+- job lag, plus uncertain and failed job counts;
+- watch lag for the live and shadow cranker;
+- oracle age, sampled every 5 minutes from the SOL/USD price account;
+- sign-in failures in the last hour, by reason;
+- stuck provider sessions (0 until providers ship);
+- seven-day cranker parity.
+
+## Cranker migration
+
+Vercel Cron (`/api/cron/crank`) stays the only scheduler that sends transactions.
+
+- Convex runs a shadow scan every minute. It signs in to the TEE with a throwaway keypair, lists due `watch_loan` cranks and sends nothing.
+- After each run, the live route posts what it triggered to `/ops/crank-report`. This needs `OPS_REPORT_SECRET` and `NEXT_PUBLIC_CONVEX_SITE_URL` in Vercel.
+- `crankParity` reports cranks the shadow saw due that the live scheduler did not trigger within 3 minutes, and the reverse.
+- The cutover moves sending into Convex. It happens only after 7 consecutive days with no misses, and the Vercel cron is removed in the same change so only one scheduler is ever active.
+
+First local run (2026-10-07): the shadow saw 4 Devnet watches due. A simulated live report triggered one of them, and parity listed the other three as missed. That is the kind of difference the 7-day window has to clear before cutover.
