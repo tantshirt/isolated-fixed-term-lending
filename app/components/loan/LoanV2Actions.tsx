@@ -22,6 +22,8 @@ import { reviewFigures } from "@/lib/v2/rules";
 import * as v2 from "@/lib/v2/transactions";
 import type { V2Role } from "./LoanV2View";
 import { RefinancePanel } from "./RefinancePanel";
+import { MandatePanel } from "./MandatePanel";
+import { MANDATES_ENABLED } from "@/lib/v2/mandates";
 import styles from "@/components/offer/ActionPanel.module.css";
 
 /** Seconds of accrual a signature allows for while it is reviewed and confirmed. */
@@ -74,8 +76,18 @@ export function LoanV2Actions({ offer, view, role, price, now, balances, onMoved
     </Panel>
   );
 
-  // A settled loan needs nothing from a visitor; only its lender can close it for rent.
-  if (offer.status !== "open" && offer.status !== "active" && role !== "lender") return panel("Settled", "Nothing is left to do on this loan.");
+  // A settled loan needs nothing from a visitor; only its lender can close it for rent. Its
+  // borrower may still revoke a leftover mandate to reclaim the rent (Story 26.3).
+  if (offer.status !== "open" && offer.status !== "active" && role !== "lender") {
+    if (role === "borrower" && signer && now !== null && MANDATES_ENABLED)
+      return (
+        <>
+          {panel("Settled", "Nothing is left to do on this loan.")}
+          <MandatePanel offer={offer} action={{ action: "mandate", by: "borrower", available: true }} signer={signer} now={now} busy={busy} run={run} panel={panel} />
+        </>
+      );
+    return panel("Settled", "Nothing is left to do on this loan.");
+  }
 
   if (!signer) {
     return panel(
@@ -221,6 +233,7 @@ export function LoanV2Actions({ offer, view, role, price, now, balances, onMoved
           topUpLamports && balances && balances.wsol < topUpLamports ? `You hold ${formatWsol(balances.wsol)} wSOL. Wrap SOL first.` : null,
         )}
         <RefinancePanel offer={offer} action={can("refinance")} signer={signer} now={now} balances={balances} busy={busy} run={run} panel={panel} />
+        <MandatePanel offer={offer} action={can("mandate")} signer={signer} now={now} busy={busy} run={run} panel={panel} />
       </>
     );
   }

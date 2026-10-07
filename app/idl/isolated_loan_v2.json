@@ -718,6 +718,65 @@
       "args": []
     },
     {
+      "name": "create_mandate",
+      "docs": [
+        "Story 26.3. Borrower: one bounded top-up or repay mandate per loan and action. Approves the",
+        "mandate PDA as delegate of `source` for exactly `cumulative_cap`, fees included."
+      ],
+      "discriminator": [
+        230,
+        170,
+        158,
+        68,
+        33,
+        169,
+        16,
+        158
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "offer"
+          ]
+        },
+        {
+          "name": "offer"
+        },
+        {
+          "name": "mandate",
+          "writable": true
+        },
+        {
+          "name": "source",
+          "docs": [
+            "The borrower's token account the allowance comes from; its mint is checked in the handler."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "MandateArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "create_offer",
       "discriminator": [
         237,
@@ -1225,6 +1284,142 @@
       ]
     },
     {
+      "name": "execute_mandate",
+      "docs": [
+        "Story 26.3. `Config.authorities.keeper` only; every bound is checked on-chain. For a",
+        "non-wSOL loan with a health trigger, the `CollateralConfig` is the first remaining account."
+      ],
+      "discriminator": [
+        66,
+        205,
+        94,
+        79,
+        120,
+        226,
+        164,
+        24
+      ],
+      "accounts": [
+        {
+          "name": "keeper",
+          "docs": [
+            "Must be `config.authorities.keeper`."
+          ],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "offer",
+          "writable": true,
+          "relations": [
+            "mandate"
+          ]
+        },
+        {
+          "name": "mandate",
+          "writable": true
+        },
+        {
+          "name": "source",
+          "writable": true
+        },
+        {
+          "name": "keeper_token",
+          "docs": [
+            "Receives the fee, in the source's mint."
+          ],
+          "writable": true
+        },
+        {
+          "name": "wsol_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  115,
+                  111,
+                  108,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  45,
+                  118,
+                  50
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "price_update",
+          "docs": [
+            "checked in loan-core."
+          ]
+        },
+        {
+          "name": "lender_usdc",
+          "docs": [
+            "Repay only: the current lender's USDC account; checked in the handler."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "borrower",
+          "docs": [
+            "Repay only: receives the collateral vault's rent if this payment closes the loan."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "borrower_wsol",
+          "docs": [
+            "Repay only: receives the collateral if this payment closes the loan."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "fee",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "fund_request",
       "docs": [
         "A lender funds an open request; the result is an active `OfferV2`."
@@ -1708,6 +1903,92 @@
       "args": []
     },
     {
+      "name": "rearm_mandate",
+      "docs": [
+        "Story 26.3. Keeper or borrower: re-arms a fired health trigger once LTV <= trigger - 200 bps."
+      ],
+      "discriminator": [
+        190,
+        212,
+        196,
+        237,
+        190,
+        112,
+        30,
+        200
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "The keeper or the borrower."
+          ],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "offer",
+          "relations": [
+            "mandate"
+          ]
+        },
+        {
+          "name": "mandate",
+          "writable": true
+        },
+        {
+          "name": "wsol_vault",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  115,
+                  111,
+                  108,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  45,
+                  118,
+                  50
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "price_update"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "refinance_into",
       "docs": [
         "Story 26.1. The borrower moves an Active or Grace loan into an open offer, atomically: the",
@@ -1977,6 +2258,48 @@
       ]
     },
     {
+      "name": "revoke_mandate",
+      "docs": [
+        "Story 26.3. Borrower: closes the mandate and revokes its token delegate."
+      ],
+      "discriminator": [
+        252,
+        97,
+        140,
+        119,
+        67,
+        43,
+        177,
+        108
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "mandate"
+          ]
+        },
+        {
+          "name": "mandate",
+          "writable": true
+        },
+        {
+          "name": "source",
+          "docs": [
+            "mandate and the borrower still owns it; it may already be closed."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "rotate_authorities",
       "docs": [
         "Governance only."
@@ -2147,6 +2470,19 @@
       ]
     },
     {
+      "name": "Mandate",
+      "discriminator": [
+        113,
+        216,
+        98,
+        159,
+        185,
+        63,
+        55,
+        18
+      ]
+    },
+    {
       "name": "OfferV2",
       "discriminator": [
         180,
@@ -2211,6 +2547,58 @@
         233,
         180,
         148
+      ]
+    },
+    {
+      "name": "MandateCreated",
+      "discriminator": [
+        140,
+        30,
+        209,
+        254,
+        5,
+        128,
+        147,
+        113
+      ]
+    },
+    {
+      "name": "MandateExecuted",
+      "discriminator": [
+        42,
+        97,
+        111,
+        87,
+        96,
+        89,
+        108,
+        173
+      ]
+    },
+    {
+      "name": "MandateRearmed",
+      "discriminator": [
+        72,
+        167,
+        66,
+        249,
+        191,
+        107,
+        243,
+        223
+      ]
+    },
+    {
+      "name": "MandateRevoked",
+      "discriminator": [
+        228,
+        111,
+        181,
+        60,
+        204,
+        58,
+        131,
+        28
       ]
     },
     {
@@ -2431,6 +2819,41 @@
       "code": 6032,
       "name": "RefinanceMismatch",
       "msg": "The new offer must lend the same asset against the same collateral"
+    },
+    {
+      "code": 6033,
+      "name": "MandateInvalid",
+      "msg": "Mandate bounds are missing, inconsistent or outside the loan's limits"
+    },
+    {
+      "code": 6034,
+      "name": "MandateExpired",
+      "msg": "Mandate has expired"
+    },
+    {
+      "code": 6035,
+      "name": "MandateNotTriggered",
+      "msg": "Mandate trigger is not met, or it fired and has not re-armed"
+    },
+    {
+      "code": 6036,
+      "name": "MandateCapReached",
+      "msg": "Mandate cumulative cap is used up"
+    },
+    {
+      "code": 6037,
+      "name": "MandateFeeAboveCap",
+      "msg": "Keeper fee is above the per-execution fee or the fee cap"
+    },
+    {
+      "code": 6038,
+      "name": "MandateDelegateRevoked",
+      "msg": "The source token account no longer delegates enough to this mandate"
+    },
+    {
+      "code": 6039,
+      "name": "MandateWrongSource",
+      "msg": "Account does not match the mandate's loan, borrower or asset"
     }
   ],
   "types": [
@@ -2727,6 +3150,266 @@
           {
             "name": "late_fee_checked",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Mandate",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "action",
+            "docs": [
+              "0 top-up (collateral into the vault), 1 repay (USDC to the current lender)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "source",
+            "docs": [
+              "The borrower's token account this mandate is the delegate of."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "trigger",
+            "docs": [
+              "0 health, 1 time."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "trigger_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "lead_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "amount_per_exec",
+            "type": "u64"
+          },
+          {
+            "name": "cumulative_cap",
+            "docs": [
+              "Everything drawn from the allowance: amounts plus fees."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "used",
+            "type": "u64"
+          },
+          {
+            "name": "fee_per_exec",
+            "type": "u64"
+          },
+          {
+            "name": "fee_cap",
+            "type": "u64"
+          },
+          {
+            "name": "fees_paid",
+            "type": "u64"
+          },
+          {
+            "name": "expiry",
+            "type": "i64"
+          },
+          {
+            "name": "armed",
+            "docs": [
+              "False after firing; a health trigger re-arms once LTV <= trigger - 200 bps."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "executions",
+            "type": "u32"
+          },
+          {
+            "name": "last_exec_ts",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MandateArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "action",
+            "type": "u8"
+          },
+          {
+            "name": "trigger",
+            "type": "u8"
+          },
+          {
+            "name": "trigger_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "lead_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "amount_per_exec",
+            "type": "u64"
+          },
+          {
+            "name": "cumulative_cap",
+            "type": "u64"
+          },
+          {
+            "name": "fee_per_exec",
+            "type": "u64"
+          },
+          {
+            "name": "fee_cap",
+            "type": "u64"
+          },
+          {
+            "name": "expiry",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MandateCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mandate",
+            "type": "pubkey"
+          },
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "action",
+            "type": "u8"
+          },
+          {
+            "name": "trigger",
+            "type": "u8"
+          },
+          {
+            "name": "cumulative_cap",
+            "type": "u64"
+          },
+          {
+            "name": "fee_cap",
+            "type": "u64"
+          },
+          {
+            "name": "expiry",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MandateExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mandate",
+            "type": "pubkey"
+          },
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "action",
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "used",
+            "type": "u64"
+          },
+          {
+            "name": "fees_paid",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MandateRearmed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mandate",
+            "type": "pubkey"
+          },
+          {
+            "name": "ltv_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MandateRevoked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mandate",
+            "type": "pubkey"
+          },
+          {
+            "name": "offer",
+            "type": "pubkey"
           }
         ]
       }

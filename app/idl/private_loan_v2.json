@@ -1367,6 +1367,135 @@
       ]
     },
     {
+      "name": "create_private_mandate",
+      "docs": [
+        "Ephemeral rollup. Borrower: a bounded top-up or repay mandate evaluated by its own crank in",
+        "the rollup, never off-chain (Story 26.3)."
+      ],
+      "discriminator": [
+        176,
+        89,
+        251,
+        48,
+        109,
+        250,
+        238,
+        37
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "signer": true
+        },
+        {
+          "name": "anchor",
+          "docs": [
+            "Pays the record's rent and sponsors the crank."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor.creator",
+                "account": "LoanAnchor"
+              },
+              {
+                "kind": "account",
+                "path": "anchor.nonce",
+                "account": "LoanAnchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "terms",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mandate",
+          "writable": true
+        },
+        {
+          "name": "mandate_permission",
+          "writable": true
+        },
+        {
+          "name": "source",
+          "writable": true
+        },
+        {
+          "name": "price_update"
+        },
+        {
+          "name": "crank",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "permission_program",
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        },
+        {
+          "name": "hydra_program",
+          "address": "eHyd5BU8QffvHi4GnXwxrK4WpS7pM2x9UGKHBWii7mf"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "PrivateMandateArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "create_session",
       "docs": [
         "Ephemeral rollup. A member authorises a session key for nonfinancial actions."
@@ -3858,6 +3987,118 @@
       "args": []
     },
     {
+      "name": "rebind_watch",
+      "docs": [
+        "Ephemeral rollup. Anyone, after a position changes hands: a watch bound to the current",
+        "lender (Story 26.4)."
+      ],
+      "discriminator": [
+        7,
+        27,
+        31,
+        108,
+        179,
+        107,
+        248,
+        125
+      ],
+      "accounts": [
+        {
+          "name": "anchor",
+          "writable": true
+        },
+        {
+          "name": "terms",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "quote",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  113,
+                  117,
+                  111,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  113,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "price_update"
+        },
+        {
+          "name": "crank",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "hydra_program",
+          "address": "eHyd5BU8QffvHi4GnXwxrK4WpS7pM2x9UGKHBWii7mf"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "record_receipt",
       "docs": [
         "Base layer, Magic Action only: writes the receipt once."
@@ -4625,6 +4866,67 @@
       ]
     },
     {
+      "name": "revoke_private_mandate",
+      "docs": [
+        "Ephemeral rollup. Borrower: stops the mandate and revokes its delegate."
+      ],
+      "discriminator": [
+        202,
+        246,
+        147,
+        183,
+        83,
+        105,
+        238,
+        165
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "signer": true
+        },
+        {
+          "name": "anchor",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor.creator",
+                "account": "LoanAnchor"
+              },
+              {
+                "kind": "account",
+                "path": "anchor.nonce",
+                "account": "LoanAnchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mandate",
+          "writable": true
+        },
+        {
+          "name": "source",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "revoke_session",
       "docs": [
         "Ephemeral rollup. The authorising wallet revokes its session."
@@ -4726,6 +5028,107 @@
           }
         }
       ]
+    },
+    {
+      "name": "run_mandate",
+      "docs": [
+        "Ephemeral rollup. Signer-free: the mandate crank."
+      ],
+      "discriminator": [
+        139,
+        251,
+        60,
+        207,
+        217,
+        237,
+        137,
+        37
+      ],
+      "accounts": [
+        {
+          "name": "anchor",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor.creator",
+                "account": "LoanAnchor"
+              },
+              {
+                "kind": "account",
+                "path": "anchor.nonce",
+                "account": "LoanAnchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mandate",
+          "writable": true
+        },
+        {
+          "name": "source",
+          "writable": true
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "loan_wsol",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "borrower_wsol",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "price_update"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
     },
     {
       "name": "schedule_watch",
@@ -4996,6 +5399,85 @@
       ]
     },
     {
+      "name": "set_quote_params",
+      "docs": [
+        "Base layer. Governance only: the liquidation quote TTL (Story 26.4)."
+      ],
+      "discriminator": [
+        168,
+        63,
+        113,
+        197,
+        181,
+        34,
+        208,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "governance",
+          "docs": [
+            "Must be `config.authorities.governance`; pays rent on the first write."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "params",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  113,
+                  117,
+                  111,
+                  116,
+                  101,
+                  45,
+                  112,
+                  97,
+                  114,
+                  97,
+                  109,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "quote_ttl_seconds",
+          "type": "i64"
+        }
+      ]
+    },
+    {
       "name": "settle_ticket",
       "docs": [
         "Ephemeral rollup. A liquidator collects payout and excess, or a refund, once."
@@ -5109,7 +5591,8 @@
     {
       "name": "watch_loan",
       "docs": [
-        "Ephemeral rollup. Signer-free: risk or overdue quotes, and their execution."
+        "Ephemeral rollup. Signer-free: risk or overdue quotes, and their execution. The governance",
+        "`QuoteParams` is an optional trailing account."
       ],
       "discriminator": [
         134,
@@ -5303,6 +5786,19 @@
         197,
         220,
         154
+      ]
+    },
+    {
+      "name": "QuoteParams",
+      "discriminator": [
+        217,
+        205,
+        11,
+        239,
+        253,
+        73,
+        63,
+        134
       ]
     },
     {
@@ -5602,6 +6098,21 @@
       "code": 6053,
       "name": "PaymentAboveLimit",
       "msg": "Payment exceeds the bound the borrower signed"
+    },
+    {
+      "code": 6054,
+      "name": "MandateInvalid",
+      "msg": "Mandate bounds are missing, inconsistent or outside the loan's limits"
+    },
+    {
+      "code": 6055,
+      "name": "NothingToRebind",
+      "msg": "The watch already follows the current lender"
+    },
+    {
+      "code": 6056,
+      "name": "InvalidQuoteParams",
+      "msg": "Quote parameters are outside their allowed range"
     }
   ],
   "types": [
@@ -5935,6 +6446,75 @@
               "array": [
                 "pubkey",
                 4
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PrivateMandateArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "action",
+            "type": "u8"
+          },
+          {
+            "name": "trigger",
+            "type": "u8"
+          },
+          {
+            "name": "trigger_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "lead_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "amount_per_exec",
+            "type": "u64"
+          },
+          {
+            "name": "cumulative_cap",
+            "type": "u64"
+          },
+          {
+            "name": "expiry",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "QuoteParams",
+      "docs": [
+        "Base layer, written only by governance (the Squads vault); read-only inside the ER. Seeds",
+        "`[\"quote-params\"]`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "quote_ttl_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
               ]
             }
           }

@@ -16,6 +16,8 @@ export type LoanAction =
   | "repay"
   | "add-collateral"
   | "refinance"
+  /** Story 26.3: create, revoke or execute an automation mandate. Servicing: a pause never blocks it. */
+  | "mandate"
   | "liquidate"
   | "liquidate-overdue"
   | "claim"

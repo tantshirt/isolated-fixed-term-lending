@@ -5,6 +5,7 @@
 
 pub mod constants;
 pub mod accounting;
+pub mod mandate;
 pub mod math;
 pub mod oracle;
 

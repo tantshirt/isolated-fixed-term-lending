@@ -4,7 +4,7 @@
  */
 export type Network = "devnet" | "localnet" | "mainnet";
 export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra";
-export type Operation = "originate" | "service" | "refinance" | "cash-out" | "cash-in" | "notify" | "shield";
+export type Operation = "originate" | "service" | "refinance" | "automate" | "cash-out" | "cash-in" | "notify" | "shield";
 
 export type Capability = {
   provider: Provider;
@@ -56,6 +56,16 @@ export const CAPABILITIES: Capability[] = [
     // the Squads vault and its 24-hour time lock.
     available: process.env.NEXT_PUBLIC_REFINANCE_ENABLED === "1",
     reason: "Refinancing is not enabled on this deployment yet.",
+  },
+  {
+    provider: "zenlo-public",
+    network: "devnet",
+    mint: DEVNET_USDC,
+    operation: "automate",
+    // Story 26.3: automation mandates on isolated_loan_v2, executed only by the configured
+    // keeper. On once the upgrade has passed the Squads vault and its 24-hour time lock.
+    available: process.env.NEXT_PUBLIC_MANDATES_ENABLED === "1",
+    reason: "Automatic top-ups and repayments are not enabled on this deployment yet.",
   },
   { provider: "zenlo-private", network: "devnet", mint: DEVNET_USDC, operation: "originate", available: true },
   { provider: "zenlo-private", network: "devnet", mint: DEVNET_USDC, operation: "service", available: true },

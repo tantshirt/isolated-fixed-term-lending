@@ -9,9 +9,14 @@
 //! A quote's debt covers accrual until it expires; at execution the lender receives the exact
 //! payoff and the liquidator's excess funding is returned with the payout, exactly once. Any
 //! change to the ledger or collateral invalidates the open quote revision.
+//!
+//! Story 26.4: once a loan settles any other way (a repayment racing a quote), the next run
+//! withdraws the open quote so funded tickets are refundable at once. Governance sets the quote
+//! TTL in `QuoteParams`. Each crank's accounts are fixed when it is scheduled, so a crank bound
+//! to an earlier lender makes no decision; `rebind_watch` schedules one for the current lender.
 
 use crate::config::Config;
-use crate::constants::{CONFIG_SEED, LIQ_POOL_SEED, LOAN_SEED, LOAN_TERMS_SEED, QUOTE_SEED, TEE_VALIDATOR};
+use crate::constants::{CONFIG_SEED, LIQ_POOL_SEED, LOAN_SEED, LOAN_TERMS_SEED, QUOTE_PARAMS_SEED, QUOTE_SEED, TEE_VALIDATOR};
 use crate::error::{core_error, PrivateLoanError};
 use crate::espl::{self, ESPL_PROGRAM_ID};
 use crate::loan::{loan_signer, transfer, LoanAnchor, LoanTerms, STATUS_ACTIVE, STATUS_LIQUIDATED, STATUS_OVERDUE_LIQUIDATED};
@@ -26,7 +31,11 @@ use ephemeral_rollups_sdk::ephemeral_accounts::EphemeralAccount;
 use loan_core::accounting::{self as acc, Phase, PRICED_RECOVERY_DELAY, TERMINAL_CLAIM_DELAY};
 use loan_core::math;
 
+/// Default quote lifetime when governance has not written `QuoteParams`.
 pub const QUOTE_TTL_SECONDS: i64 = 120;
+/// Bounds governance may set: long enough to fund, short enough that accrual stays bounded.
+pub const MIN_QUOTE_TTL_SECONDS: i64 = 30;
+pub const MAX_QUOTE_TTL_SECONDS: i64 = 600;
 pub const MAX_TICKETS: usize = 4;
 /// About one check every 24 seconds at 400 ms slots. Eligibility always uses the clock, never this.
 pub const WATCH_INTERVAL_SLOTS: u64 = 60;
@@ -50,6 +59,42 @@ pub struct LiquidationPool {
     pub usdc_mint: Pubkey,
     pub wsol_mint: Pubkey,
     pub bump: u8,
+}
+
+/// Base layer, written only by governance (the Squads vault); read-only inside the ER. Seeds
+/// `["quote-params"]`.
+#[account]
+#[derive(InitSpace)]
+pub struct QuoteParams {
+    pub version: u8,
+    pub quote_ttl_seconds: i64,
+    pub bump: u8,
+    pub reserved: [u8; 32],
+}
+
+/// The quote TTL from the crank's trailing `QuoteParams` account, or the default when it is
+/// absent (cranks scheduled before Story 26.4) or not yet written.
+fn quote_ttl(remaining: &[AccountInfo]) -> Result<i64> {
+    let Some(info) = remaining.first() else { return Ok(QUOTE_TTL_SECONDS) };
+    let (expected, _) = Pubkey::find_program_address(&[QUOTE_PARAMS_SEED], &crate::ID);
+    require_keys_eq!(info.key(), expected, PrivateLoanError::InvalidRecord);
+    if *info.owner != crate::ID || info.data_is_empty() {
+        return Ok(QUOTE_TTL_SECONDS);
+    }
+    let p = QuoteParams::try_deserialize(&mut &info.try_borrow_data()?[..]).map_err(|_| error!(PrivateLoanError::InvalidRecord))?;
+    Ok(p.quote_ttl_seconds.clamp(MIN_QUOTE_TTL_SECONDS, MAX_QUOTE_TTL_SECONDS))
+}
+
+/// Base layer. Governance rotates the quote parameters; operational keys cannot.
+pub fn set_quote_params(ctx: Context<SetQuoteParams>, quote_ttl_seconds: i64) -> Result<()> {
+    ctx.accounts.config.authorities.require_policy(&ctx.accounts.governance.key()).map_err(crate::error::governance_error)?;
+    require!((MIN_QUOTE_TTL_SECONDS..=MAX_QUOTE_TTL_SECONDS).contains(&quote_ttl_seconds), PrivateLoanError::InvalidQuoteParams);
+    let p = &mut ctx.accounts.params;
+    p.version = 1;
+    p.quote_ttl_seconds = quote_ttl_seconds;
+    p.bump = ctx.bumps.params;
+    p.reserved = [0; 32];
+    Ok(())
 }
 
 /// Quote layout, edited in place. Public inside the ER: amounts disclose economics, but no
@@ -166,15 +211,34 @@ pub fn init_liquidation_pool(ctx: Context<InitLiquidationPool>) -> Result<()> {
 /// Anyone, once per active loan: schedules `watch_loan` with fixed accounts, lasting through
 /// the terminal claim window.
 pub fn schedule_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
+    let seed = ctx.accounts.anchor.key().to_bytes();
+    schedule(ctx, seed, false)
+}
+
+/// Anyone, after the position changed hands: schedules a watch bound to the current lender's
+/// USDC account. The earlier crank keeps running but makes no decision (`watch_loan`).
+pub fn rebind_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
+    let t: LoanTerms = load(&ctx.accounts.terms.to_account_info())?;
+    let anchor = ctx.accounts.anchor.key();
+    let seed = solana_sha256_hasher::hashv(&[b"rebind", anchor.as_ref(), t.current_lender.as_ref()]).to_bytes();
+    schedule(ctx, seed, true)
+}
+
+fn schedule(ctx: Context<ScheduleWatch>, crank_seed: [u8; 32], rebind: bool) -> Result<()> {
     let a = &ctx.accounts;
     validate_pool_mints(&a.anchor, &a.pool)?;
     // A wrong price account here would mean the loan is never liquidated. Reject it now.
     loan_core::oracle::check_sol_usd_account(&a.price_update).map_err(core_error)?;
     let t: LoanTerms = load(&a.terms.to_account_info())?;
     require!(t.status == STATUS_ACTIVE, PrivateLoanError::WrongStatus);
+    // The original crank already follows the originating lender.
+    if rebind {
+        require_keys_neq!(t.current_lender, t.origin_lender, PrivateLoanError::NothingToRebind);
+    }
     let anchor = &a.anchor;
     let usdc = anchor.usdc_mint;
     let wsol = anchor.wsol_mint;
+    let (params, _) = Pubkey::find_program_address(&[QUOTE_PARAMS_SEED], &crate::ID);
     let metas: Vec<(Pubkey, bool)> = vec![
         (anchor.key(), true),
         (a.terms.key(), true),
@@ -187,6 +251,8 @@ pub fn schedule_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
         (get_associated_token_address(&a.pool.key(), &wsol), true),
         (a.price_update.key(), false),
         (anchor_spl::token::ID, false),
+        // Trailing, read-only: the governance quote parameters (remaining account).
+        (params, false),
     ];
     let remaining = watch_runs(t.duration_seconds, t.grace_seconds);
     loan_signer!(anchor, nonce, seeds);
@@ -201,8 +267,6 @@ pub fn schedule_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
             .with_signer_seeds(&[&seeds, qseeds])
             .create(q::LEN as u32)?;
     }
-    let mut crank_seed = [0u8; 32];
-    crank_seed[..32].copy_from_slice(anchor.key().as_ref());
     hydra_create(
         &anchor.to_account_info(),
         &seeds,
@@ -226,10 +290,16 @@ pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
     let terms_info = a.terms.to_account_info();
     let mut t: LoanTerms = load(&terms_info)?;
     if t.status != STATUS_ACTIVE {
-        return Ok(());
+        // Settled another way (a repayment racing the quote): tickets become refundable now.
+        return withdraw_open(&a.quote.to_account_info());
     }
     let anchor = &a.anchor;
     require_keys_eq!(a.loan_wsol.key(), get_associated_token_address(&anchor.key(), &anchor.wsol_mint), PrivateLoanError::WrongTokenAccount);
+    // A crank bound to an earlier lender makes no decision; the rebound crank does.
+    if a.lender_usdc.key() != get_associated_token_address(&t.current_lender, &anchor.usdc_mint) {
+        return Ok(());
+    }
+    let ttl = quote_ttl(ctx.remaining_accounts)?;
     let clock = Clock::get()?;
     let now = clock.unix_timestamp;
     let quote_info = a.quote.to_account_info();
@@ -254,7 +324,7 @@ pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
     }
     let kind = if overdue { KIND_OVERDUE } else { KIND_RISK };
     // The quoted debt covers accrual until the quote expires; execution pays the exact payoff.
-    let quoted_debt = t.payoff(now + QUOTE_TTL_SECONDS)?;
+    let quoted_debt = t.payoff(now + ttl)?;
     let quoted_payout = acc::liquidation_split(quoted_debt, lamports, value).map_err(core_error)?.to_recipient;
 
     require_keys_eq!(*quote_info.owner, crate::ID, PrivateLoanError::InvalidRecord);
@@ -271,7 +341,7 @@ pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
         d[q::REVISION..q::REVISION + 4].copy_from_slice(&rev.to_le_bytes());
         d[q::DEBT..q::DEBT + 8].copy_from_slice(&quoted_debt.to_le_bytes());
         d[q::PAYOUT..q::PAYOUT + 8].copy_from_slice(&quoted_payout.to_le_bytes());
-        d[q::EXPIRES..q::EXPIRES + 8].copy_from_slice(&(now + QUOTE_TTL_SECONDS).to_le_bytes());
+        d[q::EXPIRES..q::EXPIRES + 8].copy_from_slice(&(now + ttl).to_le_bytes());
         d[q::STATE] = QUOTE_OPEN;
         d[q::LEDGER_REV..q::LEDGER_REV + 4].copy_from_slice(&t.ledger_revision.to_le_bytes());
         d[q::KIND] = kind;
@@ -505,6 +575,18 @@ pub struct InitLiquidationPool<'info> {
     pub delegation_program: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct SetQuoteParams<'info> {
+    /// Must be `config.authorities.governance`; pays rent on the first write.
+    #[account(mut)]
+    pub governance: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, Config>,
+    #[account(init_if_needed, payer = governance, space = 8 + QuoteParams::INIT_SPACE, seeds = [QUOTE_PARAMS_SEED], bump)]
+    pub params: Account<'info, QuoteParams>,
     pub system_program: Program<'info, System>,
 }
 
