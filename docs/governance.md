@@ -34,6 +34,14 @@ Every key must be set and no two roles may share a key. Unit tests reject the le
 
 Each V2 program is deployed with the vault as its upgrade authority. Upgrades are proposed with `propose-upgrade --program <id> --buffer <buffer>`: the buffer is written with the deployer key, authority is set to the vault, and two approvals plus the time lock are required before execution.
 
+## Programs under the vault
+
+| Program | Upgrade authority | Since |
+| --- | --- | --- |
+| `isolated_loan_v2` `8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m` | vault `8MpmERed9K14R68F371YJtGVk6mQgNZoQeU3asNPs5mt` | 2026-10-07, after the Devnet client cycle passed |
+
+From here on, every V2 upgrade is a `propose-upgrade` proposal: two approvals and the 24-hour time lock.
+
 ## Enforcement already proven on Devnet (2026-10-07)
 
 | Check | Result |

@@ -1,0 +1,158 @@
+{
+  "program": "8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m",
+  "network": "devnet",
+  "fixtures": [
+    {
+      "name": "terminal",
+      "offer": "FbJfwEKni2XqLVoCYCbFVFNLG4uCFPkET5M6ZJyXoEyX",
+      "plan": "Untouched. The lender takes all collateral without a price at grace end + 7 days.",
+      "maturity": "2026-10-07T08:26:22.000Z",
+      "graceEnd": "2026-10-08T08:26:22.000Z",
+      "pricedFrom": "2026-10-09T08:26:22.000Z",
+      "terminalFrom": "2026-10-15T08:26:22.000Z",
+      "steps": [
+        {
+          "at": "2026-10-07T08:25:23.980Z",
+          "step": "created",
+          "signature": "8SWbCPHgj3iQwoGs2STLTh6bY9Ga4q6PeUVnDqJeCprqZzKroMn1PhQCbMCGf58m394Ct8QF9pt66MoyFidzMJQ"
+        },
+        {
+          "at": "2026-10-07T08:25:23.981Z",
+          "step": "accepted",
+          "signature": "3JofMNQhkZZW4BoLiYt3qfye5DDZmut2fDZZ1nzALVAen2UJX9sxg1V5bJa5kGcXFEtcyvM8ZKgaiMVkwZUPD4oA",
+          "note": "collateral 15240260 lamports"
+        }
+      ]
+    },
+    {
+      "name": "priced",
+      "offer": "4joUotsG5xePjrefzzBBvBNrwkZZA8ygAobpi4fsZepg",
+      "plan": "Untouched. The lender takes payoff-equivalent wSOL, with the surplus returned, at grace end + 24 hours.",
+      "maturity": "2026-10-07T08:27:05.000Z",
+      "graceEnd": "2026-10-08T08:27:05.000Z",
+      "pricedFrom": "2026-10-09T08:27:05.000Z",
+      "terminalFrom": "2026-10-15T08:27:05.000Z",
+      "steps": [
+        {
+          "at": "2026-10-07T08:26:06.311Z",
+          "step": "created",
+          "note": "adopted an offer whose confirmation was lost"
+        },
+        {
+          "at": "2026-10-07T08:26:06.312Z",
+          "step": "accepted",
+          "signature": "3tqPT6Nq32Sbj5qScEVC23gLN6vKqDengSN5m7YDLt5X1U5MCVtLjJnvzA5ahxFBpHBNf5mJWuuQciz2Jckr4QKC",
+          "note": "collateral 15232467 lamports"
+        }
+      ]
+    },
+    {
+      "name": "overdue",
+      "offer": "Fovxv6dizJeZzXHMtXR68ixdVr4aTeRep8EZVFfRaseT",
+      "plan": "Untouched. The reference liquidator pays the payoff after grace and the surplus returns.",
+      "maturity": "2026-10-07T08:27:59.000Z",
+      "graceEnd": "2026-10-08T08:27:59.000Z",
+      "pricedFrom": "2026-10-09T08:27:59.000Z",
+      "terminalFrom": "2026-10-15T08:27:59.000Z",
+      "steps": [
+        {
+          "at": "2026-10-07T08:27:00.094Z",
+          "step": "created",
+          "note": "adopted an offer whose confirmation was lost"
+        },
+        {
+          "at": "2026-10-07T08:27:00.095Z",
+          "step": "accepted",
+          "signature": "KrBg4Y2vx3cN7JLnYUmWFF9jqjzTr2dp96LTbHqhofrp8fJoFfTZF9fnxXkuNbfsC4zTxio4Kh63cjH2keLAQDN",
+          "note": "collateral 15227463 lamports"
+        }
+      ]
+    },
+    {
+      "name": "late-repay",
+      "offer": "DmvhywBxbFw4s6oiF2rsQUZWTA7gREErnhQ6fmDnZEcw",
+      "plan": "Partial now. The rest is repaid in grace with the late fee.",
+      "maturity": "2026-10-07T08:28:47.000Z",
+      "graceEnd": "2026-10-08T08:28:47.000Z",
+      "pricedFrom": "2026-10-09T08:28:47.000Z",
+      "terminalFrom": "2026-10-15T08:28:47.000Z",
+      "steps": [
+        {
+          "at": "2026-10-07T08:27:47.882Z",
+          "step": "created",
+          "signature": "2F5GVwCSMjfwER7SAXqwNEHdVG1GYdEZU4uHPJtDEWWqyKRxKxrkqH4jCZ5T2nsnHqk56XUXDLACgB7Whayy5buH"
+        },
+        {
+          "at": "2026-10-07T08:27:47.882Z",
+          "step": "accepted",
+          "signature": "2yFnsDw4vMxfMvMW2TLi2embM21KoRNCsXXW1n6rrJ7GUuNxn7MnnpSQYc2LrB3eo9QrqSFzgXn8pvM79eGV38nf",
+          "note": "collateral 15225288 lamports"
+        },
+        {
+          "at": "2026-10-07T08:30:37.908Z",
+          "step": "repaid in grace",
+          "signature": "2dQJxFKoYJQ4tmQk4wWbfi6tgTLUQyLaVN2gC74mu6rNBLSEPp4juYVkbGVhpVrsXvUqoUn1oXqVN6bAg4Erjh7J",
+          "note": "payoff 1010966 atoms including the late fee"
+        },
+        {
+          "at": "2026-10-07T08:30:37.950Z",
+          "step": "status repaid"
+        }
+      ]
+    },
+    {
+      "name": "top-up",
+      "offer": "GRgRuKDQ81x8NtAZBGtoMye3eAcpm8s52bMh9k3b7NAv",
+      "plan": "One-day term. Top up, then repay early at the pro-rata minimum.",
+      "maturity": "2026-10-08T08:29:21.000Z",
+      "graceEnd": "2026-10-09T08:29:21.000Z",
+      "pricedFrom": "2026-10-10T08:29:21.000Z",
+      "terminalFrom": "2026-10-16T08:29:21.000Z",
+      "steps": [
+        {
+          "at": "2026-10-07T08:29:22.226Z",
+          "step": "created",
+          "signature": "38AsNhYBc5k6hKtcgPFahssdmWQuNv9EVecUE6bd6qWn315PhqzhwoqJSgw7bjVJnbpqXpNoKhGbi4166QhUGhAH"
+        },
+        {
+          "at": "2026-10-07T08:29:22.228Z",
+          "step": "accepted",
+          "signature": "4htqcxM8BUkwmoPT8CHD9UGuQqbfZqUuXb2caYVGayY9hniCgHouzP3Gyp8HdThsVzhv7ptbQpM1J8nyWKRSdiTs",
+          "note": "collateral 15373826 lamports"
+        },
+        {
+          "at": "2026-10-07T08:30:55.371Z",
+          "step": "top-up",
+          "signature": "3PtpKDGGKnJuYFWgUARhAAxGdcMp81zm7BeDJYHvWVv6LwMaExFYGNdMk9CC2ocr2rYg4ccNDVtExSdBsvuPgB78",
+          "note": "0.005 wSOL"
+        },
+        {
+          "at": "2026-10-07T08:30:56.318Z",
+          "step": "repaid early",
+          "signature": "wXH7BAjNdijzidZfCe9FB7C3oyW8sEzWyV8WBApXSBSxnMArrYZKXqS2GdFxHMDr6g4FbRuDVbCXrfHApPaoTcy",
+          "note": "payoff 1002500 atoms"
+        },
+        {
+          "at": "2026-10-07T08:30:56.359Z",
+          "step": "status repaid"
+        }
+      ]
+    },
+    {
+      "name": "keeper",
+      "offer": "ZzEWKgPA9waZ9vY73yFokkWyKjSureTjwL1DWH54AEy",
+      "plan": "Untouched. Left for the reference liquidator to settle on its own after grace.",
+      "maturity": "2026-10-07T08:28:01.000Z",
+      "graceEnd": "2026-10-08T08:28:01.000Z",
+      "pricedFrom": "2026-10-09T08:28:01.000Z",
+      "terminalFrom": "2026-10-15T08:28:01.000Z",
+      "steps": [
+        {
+          "at": "2026-10-07T08:49:01.198Z",
+          "step": "adopted",
+          "note": "created and accepted in a run whose confirmation was lost"
+        }
+      ]
+    }
+  ]
+}

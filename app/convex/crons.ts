@@ -9,4 +9,6 @@ crons.daily("purge finished jobs", { hourUTC: 3, minuteUTC: 17 }, internal.jobs.
 crons.interval("shadow cranker scan", { minutes: 1 }, internal.opsNode.shadowCrankScan);
 crons.interval("sample oracle freshness", { minutes: 5 }, internal.opsNode.sampleOracle);
 crons.daily("purge old observations", { hourUTC: 3, minuteUTC: 41 }, internal.ops.purgeObservations);
+// Reference liquidator; a no-op unless KEEPER_ENABLED=1 on this deployment.
+crons.interval("reference liquidator", { minutes: 1 }, internal.keeper.run);
 export default crons;

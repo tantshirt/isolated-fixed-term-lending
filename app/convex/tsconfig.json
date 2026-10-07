@@ -11,6 +11,11 @@
     "jsx": "react-jsx",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    /* The app's shared libraries import with the same alias as Next.js. */
+    "baseUrl": "..",
+    "paths": { "@/*": ["./*"] },
 
     /* These compiler options are required by Convex */
     "target": "ESNext",

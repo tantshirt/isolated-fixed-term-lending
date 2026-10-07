@@ -66,6 +66,24 @@ export default defineSchema({
     error: v.optional(v.string()),
   }).index("by_at", ["at"]),
 
+  /** Reference liquidator results (Story 21.3). Operator capital only; no user data. */
+  keeperRuns: defineTable({
+    at: v.number(),
+    offer: v.string(),
+    result: v.string(),
+    signature: v.optional(v.string()),
+    lastValidBlockHeight: v.optional(v.number()),
+    payoff: v.optional(v.string()),
+  })
+    .index("by_at", ["at"])
+    .index("by_offer", ["offer"]),
+
+  keeperCapital: defineTable({
+    at: v.number(),
+    usdc: v.string(),
+    scanned: v.number(),
+  }).index("by_at", ["at"]),
+
   oracleSamples: defineTable({
     at: v.number(),
     publishTime: v.optional(v.number()),

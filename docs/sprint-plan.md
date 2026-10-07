@@ -105,9 +105,9 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 2 | [19.2 Convex and wallet sign-in](stories.md) | — | Open (code done; hosted Convex waits on Marketplace terms) |
 | 3 | [19.3 Durable jobs, capabilities and operations](stories.md) and [19.4 Versioned models](stories.md) | 19.2 | Open (code done; cutover after 7 clean days on hosted Convex; screens adopt `LoanView` as V2 lands) |
 | 4 | [19.5 Governance](stories.md) and [19.6 Asset registry](stories.md) | — | 19.6 Done; 19.5 Open (time-locked executions due 2026-10-08, independent signers, V2 deploys under the vault) |
-| 5 | [20.1 Accounting engine](stories.md), [20.2 Pricing ceilings](stories.md), [20.3 Spot and EMA](stories.md) | — | 20.1 Done; 20.2 and 20.3 math Done, interface lands with 21.1 |
-| 6 | [21.1 `isolated_loan_v2` core](stories.md) | 19.5, 20.x | Open (program and 16 LiteSVM tests done; client, interface and Devnet deploy in row 7) |
-| 7 | [21.2 Grace, recovery and surplus](stories.md) and [21.3 Reference liquidator](stories.md) | 21.1 | Open (21.2 program paths done in row 6) |
+| 5 | [20.1 Accounting engine](stories.md), [20.2 Pricing ceilings](stories.md), [20.3 Spot and EMA](stories.md) | — | Done |
+| 6 | [21.1 `isolated_loan_v2` core](stories.md) | 19.5, 20.x | Done |
+| 7 | [21.2 Grace, recovery and surplus](stories.md) and [21.3 Reference liquidator](stories.md) | 21.1 | Open (code and tests done; Devnet evidence as fixture windows open, 2026-10-08 to 2026-10-15) |
 | 8 | [22.1 Multi-loan rooms](stories.md) | 19.5 | Open |
 | 9 | [22.2 Private V2 protections](stories.md) | 20.x, 22.1 | Open |
 | 10 | [23.1 Desk accounts, roles and policies](stories.md) | 22.2 | Open |
@@ -147,3 +147,4 @@ Not queued until the gate passes: [25.1 Customer gate](stories.md), [Epic 26 exp
 - 2026-10-07: Story 19.6 done (`app/public/brands/registry.json`, hash-checked by a test). Story 19.5: Squads 2-of-3 with a 24-hour time lock on Devnet. Threshold and time-lock refusals are recorded in [governance.md](governance.md), and the `governance` crate separates the V2 roles.
 - 2026-10-07: Story 20.1 done. `loan-core::accounting` and `app/lib/loan-math-v2.ts` agree on `vectors-v2.json` (7 cases, 29 steps). 200,000 property cases pass. A property test caught the late fee taking the ceiling room before the maturity round-up; the round-up now happens first, and research.md says so.
 - 2026-10-07: `isolated_loan_v2` program written with all V2 instructions, including the 21.2 recovery paths, so Devnet gets one deploy. 16 LiteSVM tests; the legacy suites pass unchanged. 427 KB at `opt-level = "z"`.
+- 2026-10-07: `isolated_loan_v2` deployed to Devnet; the upgrade authority is the Squads vault. Five fixtures opened plus one adopted; late-repay and top-up proven live. Client, wizards, loan and request pages, lists, the Learn simulator and the reference liquidator are built. The V1 demo is unchanged for V1 loans, and the V2 rules have their own wallet-free simulator on /learn. The app creates V2 loans when `NEXT_PUBLIC_V2_LIVE=1`.

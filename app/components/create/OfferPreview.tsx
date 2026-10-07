@@ -15,6 +15,7 @@ import {
 } from "@/lib/format";
 import { parseAmount } from "@/lib/offer-validation";
 import { plannedLtvBps } from "@/lib/risk";
+import { V2_LIVE } from "@/lib/v2/program";
 import type { Perspective, WizardDraft } from "./useDraft";
 import styles from "./OfferPreview.module.css";
 
@@ -85,7 +86,13 @@ export function OfferPreview({
       </div>
 
       <p className={styles.deadline}>
-        {lenderReads ? (
+        {V2_LIVE ? (
+          <>
+            Due within <b>{formatDuration(draft.durationSeconds)}</b>, then <b>{formatDuration(draft.rules.graceSeconds)}</b> of grace.{" "}
+            {draft.rules.earlyRepayment === "pro-rata" ? "Early repayment pays interest for the time used." : "Early repayment pays the full-term interest."}{" "}
+            Unpaid a week after grace, the lender may take all the wSOL.
+          </>
+        ) : lenderReads ? (
           <>
             Repaid within <b>{formatDuration(draft.durationSeconds)}</b> of
             funding. If the borrower misses it, you receive their wSOL.

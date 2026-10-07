@@ -5,6 +5,8 @@ import { useChainNow, usePrice } from "@/lib/client/hooks";
 import { useMyAccounts } from "@/lib/client/live";
 import { useSigner } from "@/lib/client/signer-context";
 import { buildPortfolio } from "@/lib/portfolio";
+import { useOffersV2 } from "@/lib/v2/hooks";
+import { V2_LIVE } from "@/lib/v2/program";
 
 /** Wall-clock seconds that tick once a second, anchored to the chain clock when known. */
 export function useNow(chainNow: number | null): number {
@@ -26,15 +28,16 @@ export function usePortfolio() {
   const wallet = publicKey?.toBase58() ?? null;
   const mine = useMyAccounts(wallet);
   const { price } = usePrice();
+  const v2 = useOffersV2(V2_LIVE && !!wallet, wallet);
   const now = useNow(useChainNow());
   // Reclassify once a minute; the countdown text ticks separately.
   const minute = Math.floor(now / 60);
   const portfolio = useMemo(
     () =>
       wallet && mine.offers && mine.requests
-        ? buildPortfolio({ me: wallet, offers: mine.offers, requests: mine.requests, price, now: minute * 60 })
+        ? buildPortfolio({ me: wallet, offers: mine.offers, requests: mine.requests, offersV2: v2 ?? [], price, now: minute * 60 })
         : null,
-    [wallet, mine.offers, mine.requests, price, minute]
+    [wallet, mine.offers, mine.requests, v2, price, minute]
   );
   return { wallet, portfolio, now, status: mine.status, error: mine.error, loading: mine.loading };
 }

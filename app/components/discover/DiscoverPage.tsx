@@ -33,6 +33,9 @@ import { LenderPrivateEmpty } from "./LenderPrivateEmpty";
 import { LiveBadge } from "./LiveBadge";
 import { PrivateCardList } from "./PrivateCardList";
 import { RequestRow } from "./RequestRow";
+import { RequestV2Row } from "./RequestV2Row";
+import { useRequestsV2 } from "@/lib/v2/hooks";
+import { V2_LIVE } from "@/lib/v2/program";
 import styles from "./Discover.module.css";
 import list from "@/components/offers/OffersPage.module.css";
 
@@ -94,6 +97,8 @@ export function DiscoverPage() {
   const { publicKey } = useSigner();
   const { price } = usePrice();
   const requests = useLiveRequests();
+  const requestsV2 = useRequestsV2(V2_LIVE);
+  const openV2 = useMemo(() => (requestsV2 ?? []).filter((r) => r.status === "open"), [requestsV2]);
   const offers = useLiveOffers();
   const cards = useLiveCards();
 
@@ -129,6 +134,12 @@ export function DiscoverPage() {
   let body: ReactNode;
   if (side === "borrowers" && venue === "public") {
     body = (
+      <>
+      {openV2.length > 0 && (
+        <Rows header={["Borrow", "Repays", "Term", "Collateral locked", "Status"]}>
+          {openV2.map((r) => ({ key: r.publicKey, node: <RequestV2Row request={r} /> }))}
+        </Rows>
+      )}
       <ListState items={requests.items} error={requests.error} empty={<EmptyRequests />}>
         {(items) => (
           <Rows header={["Borrow", "Repays", "Term", "Collateral locked", "Status"]}>
@@ -139,6 +150,7 @@ export function DiscoverPage() {
           </Rows>
         )}
       </ListState>
+      </>
     );
   } else if (side === "borrowers") {
     body = (
@@ -215,7 +227,7 @@ export function DiscoverPage() {
               options={[
                 {
                   value: "public" as Venue,
-                  label: `Public${side === "borrowers" ? count(openRequests.length, requests.items !== null) : count(openOffers.length, offers.items !== null)}`,
+                  label: `Public${side === "borrowers" ? count(openRequests.length + openV2.length, requests.items !== null) : count(openOffers.length, offers.items !== null)}`,
                 },
                 {
                   value: "private" as Venue,

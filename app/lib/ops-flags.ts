@@ -16,7 +16,10 @@ export type LoanAction =
   | "repay"
   | "add-collateral"
   | "liquidate"
+  | "liquidate-overdue"
   | "claim"
+  | "claim-priced"
+  | "claim-terminal"
   | "cancel"
   | "close"
   | "withdraw";

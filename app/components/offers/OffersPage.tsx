@@ -11,6 +11,11 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useOffers, usePrice } from "@/lib/client/hooks";
 import type { Offer } from "@/lib/offers";
 import { OfferRow } from "./OfferRow";
+import { OfferV2Row } from "./OfferV2Row";
+import { useChainNow } from "@/lib/client/hooks";
+import { useOffersV2 } from "@/lib/v2/hooks";
+import { V2_LIVE } from "@/lib/v2/program";
+import type { OfferV2 } from "@/lib/v2/offers";
 import styles from "./OffersPage.module.css";
 
 type Filter = "open" | "filled" | "ended" | "mine" | "all";
@@ -38,6 +43,13 @@ const STEPS = [
   },
 ];
 
+function matchesV2(o: OfferV2, f: Filter, me: string | null) {
+  if (f === "all") return true;
+  if (f === "mine") return !!me && (o.currentLender === me || o.borrower === me);
+  if (f === "ended") return !["open", "active"].includes(o.status);
+  return f === "open" ? o.status === "open" : o.status === "active";
+}
+
 function matches(o: Offer, f: Filter, me: string | null) {
   if (f === "all") return true;
   if (f === "mine") return !!me && (o.lender === me || o.borrower === me);
@@ -50,18 +62,27 @@ export function OffersPage() {
   const me = useSigner().publicKey?.toBase58() ?? null;
   const { price } = usePrice();
   const [filter, setFilter] = useState<Filter>("open");
+  const v2 = useOffersV2(V2_LIVE);
+  const now = useChainNow();
   const shown = useMemo(
     () => (offers ?? []).filter((o) => matches(o, filter, me)),
     [offers, filter, me]
   );
+  const shownV2 = useMemo(() => (v2 ?? []).filter((o) => matchesV2(o, filter, me)), [v2, filter, me]);
   const counts = useMemo(() => {
     const c: Record<Filter, number> = {
       open: 0,
       filled: 0,
       ended: 0,
       mine: 0,
-      all: offers?.length ?? 0,
+      all: (offers?.length ?? 0) + (v2?.length ?? 0),
     };
+    for (const o of v2 ?? []) {
+      if (matchesV2(o, "mine", me)) c.mine++;
+      if (o.status === "open") c.open++;
+      else if (o.status === "active") c.filled++;
+      else c.ended++;
+    }
     for (const o of offers ?? []) {
       if (matches(o, "mine", me)) c.mine++;
       if (o.status === "open") c.open++;
@@ -69,7 +90,7 @@ export function OffersPage() {
       else c.ended++;
     }
     return c;
-  }, [offers, me]);
+  }, [offers, v2, me]);
 
   return (
     <div className="page">
@@ -146,7 +167,7 @@ export function OffersPage() {
               </div>
             ))}
           </div>
-        ) : shown.length === 0 ? (
+        ) : shown.length === 0 && shownV2.length === 0 ? (
           <m.div
             className={styles.empty}
             initial={{ opacity: 0 }}
@@ -174,6 +195,11 @@ export function OffersPage() {
               <span>Collateral</span>
               <span>Status</span>
             </li>
+            {shownV2.map((o) => (
+              <li key={o.publicKey}>
+                <OfferV2Row offer={o} price={price} now={now} />
+              </li>
+            ))}
             <AnimatePresence initial={true}>
               {shown.map((o, i) => (
                 <m.li

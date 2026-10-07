@@ -7,6 +7,8 @@ import { Slider } from "@/components/ui/Slider";
 import { CAPS } from "@/lib/constants";
 import { atomsToNumber, fmt, formatDuration } from "@/lib/format";
 import type { DraftErrors } from "@/lib/offer-validation";
+import { V2_LIVE } from "@/lib/v2/program";
+import { RulesFields } from "./RulesFields";
 import type { Perspective, WizardDraft } from "./useDraft";
 import styles from "./CreateWizard.module.css";
 
@@ -110,13 +112,17 @@ export function StepTerms({
           <strong className="num">
             <AnimatedNumber value={interest !== null ? atomsToNumber(interest, 6) : 0} format={fmt.usd} />
           </strong>{" "}
-          USDC of interest over {formatDuration(draft.durationSeconds)}, whether {perspective === "borrower" ? "you repay" : "they repay"} on day one or at the last minute.
+          USDC of interest over {formatDuration(draft.durationSeconds)}
+          {V2_LIVE && draft.rules.earlyRepayment === "pro-rata"
+            ? " if the loan runs to the deadline."
+            : `, whether ${perspective === "borrower" ? "you repay" : "they repay"} on day one or at the last minute.`}
         </p>
         <p className={styles.calloutSub}>
-          That is about <span className="num">{yearly >= 1000 ? "1,000+" : yearly.toFixed(1)}%</span> a year. Interest is fixed
-          for the whole term.
+          That is about <span className="num">{yearly >= 1000 ? "1,000+" : yearly.toFixed(1)}%</span> a year, on a 365-day year.
+          {V2_LIVE && draft.rules.earlyRepayment === "pro-rata" ? " Repaying early costs less, down to the minimum below." : " Interest is fixed for the whole term."}
         </p>
       </div>
+      {V2_LIVE && <RulesFields draft={draft} update={update} principal={principal} perspective={perspective} />}
     </div>
   );
 }

@@ -42,14 +42,7 @@ export const PYTH_PRICE_UPDATE_ACCOUNT = PublicKey.findProgramAddressSync(
 export const MAX_PRICE_AGE_SECONDS = 60;
 
 /** Caps enforced by the program (constants.rs). The wizard enforces the same ones. */
-export const CAPS = {
-  maxInterestBps: 2_000,
-  maxLtvBps: 7_000,
-  maxLiquidationLtvBps: 8_500,
-  minLtvGapBps: 500,
-  minDurationSeconds: 60,
-  maxDurationSeconds: 7_776_000,
-} as const;
+export { CAPS } from "./caps";
 
 export const BRAND = {
   name: "ZenLo",

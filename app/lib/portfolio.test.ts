@@ -173,3 +173,21 @@ test("the calendar file ends exactly at the deadline", () => {
   assert.match(ics, /SUMMARY:ZenLo: repay 105 USDC/);
   assert.equal(deadlineIcs({ key: "k", side: "lender", dueTs: null, owed: 1n }, "u"), null);
 });
+
+test("V2 loans rank grace and recovery as past due, with the next window as the deadline", async () => {
+  const { EarlyRepayment, openLedger, graceEnd, pricedRecoveryFrom, terminalClaimFrom } = await import("./loan-math-v2");
+  const terms = { principal: 100_000_000n, interestBps: 500, duration: 30 * DAY, startTs: NOW, earlyRepayment: EarlyRepayment.ProRata, minInterestBps: 2500, graceSeconds: DAY, lateFeeBps: 100, annualCeilingBps: 10_000 };
+  const o = {
+    generation: "v2" as const, publicKey: Keypair.generate().publicKey.toBase58(), version: 2, originLender: other, currentLender: other, borrower: me,
+    restrictedBorrower: null, offerId: 1n, usdcMint: "u", wsolMint: "w", terms, collateralRequired: 1_020_000_000n, collateralLocked: 1_020_000_000n,
+    maxLtvBps: 7000, liquidationLtvBps: 8000, status: "active" as const, ledger: openLedger(terms), shortfall: 0n, settledTs: 0,
+  };
+  const at = (now: number) => buildPortfolio({ me, offers: [], requests: [], offersV2: [o], price: price(150), now }).items[0];
+  assert.equal(at(NOW + DAY).urgency, URGENCY.running);
+  assert.equal(at(NOW + 30 * DAY).urgency, URGENCY.pastDue);
+  assert.equal(at(NOW + 30 * DAY).dueTs, graceEnd(terms));
+  assert.match(at(graceEnd(terms)).headline, /Anyone may now pay your debt/);
+  assert.equal(at(pricedRecoveryFrom(terms)).dueTs, terminalClaimFrom(terms));
+  assert.match(at(terminalClaimFrom(terms)).headline, /take all your wSOL/);
+  assert.equal(at(NOW + DAY).href, `/devnet/loans/${other}/1`);
+});

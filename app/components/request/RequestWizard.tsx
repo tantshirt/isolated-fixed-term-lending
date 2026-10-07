@@ -20,6 +20,9 @@ import { useToast } from "@/lib/client/toast";
 import { formatUsdc, formatWsol } from "@/lib/format";
 import { parseDraft, validateAmountStep, validateRiskStep, validateTermsStep, type DraftErrors } from "@/lib/offer-validation";
 import { RequestService } from "@/lib/request-service";
+import { V2_LIVE } from "@/lib/v2/program";
+import { rulesProblem } from "@/lib/v2/rules";
+import { requestV2Href } from "@/lib/v2/offers";
 import { requestHref } from "@/lib/requests";
 import { SubmissionError, signatureUrl } from "@/lib/transaction-lifecycle";
 import { sendWrapSol } from "@/lib/transactions";
@@ -113,7 +116,8 @@ function PublicWizard() {
   const [posted, setPosted] = useState<Posted | null>(null);
   const [touched, setTouched] = useState(false);
 
-  const stepErrors: DraftErrors[] = [validateAmountStep(draft), validateTermsStep(draft), validateRiskStep(draft), {}];
+  const rulesError = V2_LIVE ? rulesProblem({ principal, interestBps: draft.interestBps, durationSeconds: draft.durationSeconds }, draft.rules) : null;
+  const stepErrors: DraftErrors[] = [validateAmountStep(draft), { ...validateTermsStep(draft), ...(rulesError ? { rules: rulesError } : {}) }, validateRiskStep(draft), {}];
   const valid = (n: number) => stepErrors.slice(0, n).every((e) => Object.keys(e).length === 0);
   const errors = touched ? stepErrors[step - 1] : {};
 
@@ -174,9 +178,9 @@ function PublicWizard() {
     setBusy("post");
     try {
       const result = await new RequestService(signer, config).create(draft);
-      setSignature(result.signature);
+      setSignature(result.signature || null);
       setPosted({
-        href: requestHref({ borrower: publicKey.toBase58(), requestId: BigInt(result.requestId) }),
+        href: (V2_LIVE ? requestV2Href : requestHref)({ borrower: publicKey.toBase58(), requestId: BigInt(result.requestId) }),
         principal: parsed.principal,
         collateral: parsed.collateralAmount,
       });

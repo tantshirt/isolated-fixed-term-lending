@@ -86,6 +86,8 @@ async function readPrice(request: Request) {
     return NextResponse.json({
       price: decoded.price.toString(),
       conf: decoded.conf.toString(),
+      emaPrice: decoded.emaPrice?.toString(),
+      emaConf: decoded.emaConf?.toString(),
       exponent: decoded.exponent,
       publishTime,
       chainTime: now,

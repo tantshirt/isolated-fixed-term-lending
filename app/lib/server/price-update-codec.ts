@@ -22,6 +22,9 @@ export type PriceMessage = {
   conf: bigint;
   exponent: number;
   publishTime: bigint;
+  /** The time-averaged price and its own confidence (V2 wick protection). */
+  emaPrice?: bigint;
+  emaConf?: bigint;
 };
 
 export function encodePriceUpdateV2(
@@ -49,9 +52,9 @@ export function encodePriceUpdateV2(
   o += 8;
   b.writeBigInt64LE(msg.publishTime - 1n, o);
   o += 8;
-  b.writeBigInt64LE(msg.price, o); // ema_price
+  b.writeBigInt64LE(msg.emaPrice ?? msg.price, o);
   o += 8;
-  b.writeBigUInt64LE(msg.conf, o); // ema_conf
+  b.writeBigUInt64LE(msg.emaConf ?? msg.conf, o);
   o += 8;
   b.writeBigUInt64LE(postedSlot, o);
   return b;
@@ -77,5 +80,8 @@ export function decodePriceUpdateV2(data: Buffer): PriceMessage {
   const exponent = data.readInt32LE(o);
   o += 4;
   const publishTime = data.readBigInt64LE(o);
-  return { feedId, price, conf, exponent, publishTime };
+  o += 16; // publish_time, prev_publish_time
+  const emaPrice = data.readBigInt64LE(o);
+  const emaConf = data.readBigUInt64LE(o + 8);
+  return { feedId, price, conf, exponent, publishTime, emaPrice, emaConf };
 }

@@ -88,6 +88,17 @@ export const health = internalQuery({
       oracleError: oracle?.error ?? null,
       authFailuresLastHour: byReason,
       stuckProviderSessions: 0,
+      keeper: await (async () => {
+        const last = await ctx.db.query("keeperCapital").withIndex("by_at").order("desc").first();
+        const runs = await ctx.db.query("keeperRuns").withIndex("by_at", (q) => q.gte("at", now - 86_400_000)).take(500);
+        return {
+          usdc: last?.usdc ?? null,
+          lastScanAt: last?.at ?? null,
+          settled: runs.filter((r) => r.result.startsWith("settled")).length,
+          failures: runs.filter((r) => /^(failed|error|simulation)/.test(r.result)).length,
+          depleted: runs.some((r) => r.result === "no-funds" || r.result === "over-capital"),
+        };
+      })(),
     };
   },
 });
