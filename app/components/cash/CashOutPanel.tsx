@@ -12,7 +12,7 @@ import { CASH_OUT_WORDS, RAMPS, SANDBOX_CASH_OUT_WORDS, reviewSignPayload, type 
 import { useSigner } from "@/lib/client/signer-context";
 import { formatUsdc, shortKey } from "@/lib/format";
 import { getConnection } from "@/lib/program";
-import { submitTransaction } from "@/lib/transaction-lifecycle";
+import { submitCashTransfer } from "@/lib/cash/transfer";
 import styles from "./CashOut.module.css";
 
 const BACKEND = Boolean(process.env.NEXT_PUBLIC_CONVEX_URL);
@@ -72,7 +72,8 @@ function Live({ usdcBalance }: { usdcBalance: bigint | null }) {
   const container = useRef<HTMLDivElement>(null);
   const widget = useRef<RampsInstance | null>(null);
   const rampsId = useRef<string | null>(null);
-  const [review, setReview] = useState<{ transfer: ReviewedTransfer; resolve: (sig: string) => void; reject: (e: Error) => void } | null>(null);
+  const creation = useRef<Promise<unknown> | null>(null);
+  const [review, setReview] = useState<{ rampsId: string; wallet: string; transfer: ReviewedTransfer; resolve: (sig: string) => void; reject: (e: Error) => void } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -101,6 +102,8 @@ function Live({ usdcBalance }: { usdcBalance: bigint | null }) {
       if (!res.ok || !body.sessionToken) throw new Error(body.error ?? "MoneyGram is unavailable right now.");
       await loadSdk(RAMPS[ENV].sdk);
       widget.current?.destroy();
+      rampsId.current = null;
+      creation.current = null;
       widget.current = window.RampsSDK!.createRamps({
         container: container.current,
         sessionToken: body.sessionToken,
@@ -108,11 +111,13 @@ function Live({ usdcBalance }: { usdcBalance: bigint | null }) {
         wallet: { address: signer.publicKey.toBase58(), chain: "solana", asset: "USDC", walletType: "non-custodial", displayName: "ZenLo" },
         onTransactionCreated: async (tx: { id: string; mgiTransactionId?: string; amount?: number }) => {
           rampsId.current = tx.id;
-          await created({ rampsId: tx.id, mgiTransactionId: tx.mgiTransactionId, amount: tx.amount !== undefined ? String(tx.amount) : undefined });
+          creation.current = created({ rampsId: tx.id, mgiTransactionId: tx.mgiTransactionId, amount: tx.amount !== undefined ? String(tx.amount) : undefined });
+          await creation.current;
         },
         // MoneyGram waits on this promise. The transfer is checked, then shown for approval.
         onSignTransaction: (tx: SignPayload) =>
           new Promise<string>((resolve, reject) => {
+            if (!rampsId.current || !creation.current) return reject(new Error("MoneyGram has not created this cash-out yet."));
             if (usdcBalance === null) {
               const reason = "Your USDC balance has not loaded yet. Try again.";
               setError(reason);
@@ -123,7 +128,7 @@ function Live({ usdcBalance }: { usdcBalance: bigint | null }) {
               setError(checked.reason);
               return reject(new Error(checked.reason));
             }
-            setReview({ transfer: checked.transfer, resolve, reject });
+            setReview({ rampsId: rampsId.current, wallet: signer.publicKey.toBase58(), transfer: checked.transfer, resolve, reject });
           }),
         onComplete: async (tx: { id: string; referenceNumber?: string }) => {
           if (tx.referenceNumber) await reference({ rampsId: tx.id, referenceNumber: tx.referenceNumber });
@@ -140,9 +145,11 @@ function Live({ usdcBalance }: { usdcBalance: bigint | null }) {
 
   const approve = async () => {
     if (!review || !signer) return;
-    const { transfer, resolve, reject } = review;
+    const { transfer, resolve, reject, wallet, rampsId: reviewedId } = review;
     setBusy(true);
     try {
+      if (signer.publicKey.toBase58() !== wallet || session.wallet !== wallet) throw new Error("The wallet changed. Open MoneyGram again with the intended wallet.");
+      await creation.current;
       const mint = new PublicKey(transfer.mint);
       const to = new PublicKey(transfer.to);
       const from = getAssociatedTokenAddressSync(mint, signer.publicKey);
@@ -151,13 +158,14 @@ function Live({ usdcBalance }: { usdcBalance: bigint | null }) {
         createAssociatedTokenAccountIdempotentInstruction(signer.publicKey, toAta, to, mint),
         createTransferCheckedInstruction(from, mint, toAta, signer.publicKey, transfer.atoms, transfer.decimals),
       );
-      const signature = await submitTransaction(getConnection(), signer, tx);
-      if (rampsId.current) await signed({ rampsId: rampsId.current, signature, amountAtoms: transfer.atoms.toString(), depositAddress: transfer.to });
+      const signature = await submitCashTransfer(getConnection(), signer, tx, reviewedId, ENV, transfer,
+        (signature) => signed({ rampsId: reviewedId, signature, amountAtoms: transfer.atoms.toString(), depositAddress: transfer.to }));
       setReview(null);
       openButton.current?.querySelector("button")?.focus();
       resolve(signature);
     } catch (e) {
       setReview(null);
+      setError(e instanceof Error ? e.message : "Signing failed");
       reject(e instanceof Error ? e : new Error("Signing failed"));
     } finally {
       setBusy(false);

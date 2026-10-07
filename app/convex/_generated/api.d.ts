@@ -12,6 +12,8 @@
   import type * as alerts from "../alerts.js";
 import type * as alertsNode from "../alertsNode.js";
 import type * as auth from "../auth.js";
+import type * as cash from "../cash.js";
+import type * as cashNode from "../cashNode.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as jobRunner from "../jobRunner.js";
@@ -22,6 +24,7 @@ import type * as lib_handlers from "../lib/handlers.js";
 import type * as lib_jwt from "../lib/jwt.js";
 import type * as ops from "../ops.js";
 import type * as opsNode from "../opsNode.js";
+import type * as pilot from "../pilot.js";
 
   /**
    * A utility for referencing Convex functions in your app's API.
@@ -35,6 +38,8 @@ import type * as opsNode from "../opsNode.js";
     "alerts": typeof alerts,
 "alertsNode": typeof alertsNode,
 "auth": typeof auth,
+"cash": typeof cash,
+"cashNode": typeof cashNode,
 "crons": typeof crons,
 "http": typeof http,
 "jobRunner": typeof jobRunner,
@@ -45,6 +50,7 @@ import type * as opsNode from "../opsNode.js";
 "lib/jwt": typeof lib_jwt,
 "ops": typeof ops,
 "opsNode": typeof opsNode,
+"pilot": typeof pilot,
   }>;
   export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "public">>;
   export declare const internal: FilterApi<typeof fullApi, FunctionReference<any, "internal">>;

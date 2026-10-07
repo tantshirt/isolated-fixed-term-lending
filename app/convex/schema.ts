@@ -146,11 +146,13 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     lastCheckedAt: v.optional(v.number()),
+    nextCheckAt: v.optional(v.number()),
   })
     .index("by_ramps", ["rampsId"])
     .index("by_mgi", ["mgiTransactionId"])
     .index("by_wallet", ["wallet"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_next_check", ["nextCheckAt"]),
 
   /** Webhook deliveries already handled, keyed by MoneyGram id and status (retries replay). */
   moneygramEvents: defineTable({

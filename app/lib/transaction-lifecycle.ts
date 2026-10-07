@@ -157,7 +157,8 @@ export async function submitTransaction(
   connection: Connection,
   signer: LoanSigner,
   tx: Transaction,
-  ephemeralSigners: Signer[] = []
+  ephemeralSigners: Signer[] = [],
+  onSigned?: (pending: Pending) => Promise<void>
 ): Promise<string> {
   const intent = tx.instructions
     .map((i) =>
@@ -229,6 +230,7 @@ export async function submitTransaction(
     const signature = utils.bytes.bs58.encode(signed.signature);
     const record = { signature, ...lifetime, intent };
     save(key, record);
+    await onSigned?.(record);
     try {
       await connection.sendRawTransaction(signed.serialize(), {
         skipPreflight: false,

@@ -141,10 +141,10 @@ function SessionProvider({ children, onToken }: { children: ReactNode; onToken: 
   const authorizedPost = useCallback(
     async (path: string, body: unknown = {}) => {
       const live = current.current;
-      if (!live) throw new Error("Sign in first.");
+      if (!live || live.wallet !== key) throw new Error("Sign in first.");
       return post(path, body, live.token);
     },
-    [],
+    [key],
   );
 
   const value = useMemo(() => ({ status, wallet: key, error, signIn, signOut, authorizedPost }), [status, key, error, signIn, signOut, authorizedPost]);
