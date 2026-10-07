@@ -53,6 +53,30 @@ export function audienceFor(terms: Pick<LoanTermsV2, "auditorHash">, shared: str
   return hash && shared.length > 0 && same(hash, terms.auditorHash) ? { kind: "named", auditors: shared } : { kind: "unverified" };
 }
 
+/** Recover the current audience after a partially completed removal, using the on-chain hash.
+ * Before acceptance only the exact published audience is allowed. Removal preserves key order.
+ */
+export async function resolveAudience(
+  terms: Pick<LoanTermsV2, "auditorHash" | "status">,
+  shared: string[],
+  hash: (keys: string[]) => Promise<Uint8Array>,
+): Promise<Audience> {
+  const exact = audienceFor(terms, shared, shared.length ? await hash(shared) : null);
+  if (exact.kind !== "unverified" || terms.status !== "active" || shared.length > 4) return exact;
+  for (let mask = 1; mask < (1 << shared.length) - 1; mask++) {
+    const remaining = shared.filter((_, index) => (mask & (1 << index)) !== 0);
+    const candidate = audienceFor(terms, remaining, await hash(remaining));
+    if (candidate.kind === "named") return candidate;
+  }
+  return exact;
+}
+
+/** A full-payoff signature permits two minutes of accrual; the program takes only the payoff. */
+export const PAYOFF_SIGNING_ALLOWANCE = 120;
+export function fullPayoffAmount(t: Pick<LoanTermsV2, "terms" | "ledger">, now: number): bigint {
+  return payoff(t.terms, t.ledger, now + PAYOFF_SIGNING_ALLOWANCE);
+}
+
 // ---- who can do what next
 
 export type V2Action = "fund" | "cancel" | "accept" | "repay" | "top-up" | "claim-priced" | "claim-terminal" | "share-auditors";

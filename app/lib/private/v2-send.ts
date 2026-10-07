@@ -4,6 +4,7 @@ import { AnchorProvider, Program, type Idl } from "@coral-xyz/anchor";
 import { Connection, PublicKey, Transaction, type TransactionInstruction } from "@solana/web3.js";
 import idl from "@/idl/private_loan_v2.json";
 import type { LoanSigner } from "@/lib/keypair-wallet";
+import { assertOriginationAllowed } from "@/lib/ops-transaction";
 import { MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID } from "./espl";
 import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
 import { assertDevnet, validateTransaction } from "./tx-validator";
@@ -50,6 +51,7 @@ export async function sendEr(er: Connection, signer: LoanSigner, ix: Transaction
   tx.feePayer = signer.publicKey;
   validateTransaction(tx, { feePayer: signer.publicKey });
   tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
+  await assertOriginationAllowed(tx);
   const signed = await signer.signTransaction(tx);
   recordSignedReceipt(wallet, receipt, signed);
   const sig = await er.sendRawTransaction(signed.serialize(), { skipPreflight: true });
@@ -74,6 +76,7 @@ export async function sendBase(base: Connection, signer: LoanSigner, ixs: Transa
   await assertDevnet(base);
   const { blockhash, lastValidBlockHeight } = await base.getLatestBlockhash();
   tx.recentBlockhash = blockhash;
+  await assertOriginationAllowed(tx);
   const signed = await signer.signTransaction(tx);
   recordSignedReceipt(wallet, receipt, signed);
   const sig = await base.sendRawTransaction(signed.serialize());
