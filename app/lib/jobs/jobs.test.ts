@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { afterError, afterLeaseExpired, reconcile, retryDelayMs, MAX_ATTEMPTS } from "./policy";
+import { afterError, afterLeaseExpired, reconcile, retryDelayMs, MAX_ATTEMPTS, signatureState } from "./policy";
 import { crankParity } from "./crank-parity";
 import { capabilityFor, DEVNET_USDC, WSOL } from "../capabilities";
 import { loanActionAllowed, providerAllowed, ORIGINATING, type LoanAction } from "../ops-flags";
@@ -61,4 +61,26 @@ test("pausing originations never blocks servicing or recovery", () => {
   assert.equal(loanActionAllowed("accept", []).allowed, true);
   assert.equal(providerAllowed("moneygram", [{ key: "provider:moneygram", paused: true }]).allowed, false);
   assert.equal(providerAllowed("telegram", [{ key: "provider:moneygram", paused: true }]).allowed, true);
+});
+
+
+test("a processed signature never becomes retryable just because its blockhash expired", () => {
+  assert.equal(reconcile(signatureState({ err: null, confirmationStatus: "processed" }, 201, 200)), "wait");
+  assert.equal(reconcile(signatureState({ err: { InstructionError: [0, "Custom"] }, confirmationStatus: "processed" }, 201, 200)), "wait");
+  assert.equal(reconcile(signatureState(null, 200, 200)), "wait");
+  assert.equal(reconcile(signatureState(null, 201, 200)), "retry");
+  assert.equal(reconcile(signatureState({ err: null, confirmationStatus: "confirmed" }, 201, 200)), "succeeded");
+});
+
+test("parity detects later missed executions of a recurring watch in both directions", () => {
+  const t = 1_000_000;
+  const observations = [
+    { source: "shadow" as const, at: t, due: ["a", "b"], triggered: [] },
+    { source: "live" as const, at: t + 60_000, due: [], triggered: ["a", "b"] },
+    { source: "shadow" as const, at: t + 1_000_000, due: ["a"], triggered: [] },
+    { source: "live" as const, at: t + 1_000_000, due: [], triggered: ["b"] },
+  ];
+  const report = crankParity(observations, t + 2_000_000);
+  assert.deepEqual(report.missedByLive, ["a"]);
+  assert.deepEqual(report.unseenByShadow, ["b"]);
 });
