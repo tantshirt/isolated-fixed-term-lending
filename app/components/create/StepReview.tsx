@@ -12,6 +12,8 @@ import { parseAmount } from "@/lib/offer-validation";
 import { V2_LIVE } from "@/lib/v2/program";
 import { reviewFigures, termsFrom } from "@/lib/v2/rules";
 import type { Perspective, WizardDraft } from "./useDraft";
+import { WSOL_ASSET } from "@/lib/models/collateral";
+import type { CollateralAsset } from "@/lib/models";
 import styles from "./CreateWizard.module.css";
 
 export function StepReview({
@@ -19,17 +21,20 @@ export function StepReview({
   owed,
   onEdit,
   perspective = "lender",
+  asset = WSOL_ASSET,
 }: {
   draft: WizardDraft;
   owed: bigint | null;
   price: LivePrice | null;
   onEdit: (step: number) => void;
   perspective?: Perspective;
+  asset?: CollateralAsset;
 }) {
   const borrower = perspective === "borrower";
+  const unit = asset.label;
   const now = useChainNow();
   const principal = parseAmount(draft.principal, 6) ?? 0n;
-  const lamports = parseAmount(draft.collateral, 9) ?? 0n;
+  const lamports = parseAmount(draft.collateral, asset.decimals) ?? 0n;
   const rows: { label: string; value: string; step: number }[] = [
     { label: borrower ? "You borrow" : "You lend", value: `${formatUsdc(principal)} USDC`, step: 1 },
     {
@@ -38,7 +43,7 @@ export function StepReview({
       step: 2,
     },
     { label: "Term", value: formatDuration(draft.durationSeconds), step: 2 },
-    { label: borrower ? "wSOL you lock" : "wSOL required", value: `${formatWsol(lamports)} wSOL`, step: 3 },
+    { label: borrower ? `${unit} you lock` : `${unit} required`, value: `${formatWsol(lamports)} ${unit}`, step: 3 },
     { label: "Max LTV", value: formatBpsAsPercent(draft.maxLtvBps), step: 3 },
     {
       label: "Liquidation LTV",
@@ -66,7 +71,7 @@ export function StepReview({
       <div className={styles.fields}>
         <p className={styles.sentence}>
           {borrower ? "You lock " : "A borrower locks "}
-          <b className="num">{formatWsol(lamports)}</b> wSOL for <b className="num">{formatUsdc(principal)}</b> USDC.{" "}
+          <b className="num">{formatWsol(lamports)}</b> {unit} for <b className="num">{formatUsdc(principal)}</b> USDC.{" "}
           {proRata ? (
             <>
               Repaid at the deadline, {borrower ? "you owe" : "they owe"} <b className="num">{owed ? formatUsdc(owed) : "—"}</b> USDC; repaid
@@ -86,25 +91,28 @@ export function StepReview({
           </li>
           <li>
             <span>Grace ends</span>
-            <span>{when(f.graceEnd)}. Anyone may then pay what is owed and take wSOL worth that plus 5%; the rest returns to the borrower.</span>
+            <span>{when(f.graceEnd)}. Anyone may then pay what is owed and take {unit} worth that plus 5%; the rest returns to the borrower.</span>
           </li>
           <li>
             <span>Priced recovery</span>
-            <span>{when(f.pricedRecoveryFrom)}. The lender may take wSOL worth what is owed, with no bonus; the rest returns to the borrower.</span>
+            <span>{when(f.pricedRecoveryFrom)}. The lender may take {unit} worth what is owed, with no bonus; the rest returns to the borrower.</span>
           </li>
           <li>
             <span>Final claim</span>
-            <span>{when(f.terminalClaimFrom)}. The lender may take all remaining wSOL without a price, even if it is worth more than the debt.</span>
+            <span>{when(f.terminalClaimFrom)}. The lender may take all remaining {unit} without a price, even if it is worth more than the debt.</span>
           </li>
         </ol>
         <p className={styles.sentenceStrong}>
           {borrower
-            ? "Repay any time before a settlement executes and you keep all your wSOL. After the final claim time, you can lose any surplus."
-            : "The borrower can repay until a settlement executes. After the final claim time, you may take all of the wSOL."}
+            ? `Repay any time before a settlement executes and you keep all your ${unit}. After the final claim time, you can lose any surplus.`
+            : `The borrower can repay until a settlement executes. After the final claim time, you may take all of the ${unit}.`}
         </p>
         <p className={styles.sentence}>
           The price can fall before the deadline too: if the liquidation LTV is crossed on both the live and the average price, or the
-          live price runs three points past it, a liquidator can settle early. wSOL is SOL wrapped in a token account.
+          live price runs three points past it, a liquidator can settle early.{" "}
+          {asset.symbol === "wSOL"
+            ? "wSOL is SOL wrapped in a token account."
+            : `${unit} is a ZenLo Devnet test token priced by the real JITOSOL/USD feed, with its own caps of ${asset.maxLtvBps / 100}% max and ${asset.liquidationLtvBps / 100}% liquidation LTV.`}
         </p>
         <dl className={styles.terms}>
           {v2rows.map((r) => (

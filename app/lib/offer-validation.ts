@@ -1,6 +1,7 @@
 import { CAPS } from "./constants";
 import { debt } from "./loan-math";
 import type { RepaymentRules } from "./v2/rules";
+import { draftCollateral } from "./models/collateral";
 
 /** What the create wizard collects, as the user typed it. */
 export type OfferDraft = {
@@ -12,6 +13,8 @@ export type OfferDraft = {
   liquidationLtvBps: number;
   /** V2 repayment rules; absent on V1 drafts. */
   rules?: RepaymentRules;
+  /** V2 collateral mint (Story 26.2); absent means canonical wSOL. */
+  collateralMint?: string;
 };
 
 export type ParsedOffer = {
@@ -62,22 +65,27 @@ export function validateTermsStep(
 }
 
 export function validateRiskStep(
-  draft: Pick<OfferDraft, "collateral" | "maxLtvBps" | "liquidationLtvBps">,
+  draft: Pick<OfferDraft, "collateral" | "maxLtvBps" | "liquidationLtvBps" | "collateralMint">,
 ): DraftErrors {
   const errors: DraftErrors = {};
-  const collateral = parseAmount(draft.collateral, 9);
-  if (collateral === null) errors.collateral = "Enter a wSOL amount, up to 9 decimals.";
-  else if (collateral === 0n) errors.collateral = "Ask for more than zero wSOL.";
+  // Each asset carries its own decimals and caps; wSOL's equal the global caps.
+  const asset = draftCollateral(draft.collateralMint);
+  if (!asset) return { collateralMint: "This collateral is not available on this deployment. Choose wSOL." };
+  const maxLtv = Math.min(CAPS.maxLtvBps, asset.maxLtvBps);
+  const maxLiq = Math.min(CAPS.maxLiquidationLtvBps, asset.liquidationLtvBps);
+  const collateral = parseAmount(draft.collateral, asset.decimals);
+  if (collateral === null) errors.collateral = `Enter a ${asset.label} amount, up to ${asset.decimals} decimals.`;
+  else if (collateral === 0n) errors.collateral = `Ask for more than zero ${asset.label}.`;
 
-  if (!Number.isInteger(draft.maxLtvBps) || draft.maxLtvBps <= 0 || draft.maxLtvBps > CAPS.maxLtvBps) {
-    errors.maxLtvBps = `Max LTV is at most ${CAPS.maxLtvBps / 100}%.`;
+  if (!Number.isInteger(draft.maxLtvBps) || draft.maxLtvBps <= 0 || draft.maxLtvBps > maxLtv) {
+    errors.maxLtvBps = `Max LTV is at most ${maxLtv / 100}%${asset.symbol === "wSOL" ? "" : ` for ${asset.label}`}.`;
   }
   if (
     !Number.isInteger(draft.liquidationLtvBps) ||
-    draft.liquidationLtvBps > CAPS.maxLiquidationLtvBps ||
+    draft.liquidationLtvBps > maxLiq ||
     draft.liquidationLtvBps < draft.maxLtvBps + CAPS.minLtvGapBps
   ) {
-    errors.liquidationLtvBps = `Liquidation LTV sits at least ${CAPS.minLtvGapBps / 100} points above max LTV, and at most ${CAPS.maxLiquidationLtvBps / 100}%.`;
+    errors.liquidationLtvBps = `Liquidation LTV sits at least ${CAPS.minLtvGapBps / 100} points above max LTV, and at most ${maxLiq / 100}%.`;
   }
   return errors;
 }
@@ -94,7 +102,7 @@ export function parseDraft(draft: OfferDraft): ParsedOffer | null {
     principal,
     interestBps: draft.interestBps,
     durationSeconds: draft.durationSeconds,
-    collateralAmount: parseAmount(draft.collateral, 9)!,
+    collateralAmount: parseAmount(draft.collateral, draftCollateral(draft.collateralMint)!.decimals)!,
     maxLtvBps: draft.maxLtvBps,
     liquidationLtvBps: draft.liquidationLtvBps,
     debt: debt(principal, draft.interestBps),

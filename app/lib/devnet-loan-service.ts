@@ -137,7 +137,7 @@ export class DevnetLoanService implements LoanService {
         return { action: "create" as const, message: "Offer created", offerId: offerId.toString() };
       }
       writeSubmissionStorage(key, { version: 2, offerId: offerId.toString() });
-      const result = await sendCreateOfferV2(this.signer, offerId, termsInput(terms, parsed));
+      const result = await sendCreateOfferV2(this.signer, offerId, termsInput(terms, parsed), draft.collateralMint ? { wsolMint: new PublicKey(draft.collateralMint) } : {});
       writeSubmissionStorage(key);
       return { action: "create" as const, message: "Offer created", signature: result.signature, offerId: offerId.toString() };
     });

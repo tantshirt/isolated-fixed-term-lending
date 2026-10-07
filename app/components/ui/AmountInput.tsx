@@ -85,7 +85,7 @@ export const AmountInput = forwardRef<HTMLInputElement, Props>(
             }}
           />
           <span className={styles.unit}>
-            {unit === "USDC" || unit === "SOL" || unit === "wSOL" ? (
+            {unit === "USDC" || unit === "SOL" || unit === "wSOL" || unit === "jitoSOL" ? (
               <AssetLabel symbol={unit} />
             ) : (
               unit

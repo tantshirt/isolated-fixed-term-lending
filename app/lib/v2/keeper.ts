@@ -8,6 +8,7 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAcc
 import { ComputeBudgetProgram, PublicKey, Transaction, type Connection, type Keypair } from "@solana/web3.js";
 import { utils } from "@coral-xyz/anchor";
 import { collateralValueUsdc } from "../loan-math";
+import { collateralForMint, hasOwnFeed } from "../models/collateral";
 import { graceEnd, maturity, liquidationSplit, payoff as payoffAt } from "../loan-math-v2";
 import { v2LoanView } from "../models/loan-view";
 import type { PriceSnapshot } from "../offer-status";
@@ -31,11 +32,14 @@ export const DEFAULT_KEEPER_LIMITS: KeeperLimits = { maxPerAction: 50_000_000n, 
 
 export type Decision =
   | { act: true; kind: "risk" | "overdue"; payoff: bigint; receive: bigint; receiveValue: bigint }
-  | { act: false; reason: "healthy" | "not-due" | "stale-price" | "over-action-cap" | "over-capital" | "unprofitable" | "no-funds" | "not-active" };
+  | { act: false; reason: "healthy" | "not-due" | "stale-price" | "over-action-cap" | "over-capital" | "unprofitable" | "no-funds" | "not-active" | "unsupported-collateral" };
 
 /** Pure: should the keeper settle this loan now, within its limits? */
 export function decide(o: OfferV2, price: PriceSnapshot | null, now: number, limits: KeeperLimits, spentInWindow: bigint, usdcBalance: bigint): Decision {
   if (o.status !== "active") return { act: false, reason: "not-active" };
+  // Story 26.2: the keeper prices with SOL/USD only. Collateral with its own feed (jitoSOL (test))
+  // is left to other callers rather than valued with the wrong price.
+  if (hasOwnFeed(collateralForMint(o.wsolMint))) return { act: false, reason: "unsupported-collateral" };
   const overdue = now >= graceEnd(o.terms);
   const view = v2LoanView(o, price, now);
   if (!overdue && !view.risk?.liquidatable) {

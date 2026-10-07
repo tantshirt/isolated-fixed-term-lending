@@ -12,11 +12,14 @@ export function PriceLadder({
   acceptBelow,
   liquidateBelow,
   acceptLabel = "Borrowers can accept above",
+  priceName = "SOL",
 }: {
   now: number;
   acceptBelow: number;
   liquidateBelow: number;
   acceptLabel?: string;
+  /** Whose price this is: "SOL" for wSOL, "jitoSOL" for jitoSOL (test). */
+  priceName?: string;
 }) {
   const top = Math.max(now, acceptBelow) * 1.12;
   const pos = (v: number) => `${Math.max(0, Math.min(100, (v / top) * 100))}%`;
@@ -32,7 +35,7 @@ export function PriceLadder({
         <m.span className={styles.marker} data-kind="accept" animate={{ left: pos(acceptBelow) }} transition={spring} />
         <m.span className={styles.now} animate={{ left: pos(now) }} transition={spring}>
           <span className={styles.nowLabel}>
-            SOL now <b className="num">${now.toFixed(2)}</b>
+            {priceName} now <b className="num">${now.toFixed(2)}</b>
           </span>
         </m.span>
       </div>

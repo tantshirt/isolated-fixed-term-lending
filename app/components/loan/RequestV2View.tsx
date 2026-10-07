@@ -7,11 +7,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { messageFromAnchorError } from "@/lib/anchor-errors";
-import { useBalances, useChainNow, useDevConfig, usePrice } from "@/lib/client/hooks";
+import { useChainNow, useDevConfig } from "@/lib/client/hooks";
+import { useCollateralBalances, useCollateralPrice } from "@/lib/client/collateral-price";
+import { collateralForMint, collateralValueAtoms, hasOwnFeed } from "@/lib/models/collateral";
 import { useSigner } from "@/lib/client/signer-context";
 import { useToast } from "@/lib/client/toast";
 import { formatBpsAsPercent, formatDeadline, formatDuration, formatUsdc, formatWsol, shortKey } from "@/lib/format";
-import { collateralValueUsdc, currentLtvBps } from "@/lib/loan-math";
+import { currentLtvBps } from "@/lib/loan-math";
 import { annualizedBps, EarlyRepayment, maxExposure } from "@/lib/loan-math-v2";
 import { getConnection } from "@/lib/program";
 import { sendPythUpdate } from "@/lib/pyth";
@@ -34,10 +36,15 @@ export function RequestV2View({ borrower, requestId }: { borrower: string; reque
   }, [borrower, requestId]);
   const [request, setRequest] = useState<RequestV2 | null | undefined>(undefined);
   const { refreshKey, signer, publicKey, setConnectOpen, bumpRefresh } = useSigner();
-  const { price } = usePrice();
+  // Story 26.2: the request's own collateral sets the feed and labels. Lenders fund in USDC, so
+  // only `balances.usdc` is read here.
+  const asset = collateralForMint(request?.wsolMint);
+  const unit = asset.label;
+  const ownFeed = hasOwnFeed(asset);
+  const { price } = useCollateralPrice(asset);
   const now = useChainNow();
   const { config } = useDevConfig();
-  const balances = useBalances(publicKey, config);
+  const balances = useCollateralBalances(publicKey, config, asset);
   const toast = useToast();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -68,7 +75,7 @@ export function RequestV2View({ borrower, requestId }: { borrower: string; reque
   const mine = publicKey?.toBase58() === request.borrower;
   const f = reviewFigures(t, now ?? 0);
   const exposure = maxExposure(t);
-  const fits = price ? currentLtvBps(exposure, collateralValueUsdc(request.collateralAmount, price.price, price.conf, price.exponent)) <= request.maxLtvBps : false;
+  const fits = price ? currentLtvBps(exposure, collateralValueAtoms(request.collateralAmount, asset.decimals, price.price, price.conf, price.exponent)) <= request.maxLtvBps : false;
 
   const run = async (fn: () => Promise<string>, done: string, after?: () => void) => {
     setError(null);
@@ -90,12 +97,13 @@ export function RequestV2View({ borrower, requestId }: { borrower: string; reque
   if (!signer) action = <Button size="lg" block onClick={() => setConnectOpen(true)}>Connect wallet</Button>;
   else if (request.status === "open" && mine)
     action = (
-      <Button variant="secondary" size="lg" block loading={busy} onClick={() => run(() => sendCancelRequestV2(signer, request), `Your ${formatWsol(request.collateralAmount)} wSOL is back`)}>
+      <Button variant="secondary" size="lg" block loading={busy} onClick={() => run(() => sendCancelRequestV2(signer, request), `Your ${formatWsol(request.collateralAmount)} ${unit} is back`)}>
         Cancel request
       </Button>
     );
   else if (request.status === "open" && config)
-    action = !price?.fresh ? (
+    // An asset with its own feed posts a fresh update inside the funding sequence itself.
+    action = !price?.fresh && !ownFeed ? (
       <Button variant="secondary" size="lg" block loading={busy} onClick={() => run(async () => (await sendPythUpdate(signer)).signatures.at(-1) ?? "", "A fresh SOL price is on chain")}>
         Post a fresh SOL price
       </Button>
@@ -135,7 +143,7 @@ export function RequestV2View({ borrower, requestId }: { borrower: string; reque
         <h1 className={styles.title}>{request.status === "open" ? `${formatUsdc(t.principal)} USDC requested` : request.status === "funded" ? "Funded" : "Cancelled"}</h1>
         <dl className={styles.terms}>
           <div><dt>Borrower</dt><dd className="num">{shortKey(request.borrower)}</dd></div>
-          <div><dt>Collateral locked</dt><dd className="num">{formatWsol(request.collateralAmount)} wSOL</dd></div>
+          <div><dt>Collateral locked</dt><dd className="num">{formatWsol(request.collateralAmount)} {unit}</dd></div>
           <div><dt>Term cost</dt><dd className="num">{formatUsdc(f.termCost)} USDC for {formatDuration(t.duration)}</dd></div>
           <div><dt>Annualized pricing</dt><dd className="num">{formatBpsAsPercent(annualizedBps(t), 1)}</dd></div>
           <div><dt>Early repayment</dt><dd>{t.earlyRepayment === EarlyRepayment.ProRata ? `Interest for time used, at least ${formatUsdc(f.minInterest)} USDC` : "Full-term interest"}</dd></div>
@@ -155,10 +163,10 @@ export function RequestV2View({ borrower, requestId }: { borrower: string; reque
           <h2 className={panel.title}>{mine ? "Your request" : "Fund this request"}</h2>
           <p className={panel.body}>
             {mine
-              ? "Your wSOL is locked until a lender funds it or you cancel."
-              : `Lend ${formatUsdc(t.principal)} USDC from your own wallet. The borrower's wSOL moves into the loan at once.`}
+              ? `Your ${unit} is locked until a lender funds it or you cancel.`
+              : `Lend ${formatUsdc(t.principal)} USDC from your own wallet. The borrower's ${unit} moves into the loan at once.`}
           </p>
-          {request.status === "open" && !mine && price?.fresh && !fits && <p className={panel.note}>At today&apos;s SOL price this collateral does not cover the most this loan can cost.</p>}
+          {request.status === "open" && !mine && price?.fresh && !fits && <p className={panel.note}>At today&apos;s {ownFeed ? asset.symbol : "SOL"} price this collateral does not cover the most this loan can cost.</p>}
           {action}
           {receipt && (
             <a href={signatureUrl(receipt)} target="_blank" rel="noreferrer">
