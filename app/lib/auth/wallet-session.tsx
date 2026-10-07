@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { ConvexProviderWithAuth, ConvexReactClient } from "convex/react";
 import { useSigner } from "@/lib/client/signer-context";
 import { KeypairWallet } from "@/lib/keypair-wallet";
+import { SessionScope } from "./session-scope";
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 const SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
@@ -56,7 +57,10 @@ function SessionProvider({ children, onToken }: { children: ReactNode; onToken: 
   const { signer, source } = useSigner();
   const wallet = useWallet();
   const key = signer?.publicKey.toBase58() ?? null;
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<{ wallet: string; token: string } | null>(null);
+  const scope = useRef(new SessionScope());
+  scope.current.setWallet(key);
+  useEffect(() => () => scope.current.invalidate(), []);
   const [status, setStatus] = useState<SessionStatus>(CONVEX_URL ? "no-wallet" : "unavailable");
   const [error, setError] = useState<string | null>(null);
   const current = useRef<{ wallet: string; token: string } | null>(null);
@@ -69,7 +73,7 @@ function SessionProvider({ children, onToken }: { children: ReactNode; onToken: 
     }
     const stored = key ? readStored(key) : null;
     current.current = key && stored ? { wallet: key, token: stored } : null;
-    setToken(stored);
+    setToken(current.current);
     setError(null);
     if (!CONVEX_URL) setStatus("unavailable");
     else if (!key) setStatus("no-wallet");
@@ -78,7 +82,7 @@ function SessionProvider({ children, onToken }: { children: ReactNode; onToken: 
     else setStatus("signed-out");
   }, [key, source, wallet.signMessage]);
 
-  useEffect(() => onToken(key && token ? { wallet: key, token } : null), [key, token, onToken]);
+  useEffect(() => onToken(token?.wallet === key ? token : null), [key, token, onToken]);
 
   const signMessage = useCallback(
     async (message: Uint8Array): Promise<Uint8Array> => {
@@ -92,29 +96,36 @@ function SessionProvider({ children, onToken }: { children: ReactNode; onToken: 
   const signIn = useCallback(async () => {
     if (!CONVEX_URL || !key) return;
     const signingFor = key;
+    const attempt = scope.current.begin();
     setStatus("signing");
     setError(null);
     try {
       const challenge = await post("/auth/challenge", { wallet: signingFor });
       if (!challenge.ok) throw new Error("Sign-in is not available on this site right now.");
       const { nonce, message } = (await challenge.json()) as { nonce: string; message: string };
+      if (!scope.current.isCurrent(attempt)) return;
       const signature = base58.encode(await signMessage(new TextEncoder().encode(message)));
+      if (!scope.current.isCurrent(attempt)) return;
       const verified = await post("/auth/verify", { wallet: signingFor, nonce, signature });
       if (!verified.ok) throw new Error("The signature was not accepted. Try again.");
       const { token: issued } = (await verified.json()) as { token: string };
-      if (current.current && current.current.wallet !== signingFor) return;
-      if (signer?.publicKey.toBase58() !== signingFor) return;
+      if (!scope.current.isCurrent(attempt)) {
+        void post("/auth/signout", {}, issued).catch(() => {});
+        return;
+      }
       current.current = { wallet: signingFor, token: issued };
       writeStored(signingFor, issued);
-      setToken(issued);
+      setToken(current.current);
       setStatus("signed-in");
     } catch (e) {
+      if (!scope.current.isCurrent(attempt)) return;
       setStatus("error");
       setError(e instanceof Error ? e.message : "Sign-in failed.");
     }
-  }, [key, signMessage, signer]);
+  }, [key, signMessage]);
 
   const signOut = useCallback(async () => {
+    scope.current.invalidate();
     const live = current.current;
     current.current = null;
     setToken(null);
