@@ -157,7 +157,7 @@ pub mod private_loan_v2 {
     }
 
     /// Ephemeral rollup. An administrator adds, re-roles (roles != 0) or removes (roles == 0) a member.
-    pub fn set_desk_member(ctx: Context<DeskAdmin>, member: Pubkey, roles: u8) -> Result<()> {
+    pub fn set_desk_member<'info>(ctx: Context<'info, DeskAdmin<'info>>, member: Pubkey, roles: u8) -> Result<()> {
         desk::set_desk_member(ctx, member, roles)
     }
 

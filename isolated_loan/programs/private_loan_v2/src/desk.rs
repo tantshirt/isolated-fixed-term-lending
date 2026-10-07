@@ -19,7 +19,7 @@ use crate::room::{load, store};
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 use ephemeral_rollups_sdk::access_control::instructions::{CreateEphemeralPermissionCpi, UpdateEphemeralPermissionCpi};
-use ephemeral_rollups_sdk::access_control::structs::{EphemeralMembersArgs, Member, AUTHORITY_FLAG, TX_BALANCES_FLAG, TX_LOGS_FLAG, TX_MESSAGE_FLAG};
+use ephemeral_rollups_sdk::access_control::structs::{EphemeralMembersArgs, Member, Permission, AUTHORITY_FLAG, TX_BALANCES_FLAG, TX_LOGS_FLAG, TX_MESSAGE_FLAG};
 use ephemeral_rollups_sdk::anchor::{delegate, MagicProgram, PermissionProgram};
 use ephemeral_rollups_sdk::consts::EPHEMERAL_VAULT_ID;
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
@@ -80,6 +80,12 @@ impl DeskState {
             .filter(|m| m.active)
             .map(|m| Member { flags: if m.roles & DESK_ADMIN != 0 { AUTHORITY_FLAG | SEEN } else { SEEN }, pubkey: m.pubkey })
             .collect()
+    }
+
+    /// Policies and book entries follow desk membership, but only the program may change
+    /// their audiences. Administrator authority belongs on DeskState alone.
+    pub fn metadata_readers(&self) -> Vec<Member> {
+        self.members.iter().filter(|m| m.active).map(|m| Member { flags: SEEN, pubkey: m.pubkey }).collect()
     }
 }
 
@@ -238,13 +244,16 @@ pub fn init_desk(ctx: Context<InitDesk>, creator_roles: u8) -> Result<()> {
 }
 
 /// An administrator adds, re-roles or removes a member. The last administrator cannot remove
-/// themselves, so a desk is never left without one.
-pub fn set_desk_member(ctx: Context<DeskAdmin>, member: Pubkey, roles: u8) -> Result<()> {
+/// themselves, so a desk is never left without one. Remaining accounts contain every policy
+/// (versions 1..=policy_version), then every book entry (0..next_loan_seq), each followed by its
+/// permission. Membership and all metadata permissions change atomically or not at all.
+pub fn set_desk_member<'info>(ctx: Context<'info, DeskAdmin<'info>>, member: Pubkey, roles: u8) -> Result<()> {
     require!(roles & !DESK_ROLES == 0, PrivateLoanError::InvalidRole);
     let a = &ctx.accounts;
     let info = a.state.to_account_info();
     let mut s: DeskState = load(&info)?;
     require!(s.has(&a.admin.key(), DESK_ADMIN), PrivateLoanError::NotDeskAdmin);
+    validate_metadata_accounts(&a.anchor.key(), &s, ctx.remaining_accounts)?;
     if let Some(m) = s.members.iter_mut().find(|m| m.active && m.pubkey == member) {
         if roles == 0 {
             m.active = false;
@@ -257,10 +266,28 @@ pub fn set_desk_member(ctx: Context<DeskAdmin>, member: Pubkey, roles: u8) -> Re
         *slot = DeskMember { pubkey: member, roles, active: true };
     }
     require!(s.members.iter().any(|m| m.active && m.roles & DESK_ADMIN != 0), PrivateLoanError::LastDeskAdmin);
-    s.revision = s.revision.saturating_add(1);
     let key = a.anchor.key();
-    let bump = [ctx.bumps.state];
     let seeds = desk_seeds(&a.anchor);
+    for (i, pair) in ctx.remaining_accounts.chunks_exact(2).enumerate() {
+        let (seed, index) = metadata_seed(&s, i);
+        let index = index.to_le_bytes();
+        let (_, bump) = Pubkey::find_program_address(&[seed, key.as_ref(), &index], &crate::ID);
+        let record_seeds: &[&[u8]] = &[seed, key.as_ref(), &index, &[bump]];
+        UpdateEphemeralPermissionCpi {
+            permissioned_account: pair[0].clone(),
+            permission: pair[1].clone(),
+            payer: a.anchor.to_account_info(),
+            authority: pair[0].clone(),
+            vault: a.vault.to_account_info(),
+            magic_program: a.magic_program.to_account_info(),
+            permission_program: a.permission_program.to_account_info(),
+            authority_is_signer: false,
+            args: EphemeralMembersArgs { is_private: true, members: s.metadata_readers() },
+        }
+        .invoke_signed(&[&seeds, record_seeds])?;
+    }
+    s.revision = s.revision.saturating_add(1);
+    let bump = [ctx.bumps.state];
     let record_seeds: &[&[u8]] = &[DESK_STATE_SEED, key.as_ref(), &bump];
     UpdateEphemeralPermissionCpi {
         permissioned_account: info.clone(),
@@ -275,6 +302,31 @@ pub fn set_desk_member(ctx: Context<DeskAdmin>, member: Pubkey, roles: u8) -> Re
     }
     .invoke_signed(&[&seeds, record_seeds])?;
     store(&info, &s)
+}
+
+fn metadata_seed(s: &DeskState, i: usize) -> (&'static [u8], u32) {
+    if i < s.policy_version as usize {
+        (DESK_POLICY_SEED, i as u32 + 1)
+    } else {
+        (DESK_LOAN_SEED, (i - s.policy_version as usize) as u32)
+    }
+}
+
+/// Require the complete canonical list before touching permissions. A concurrently published
+/// policy or attached loan makes the supplied list stale and safely rejects the whole update.
+fn validate_metadata_accounts(desk: &Pubkey, s: &DeskState, accounts: &[AccountInfo]) -> Result<()> {
+    let count = (s.policy_version as usize).checked_add(s.next_loan_seq as usize)
+        .and_then(|n| n.checked_mul(2)).ok_or(PrivateLoanError::MathOverflow)?;
+    require!(accounts.len() == count, PrivateLoanError::InvalidRecord);
+    for (i, pair) in accounts.chunks_exact(2).enumerate() {
+        let (seed, index) = metadata_seed(s, i);
+        let (record, _) = Pubkey::find_program_address(&[seed, desk.as_ref(), &index.to_le_bytes()], &crate::ID);
+        require_keys_eq!(pair[0].key(), record, PrivateLoanError::InvalidRecord);
+        require_keys_eq!(*pair[0].owner, crate::ID, PrivateLoanError::InvalidRecord);
+        require_keys_eq!(pair[1].key(), Permission::find_pda(&record).0, PrivateLoanError::InvalidRecord);
+        require!(pair[1].is_writable, PrivateLoanError::InvalidRecord);
+    }
+    Ok(())
 }
 
 /// An administrator publishes the next policy version. Earlier versions stay as written, so a
@@ -296,7 +348,7 @@ pub fn publish_policy(ctx: Context<PublishPolicy>, args: PolicyArgs) -> Result<(
         &a.policy_permission.to_account_info(),
         &[DESK_POLICY_SEED, key.as_ref(), &version.to_le_bytes(), &[bump]],
         DeskPolicy::LEN as u32,
-        s.permission_members(),
+        s.metadata_readers(),
         &a.vault.to_account_info(),
         &a.magic_program.to_account_info(),
         &a.permission_program.to_account_info(),
@@ -334,7 +386,7 @@ pub fn attach_desk(ctx: Context<AttachDesk>) -> Result<()> {
         &a.book_permission.to_account_info(),
         &[DESK_LOAN_SEED, desk_key.as_ref(), &seq.to_le_bytes(), &[book_bump]],
         32,
-        s.permission_members(),
+        s.metadata_readers(),
         &a.vault.to_account_info(),
         &a.magic_program.to_account_info(),
         &a.permission_program.to_account_info(),
@@ -356,6 +408,7 @@ pub fn check_desk_policy(t: &LoanTerms, policy_info: &AccountInfo) -> Result<Des
     let (expected, _) = Pubkey::find_program_address(&[DESK_POLICY_SEED, t.desk.as_ref(), &t.policy_version.to_le_bytes()], &crate::ID);
     require_keys_eq!(policy_info.key(), expected, PrivateLoanError::InvalidRecord);
     require!(policy.version == t.policy_version, PrivateLoanError::InvalidRecord);
+    require!(policy.args.auditor_hash() == t.auditor_hash, PrivateLoanError::AuditorMismatch);
     policy.args.allows(t)?;
     Ok(policy)
 }
@@ -443,6 +496,10 @@ pub fn hash_readers(readers: &[Pubkey]) -> [u8; 32] {
 
 /// The caller passes the current reader list; it must hash to what the loan recorded.
 fn current_readers(t: &LoanTerms, readers: Vec<Pubkey>) -> Result<Vec<Pubkey>> {
+    // Before acceptance the policy's list is a proposed audience, not an existing grant.
+    // Rewriting it would grant the remaining auditors access without borrower consent.
+    // Accepted revisions remain set after settlement, allowing later revocation too.
+    require!(t.accepted_revision > 0, PrivateLoanError::WrongStatus);
     require!(readers.len() <= MAX_AUDITORS, PrivateLoanError::InvalidRecord);
     require!(hash_readers(&readers) == t.auditor_hash, PrivateLoanError::StaleRevision);
     Ok(readers)
@@ -601,6 +658,100 @@ mod tests {
             max_annual_ceiling_bps: 3_000, max_interest_bps: 1_000, repayment_modes: MODE_PRO_RATA, max_ltv_bps: 6_500,
             max_liquidation_ltv_bps: 8_000, min_grace_seconds: 86_400, max_late_fee_bps: 100, auditor_count: 1, auditors: [Pubkey::new_unique(), Pubkey::default(), Pubkey::default(), Pubkey::default()],
         }
+    }
+
+    fn loan_terms() -> LoanTerms {
+        LoanTerms {
+            version: 2, origin_lender: Pubkey::new_unique(), current_lender: Pubkey::new_unique(), borrower: Pubkey::new_unique(),
+            room_index: 0, request_index: 0, principal: 1_000_000, interest_bps: 0, duration_seconds: 86_400,
+            early_repayment: 1, min_interest_bps: 0, grace_seconds: 86_400, late_fee_bps: 0, annual_ceiling_bps: 3_000,
+            collateral_required: 1_000_000_000, collateral_locked: 0, max_ltv_bps: 6_500, liquidation_ltv_bps: 8_000,
+            revision: 1, funded_revision: 1, accepted_revision: 0, status: STATUS_FUNDED, start_ts: 0,
+            ledger: Default::default(), ledger_revision: 0, shortfall: 0, settled_ts: 0, desk: Pubkey::new_unique(),
+            policy_version: 1, auditor_hash: [0; 32],
+        }
+    }
+
+    fn metadata_accounts(desk: &Pubkey, policies: u32, loans: u32) -> Vec<AccountInfo<'static>> {
+        let records = (1..=policies).map(|i| (DESK_POLICY_SEED, i))
+            .chain((0..loans).map(|i| (DESK_LOAN_SEED, i)));
+        records.flat_map(|(seed, i)| {
+            let record = Pubkey::find_program_address(&[seed, desk.as_ref(), &i.to_le_bytes()], &crate::ID).0;
+            [(record, false), (Permission::find_pda(&record).0, true)]
+        }).map(|(key, writable)| AccountInfo::new(
+            Box::leak(Box::new(key)), false, writable, Box::leak(Box::new(1)),
+            Box::leak(Vec::new().into_boxed_slice()), &crate::ID, false,
+        )).collect()
+    }
+
+    #[test]
+    fn membership_requires_all_metadata_pairs_in_order_and_for_this_desk() {
+        let desk = Pubkey::new_unique();
+        let s = DeskState { version: 1, revision: 0, policy_version: 2, next_loan_seq: 2, members: [DeskMember::default(); DESK_MEMBERS] };
+        let accounts = metadata_accounts(&desk, 2, 2);
+        assert!(validate_metadata_accounts(&desk, &s, &accounts).is_ok());
+        assert!(validate_metadata_accounts(&desk, &s, &accounts[..6]).is_err());
+        assert!(validate_metadata_accounts(&desk, &s, &accounts[..7]).is_err());
+        let mut reordered = accounts.clone();
+        reordered.swap(0, 2);
+        reordered.swap(1, 3);
+        assert!(validate_metadata_accounts(&desk, &s, &reordered).is_err());
+        let foreign = metadata_accounts(&Pubkey::new_unique(), 2, 2);
+        assert!(validate_metadata_accounts(&desk, &s, &foreign).is_err());
+        let mut wrong_permission = accounts.clone();
+        wrong_permission[1] = foreign[1].clone();
+        assert!(validate_metadata_accounts(&desk, &s, &wrong_permission).is_err());
+        let mut read_only = accounts.clone();
+        read_only[1].is_writable = false;
+        assert!(validate_metadata_accounts(&desk, &s, &read_only).is_err());
+        let newly_attached = DeskState { next_loan_seq: 3, ..s };
+        assert!(validate_metadata_accounts(&desk, &newly_attached, &accounts).is_err());
+    }
+
+    #[test]
+    fn metadata_readers_follow_membership_without_granting_permission_authority() {
+        let (admin, removed, added) = (Pubkey::new_unique(), Pubkey::new_unique(), Pubkey::new_unique());
+        let mut members = [DeskMember::default(); DESK_MEMBERS];
+        members[0] = DeskMember { pubkey: admin, roles: DESK_ADMIN, active: true };
+        members[1] = DeskMember { pubkey: removed, roles: DESK_ADMIN | DESK_LENDER, active: false };
+        members[2] = DeskMember { pubkey: added, roles: DESK_AUDITOR, active: true };
+        let s = DeskState { version: 1, revision: 1, policy_version: 1, next_loan_seq: 1, members };
+        let readers = s.metadata_readers();
+        assert_eq!(readers.iter().map(|m| m.pubkey).collect::<Vec<_>>(), vec![admin, added]);
+        assert!(readers.iter().all(|m| m.flags == SEEN && m.flags & AUTHORITY_FLAG == 0));
+        assert!(s.permission_members()[0].flags & AUTHORITY_FLAG != 0);
+    }
+
+    #[test]
+    fn proposed_auditors_cannot_be_rewritten_into_grants_before_acceptance() {
+        let auditors = vec![Pubkey::new_unique(), Pubkey::new_unique()];
+        let mut t = loan_terms();
+        t.auditor_hash = hash_readers(&auditors);
+        for status in [STATUS_DRAFT, STATUS_FUNDED, crate::loan::STATUS_CANCELLED] {
+            t.status = status;
+            assert!(current_readers(&t, auditors.clone()).is_err());
+        }
+        t.accepted_revision = t.revision;
+        for status in [crate::loan::STATUS_ACTIVE, crate::loan::STATUS_REPAID, crate::loan::STATUS_LIQUIDATED] {
+            t.status = status;
+            assert_eq!(current_readers(&t, auditors.clone()).unwrap(), auditors);
+        }
+    }
+
+    #[test]
+    fn acceptance_rejects_a_hash_that_does_not_match_the_policy_audience() {
+        let mut t = loan_terms();
+        let policy = DeskPolicy { version: t.policy_version, published_at: 0, args: policy() };
+        let key = Pubkey::find_program_address(&[DESK_POLICY_SEED, t.desk.as_ref(), &t.policy_version.to_le_bytes()], &crate::ID).0;
+        let mut data = Vec::new();
+        policy.serialize(&mut data).unwrap();
+        let mut lamports = 1;
+        let info = AccountInfo::new(&key, false, false, &mut lamports, &mut data, &crate::ID, false);
+        // A pre-acceptance removal in an older deployment may have changed the stored hash.
+        // Signing that hash must never grant the original policy's audience.
+        assert!(check_desk_policy(&t, &info).is_err());
+        t.auditor_hash = policy.args.auditor_hash();
+        assert!(check_desk_policy(&t, &info).is_ok());
     }
 
     #[test]
