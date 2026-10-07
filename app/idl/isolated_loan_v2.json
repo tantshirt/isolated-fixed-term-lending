@@ -1821,6 +1821,15 @@
           }
         },
         {
+          "name": "new_lender_usdc",
+          "docs": [
+            "Receives any USDC in the new offer's vault beyond its principal; refinancing never pays the borrower.",
+            "The same account as `old_lender_usdc` in a same-lender rollover. Token accounts are only",
+            "written by the token program here, so the duplicate is safe."
+          ],
+          "writable": true
+        },
+        {
           "name": "wsol_mint"
         },
         {

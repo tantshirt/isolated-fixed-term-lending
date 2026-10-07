@@ -135,7 +135,8 @@ export async function sendRefinanceV2(signerLike: AnySigner, old: OfferV2, next:
     .methods.refinanceInto(bnU64(maxContribution))
     .accountsPartial({
       borrower, oldOffer, oldWsolVault: wsolVaultV2Pda(oldOffer), oldLender, oldLenderUsdc: ata(old.usdcMint, oldLender), newOffer,
-      newLender: new PublicKey(next.originLender), newUsdcVault: usdcVaultV2Pda(newOffer), wsolMint: mint, newWsolVault: wsolVaultV2Pda(newOffer),
+      newLender: new PublicKey(next.originLender), newUsdcVault: usdcVaultV2Pda(newOffer),
+      newLenderUsdc: ata(old.usdcMint, new PublicKey(next.originLender)), wsolMint: mint, newWsolVault: wsolVaultV2Pda(newOffer),
       borrowerUsdc: ata(old.usdcMint, borrower), borrowerWsol: ata(mint, borrower), priceUpdate, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     })
     .remainingAccounts(remaining)

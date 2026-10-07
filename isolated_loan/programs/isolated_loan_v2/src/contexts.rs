@@ -156,6 +156,11 @@ pub struct RefinanceInto<'info> {
     pub new_lender: SystemAccount<'info>,
     #[account(mut, seeds = [USDC_VAULT_SEED, new_offer.key().as_ref()], bump, token::mint = new_offer.usdc_mint, token::authority = new_offer)]
     pub new_usdc_vault: Box<Account<'info, TokenAccount>>,
+    /// Receives any USDC in the new offer's vault beyond its principal; refinancing never pays the borrower.
+    /// The same account as `old_lender_usdc` in a same-lender rollover. Token accounts are only
+    /// written by the token program here, so the duplicate is safe.
+    #[account(mut, dup, token::mint = new_offer.usdc_mint, token::authority = new_lender)]
+    pub new_lender_usdc: Box<Account<'info, TokenAccount>>,
     #[account(constraint = wsol_mint.key() == old_offer.wsol_mint @ LoanV2Error::RefinanceMismatch)]
     pub wsol_mint: Box<Account<'info, Mint>>,
     #[account(

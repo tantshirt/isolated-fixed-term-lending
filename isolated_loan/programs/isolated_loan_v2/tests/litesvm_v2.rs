@@ -215,6 +215,13 @@ impl Env {
         self.svm.set_account(key, Account { lamports, data, owner: TOKEN_PROGRAM, executable: false, rent_epoch: 0 }).unwrap();
     }
 
+    /// Overwrites a token account's amount, as if someone transferred tokens into it.
+    fn set_token_amount(&mut self, key: Pubkey, amount: u64) {
+        let mut acc = self.svm.get_account(&key).unwrap();
+        acc.data[64..72].copy_from_slice(&amount.to_le_bytes());
+        self.svm.set_account(key, acc).unwrap();
+    }
+
     fn put(&mut self, key: Pubkey, owner: Pubkey, data: Vec<u8>) {
         let lamports = self.svm.minimum_balance_for_rent_exemption(data.len());
         self.svm.set_account(key, Account { lamports, data, owner, executable: false, rent_epoch: 0 }).unwrap();
@@ -463,6 +470,7 @@ impl Env {
             new_offer: new,
             new_lender: n.origin_lender,
             new_usdc_vault: pda(&[USDC_VAULT_SEED, new.as_ref()]),
+            new_lender_usdc: ata(n.origin_lender, USDC_MINT),
             wsol_mint: mint,
             new_wsol_vault: pda(&[WSOL_VAULT_SEED, new.as_ref()]),
             borrower_usdc: ata(b.pubkey(), USDC_MINT),
@@ -1182,6 +1190,23 @@ fn same_lender_rollover_in_grace_with_no_contribution_and_a_top_up() {
     let new = env.offer(n);
     assert_eq!((new.status, new.collateral_locked, new.terms.principal), (StatusV2::Active, 1_100_000_000, payoff));
     assert_eq!(env.balance(pda(&[WSOL_VAULT_SEED, n.as_ref()])), 1_100_000_000);
+}
+
+#[test]
+fn refinance_returns_a_donated_vault_surplus_to_the_new_lender_not_the_borrower() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let (b, s) = (env.borrower.insecure_clone(), env.stranger.insecure_clone());
+    let n = offer_from(&mut env, &s, 7, 90_000_000, 950_000_000, Pubkey::default());
+    // Someone sends 5 USDC to the new offer's vault before the refinance.
+    env.set_token_amount(pda(&[USDC_VAULT_SEED, n.as_ref()]), 95_000_000);
+    env.at(START + DAY);
+    env.price_usd(150, 150);
+    let contribution = env.payoff(o) - 90_000_000;
+    let (b0, s0) = (env.usdc(&b), env.usdc(&s));
+    env.refinance(o, n, contribution).unwrap();
+    assert_eq!(b0 - env.usdc(&b), contribution, "the borrower receives nothing back");
+    assert_eq!(env.usdc(&s) - s0, 5_000_000, "the surplus returns to the new lender");
 }
 
 #[test]

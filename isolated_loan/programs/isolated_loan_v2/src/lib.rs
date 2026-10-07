@@ -315,9 +315,10 @@ pub mod isolated_loan_v2 {
             let info = ctx.accounts.new_offer.to_account_info();
             let vault = ctx.accounts.new_usdc_vault.to_account_info();
             pay_out(&program, &vault, &ctx.accounts.old_lender_usdc.to_account_info(), &info, signer, new_principal)?;
-            // Anything donated to the vault beyond the principal goes to the borrower, as at accept.
+            // Anything in the vault beyond the principal goes back to the new lender: a refinance
+            // never pays USDC to the borrower (research.md, Refinance and rollover).
             let extra = ctx.accounts.new_usdc_vault.amount.saturating_sub(new_principal);
-            pay_out(&program, &vault, &ctx.accounts.borrower_usdc.to_account_info(), &info, signer, extra)?;
+            pay_out(&program, &vault, &ctx.accounts.new_lender_usdc.to_account_info(), &info, signer, extra)?;
             close_vault(&program, &vault, &ctx.accounts.new_lender.to_account_info(), &info, signer)?;
         }
         if contribution > 0 {
