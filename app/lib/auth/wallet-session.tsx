@@ -129,11 +129,11 @@ function SessionProvider({ children, onToken }: { children: ReactNode; onToken: 
     const live = current.current;
     current.current = null;
     setToken(null);
+    setStatus(key ? "signed-out" : "no-wallet");
     if (live) {
       writeStored(live.wallet, null);
       await post("/auth/signout", {}, live.token).catch(() => {});
     }
-    setStatus(key ? "signed-out" : "no-wallet");
   }, [key]);
 
   const value = useMemo(() => ({ status, wallet: key, error, signIn, signOut }), [status, key, error, signIn, signOut]);
