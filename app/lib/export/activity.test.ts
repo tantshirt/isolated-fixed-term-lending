@@ -2,11 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey, TransactionInstruction, TransactionMessage, type Connection } from "@solana/web3.js";
+import { BN, BorshInstructionCoder } from "@coral-xyz/anchor";
 import { CSV_FOOTER, CSV_HEADER, atomsToDecimal, csvField, nextCursor, rowsAfter, toCsv, type ActivityRow } from "./activity";
-import { eventsToRows, type ChainEvent, type LoanFacts } from "./public-activity";
+import { archivedLoanFacts, eventsToRows, publicActivityRows, replayPublicActivity, type ArchivedTransaction, type ChainEvent, type LoanFacts } from "./public-activity";
 import { privateActivityRows } from "./private-activity";
 import { EarlyRepayment } from "../loan-math-v2";
+import { PROGRAM_V2_ID, readOnlyProgramV2 } from "../v2/program";
 
 const row = (slot: number, signature: string, over: Partial<ActivityRow> = {}): ActivityRow => ({
   timeUtc: "2026-10-07T12:00:00Z", slot, signature, loan: "Loan1", role: "borrower", action: "repay", asset: "USDC",
@@ -81,6 +83,90 @@ test("private rows come from the rollup ledger only and are stable", () => {
   assert.deepEqual(r.map((x) => x.action), ["borrow", "interest-paid-to-date", "principal-repaid-to-date", "settled-repaid"]);
   assert.ok(r.every((x) => x.fee === "0" && x.signature.startsWith("private:")));
   assert.equal(toCsv(privateActivityRows([p])), toCsv(r));
+});
+
+const archivedEvent = (slot: number, signature: string, name: string, data: Record<string, unknown>): ChainEvent => ({ slot, signature, name, data, blockTime: 1800000000 + slot, fee: 5000, feePayer: "borrower" });
+const historyFixture = () => {
+  const create: ArchivedTransaction = {
+    instructions: [{ name: "createOffer", accounts: { offer: "closed-loan", lender: "original", wsolMint: "So11111111111111111111111111111111111111112" }, data: { args: { principal: 100000000n } } }],
+    events: [archivedEvent(1, "create", "OfferCreatedV2", { offer: "closed-loan", lender: "original", principal: 100000000n })],
+  };
+  const accepted: ArchivedTransaction = { instructions: [], events: [archivedEvent(2, "accept", "AcceptedV2", { offer: "closed-loan", borrower: "borrower" })] };
+  const buy: ArchivedTransaction = { instructions: [], events: [archivedEvent(3, "buy", "PositionSoldV2", { offer: "closed-loan", seller: "original", buyer: "middle", price: 99000000n })] };
+  // Signature lexicographic order opposes chain execution order: sale precedes payment.
+  const sell: ArchivedTransaction = { instructions: [], events: [archivedEvent(4, "z-sale", "PositionSoldV2", { offer: "closed-loan", seller: "middle", buyer: "last", price: 98000000n })] };
+  const paid: ArchivedTransaction = { instructions: [], events: [archivedEvent(4, "a-payment", "PaymentV2", { offer: "closed-loan", used: 105000000n, closed: true })] };
+  return { create, accepted, buy, sell, paid, all: [paid, sell, buy, accepted, create] };
+};
+
+test("closed and resold holdings are reconstructed without any live offer account", async () => {
+  const h = historyFixture();
+  const archive = {
+    transactionsFor: async (address: string) => address === "closed-loan" ? h.all : address === "middle" ? [h.sell, h.buy] : [h.paid, h.sell],
+    blockSignatures: async () => ["z-sale", "a-payment"],
+  };
+  const seller = await replayPublicActivity("middle", archive);
+  assert.deepEqual(seller.map((r) => r.action), ["buy-position", "sell-position"]);
+  const buyer = await replayPublicActivity("last", archive);
+  assert.equal(buyer.find((r) => r.action === "receive-repayment")?.amountAtoms, "105000000");
+  // Cursor order remains deterministic, but is applied only after chain-order attribution.
+  assert.deepEqual(rowsAfter(buyer, { slot: 3, signature: "buy" }).map((r) => r.action), ["receive-repayment", "buy-position"]);
+});
+
+test("missing block ordering refuses an export instead of guessing the payment recipient", async () => {
+  const h = historyFixture();
+  await assert.rejects(replayPublicActivity("middle", { transactionsFor: async (address) => address === "middle" ? [h.buy] : h.all, blockSignatures: async () => [] }), /order is unavailable/);
+});
+
+test("a closed request-funded loan recovers its principal from the archived request", () => {
+  const tx: ArchivedTransaction = {
+    instructions: [{ name: "fundRequest", accounts: { offer: "loan", request: "request", lender: "lender", wsolMint: "jito" }, data: {} }],
+    events: [archivedEvent(10, "fund", "AcceptedV2", { offer: "loan", borrower: "borrower" })],
+  };
+  const request: ArchivedTransaction = { instructions: [{ name: "createRequest", accounts: { request: "request" }, data: { args: { principal: 123456789n } } }], events: [] };
+  assert.deepEqual(archivedLoanFacts("loan", [tx], [request]), { publicKey: "loan", originLender: "lender", borrower: "borrower", wsolMint: "jito", terms: { principal: 123456789n } });
+  assert.throws(() => archivedLoanFacts("loan", [tx]), /origination history is unavailable/);
+});
+
+test("mandate accounting events export each payment and top-up once, retaining keeper fees", () => {
+  const h = historyFixture();
+  const facts = archivedLoanFacts("closed-loan", h.all);
+  const events = [
+    archivedEvent(8, "repay", "PaymentV2", { used: 100n, closed: false }),
+    archivedEvent(8, "repay", "MandateExecuted", { action: 1, amount: 100n, fee: 2n }),
+    archivedEvent(9, "topup", "CollateralAddedV2", { amount: 300n }),
+    archivedEvent(9, "topup", "MandateExecuted", { action: 0, amount: 300n, fee: 3n }),
+  ];
+  assert.deepEqual(eventsToRows("borrower", facts, events).map((r) => [r.action, r.amountAtoms]), [["repay", "100"], ["keeper-fee", "2"], ["add-collateral", "300"], ["keeper-fee", "3"]]);
+  assert.deepEqual(eventsToRows("original", facts, events).map((r) => [r.action, r.amountAtoms]), [["receive-repayment", "100"]]);
+});
+
+test("RPC archive decodes actual Anchor instruction and event bytes for a closed offer", async () => {
+  const program = readOnlyProgramV2();
+  const lender = Keypair.generate().publicKey;
+  const loan = Keypair.generate().publicKey;
+  const definition = program.idl.instructions.find((i) => i.name === "createOffer")!;
+  const accounts = definition.accounts.map((a) => ({ pubkey: a.name === "lender" ? lender : a.name === "offer" ? loan : Keypair.generate().publicKey, isSigner: a.name === "lender", isWritable: true }));
+  const data = new BorshInstructionCoder(program.idl).encode("createOffer", {
+    offerId: new BN(1), restrictedBorrower: PublicKey.default,
+    args: { principal: new BN(123456789), interestBps: 500, duration: new BN(86400), earlyRepayment: 1, minInterestBps: 0, graceSeconds: new BN(60), lateFeeBps: 0, annualCeilingBps: 10000, collateralAmount: new BN(1000000000), maxLtvBps: 6000, liquidationLtvBps: 7000 },
+  });
+  const message = new TransactionMessage({ payerKey: lender, recentBlockhash: PublicKey.default.toBase58(), instructions: [new TransactionInstruction({ programId: PROGRAM_V2_ID, keys: accounts, data })] }).compileToV0Message();
+  const event = program.idl.events!.find((e) => e.name === "offerCreatedV2")!;
+  const amount = Buffer.alloc(8);
+  amount.writeBigUInt64LE(123456789n);
+  const log = Buffer.concat([Buffer.from(event.discriminator), loan.toBuffer(), lender.toBuffer(), amount]).toString("base64");
+  let reads = 0;
+  const connection = {
+    getSignaturesForAddress: async () => [{ signature: "creation", slot: 1, err: null }],
+    getTransaction: async () => {
+      reads++;
+      return { slot: 1, blockTime: 1800000000, transaction: { message }, meta: { err: null, fee: 5000, loadedAddresses: { writable: [], readonly: [] }, innerInstructions: [], logMessages: [`Program ${PROGRAM_V2_ID} invoke [1]`, `Program data: ${log}`, `Program ${PROGRAM_V2_ID} success`] } };
+    },
+  } as unknown as Connection;
+  const rows = await publicActivityRows(connection, lender.toBase58());
+  assert.deepEqual(rows.map((r) => [r.loan, r.action, r.amountAtoms]), [[loan.toBase58(), "create-offer", "123456789"]]);
+  assert.equal(reads, 1, "wallet and loan discovery share the same transaction cache");
 });
 
 // The private export must never reach a server: no app API route, no Convex, no fetch, anywhere in
