@@ -26,6 +26,7 @@ export const run = internalAction({
       attempt: job.attempts,
       payload: job.payload,
       rpc,
+      canSendAlert: (subscriptionId, chatLinkId, chatId) => ctx.runQuery(internal.alerts.deliveryAllowed, { subscriptionId, chatLinkId, chatId }),
       recordSignature: async (signature, lastValidBlockHeight) => {
         await ctx.runMutation(internal.jobs.recordSignature, { id, signature, lastValidBlockHeight });
       },

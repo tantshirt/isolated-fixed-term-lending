@@ -36,7 +36,8 @@ export type RiskInput = { price: number; baseline: number; liquidationPrice: num
 
 /** The raw level for a price, before hysteresis. */
 export function rawLevel({ price, baseline, liquidationPrice: lp, eligible }: RiskInput): RiskLevel {
-  if (eligible || price <= lp) return 6;
+  if (eligible) return 6;
+  if (price <= lp) return 5;
   const remaining = (price - lp) / price;
   if (remaining <= 0.02) return 5;
   if (remaining <= 0.05) return 4;
@@ -67,6 +68,8 @@ export type AlertState = {
   /** Highest level already announced since the last full recovery. */
   notified: RiskLevel;
   reminders: string[];
+  /** Increments on recovery/rebase so an old completed send cannot suppress a new warning. */
+  cycle?: number;
 };
 
 /**
@@ -75,14 +78,14 @@ export type AlertState = {
  */
 export function step(state: AlertState | null, input: Omit<RiskInput, "baseline"> & { basis: string }): { state: AlertState; send: RiskLevel | null } {
   if (!state || state.basis !== input.basis) {
-    const fresh: AlertState = { baseline: input.price, basis: input.basis, level: 0, notified: 0, reminders: state?.reminders ?? [] };
+    const fresh: AlertState = { baseline: input.price, basis: input.basis, level: 0, notified: 0, reminders: state?.reminders ?? [], cycle: (state?.cycle ?? 0) + 1 };
     const level = rawLevel({ ...input, baseline: input.price });
     return { state: { ...fresh, level, notified: level }, send: level > 0 && level > (state?.notified ?? 0) ? level : null };
   }
   const level = nextLevel(state.level, { ...input, baseline: state.baseline });
   const notified = level === 0 ? 0 : state.notified;
   const send = level > notified ? level : null;
-  return { state: { ...state, level, notified: Math.max(notified, send ?? 0) as RiskLevel }, send };
+  return { state: { ...state, level, cycle: (state.cycle ?? 0) + (level === 0 && state.notified > 0 ? 1 : 0), notified: Math.max(notified, send ?? 0) as RiskLevel }, send };
 }
 
 export type Reminder = { key: string; at: number; words: string };
@@ -112,3 +115,7 @@ export function dueReminders(all: Reminder[], sent: string[], now: number): Remi
 
 /** Private loans: the server never sees terms, so every message is the same generic line. */
 export const GENERIC_PRIVATE_MESSAGE = "You have an update in ZenLo. Open the app to see it.";
+
+export function riskNotificationKey(state: AlertState, level: RiskLevel): string {
+  return `risk:${state.basis}:${state.cycle ?? 0}:${level}`;
+}

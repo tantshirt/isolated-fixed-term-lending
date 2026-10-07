@@ -122,6 +122,7 @@ export default defineSchema({
       v.object({ maturity: v.number(), graceEnd: v.optional(v.number()), pricedFrom: v.optional(v.number()), terminalFrom: v.optional(v.number()) }),
     ),
     state: v.optional(v.any()),
+    revision: v.optional(v.number()),
     active: v.boolean(),
     consentedAt: v.number(),
   })
