@@ -208,8 +208,8 @@ pub fn record_history(ctx: Context<RecordHistory>) -> Result<()> {
 
 /// Ephemeral rollup. The borrower publishes their current counts to `HistoryAttestation` on
 /// Solana through a post-commit action on one of their loan anchors.
-pub fn attest_history(ctx: Context<AttestHistory>) -> Result<()> {
-    let a = &ctx.accounts;
+#[inline(never)]
+fn attestation_args(a: &AttestHistory) -> Result<HistoryAttestationArgs> {
     let borrower = a.borrower.key();
     let t: LoanTerms = load(&a.terms.to_account_info())?;
     require_keys_eq!(t.borrower, borrower, PrivateLoanError::NotBorrower);
@@ -219,7 +219,7 @@ pub fn attest_history(ctx: Context<AttestHistory>) -> Result<()> {
     require_keys_eq!(h.borrower, borrower, PrivateLoanError::NotBorrower);
     let clock = Clock::get()?;
     let anchor = &a.anchor;
-    let args = HistoryAttestationArgs {
+    Ok(HistoryAttestationArgs {
         borrower,
         anchor_creator: anchor.creator,
         anchor_nonce: anchor.nonce,
@@ -231,7 +231,14 @@ pub fn attest_history(ctx: Context<AttestHistory>) -> Result<()> {
         loans_counted: h.count,
         rollup_slot: clock.slot,
         attested_at: clock.unix_timestamp,
-    };
+    })
+}
+
+pub fn attest_history(ctx: Context<AttestHistory>) -> Result<()> {
+    let a = &ctx.accounts;
+    // Keep the large ER records out of the Magic Intent builder's SBF stack frame.
+    let args = attestation_args(a)?;
+    let anchor = &a.anchor;
     let data = anchor_lang::InstructionData::data(&crate::instruction::RecordHistoryAttestation { args });
     let mut anchor_signer = a.anchor.to_account_info();
     anchor_signer.is_signer = true;
