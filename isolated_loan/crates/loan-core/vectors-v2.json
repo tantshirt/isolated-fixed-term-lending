@@ -1,0 +1,696 @@
+{
+  "cases": [
+    {
+      "derived": {
+        "charge_ceiling": "8493150",
+        "full_term_interest": "5000000",
+        "grace_end": 1802678400,
+        "maturity": 1802592000,
+        "max_exposure": "106000000",
+        "min_interest": "1250000",
+        "priced_recovery_from": 1802764800,
+        "terminal_claim_from": 1803283200
+      },
+      "name": "pro-rata, untouched, paid at maturity",
+      "steps": [
+        {
+          "expect": "104999999",
+          "now": 1802591999,
+          "op": "payoff"
+        },
+        {
+          "expect": "106000000",
+          "now": 1802592000,
+          "op": "payoff"
+        },
+        {
+          "amount": "18446744073709551615",
+          "expect": {
+            "adjustment": "0",
+            "closed": true,
+            "interest": "5000000",
+            "late_fee": "1000000",
+            "ledger": {
+              "accrual_remainder": "0",
+              "interest_accrued": "0",
+              "interest_paid": "5000000",
+              "last_accrual_ts": 1802592000,
+              "late_fee_assessed": "1000000",
+              "late_fee_checked": true,
+              "late_fee_paid": "1000000",
+              "outstanding_principal": "0"
+            },
+            "principal": "100000000",
+            "used": "106000000"
+          },
+          "now": 1802592000,
+          "op": "pay"
+        }
+      ],
+      "terms": {
+        "annual_ceiling_bps": 10000,
+        "duration": 2592000,
+        "early_repayment": 1,
+        "grace_seconds": 86400,
+        "interest_bps": 500,
+        "late_fee_bps": 100,
+        "min_interest_bps": 2500,
+        "principal": "100000000",
+        "start_ts": 1800000000
+      }
+    },
+    {
+      "derived": {
+        "charge_ceiling": "8493150",
+        "full_term_interest": "5000000",
+        "grace_end": 1802678400,
+        "maturity": 1802592000,
+        "max_exposure": "106000000",
+        "min_interest": "1250000",
+        "priced_recovery_from": 1802764800,
+        "terminal_claim_from": 1803283200
+      },
+      "name": "pro-rata, early payoff under the minimum",
+      "steps": [
+        {
+          "expect": "101250000",
+          "now": 1800086400,
+          "op": "payoff"
+        },
+        {
+          "amount": "18446744073709551615",
+          "expect": {
+            "adjustment": "1083334",
+            "closed": true,
+            "interest": "166666",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "0",
+              "interest_accrued": "0",
+              "interest_paid": "1250000",
+              "last_accrual_ts": 1800086400,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "0"
+            },
+            "principal": "100000000",
+            "used": "101250000"
+          },
+          "now": 1800086400,
+          "op": "pay"
+        }
+      ],
+      "terms": {
+        "annual_ceiling_bps": 10000,
+        "duration": 2592000,
+        "early_repayment": 1,
+        "grace_seconds": 86400,
+        "interest_bps": 500,
+        "late_fee_bps": 100,
+        "min_interest_bps": 2500,
+        "principal": "100000000",
+        "start_ts": 1800000000
+      }
+    },
+    {
+      "derived": {
+        "charge_ceiling": "8493150",
+        "full_term_interest": "5000000",
+        "grace_end": 1802678400,
+        "maturity": 1802592000,
+        "max_exposure": "106000000",
+        "min_interest": "1250000",
+        "priced_recovery_from": 1802764800,
+        "terminal_claim_from": 1803283200
+      },
+      "name": "pro-rata, partials then late payoff",
+      "steps": [
+        {
+          "amount": "30000000",
+          "expect": {
+            "adjustment": "0",
+            "closed": false,
+            "interest": "1666666",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "17280000000",
+              "interest_accrued": "0",
+              "interest_paid": "1666666",
+              "last_accrual_ts": 1800864000,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "71666666"
+            },
+            "principal": "28333334",
+            "used": "30000000"
+          },
+          "now": 1800864000,
+          "op": "pay"
+        },
+        {
+          "amount": "1",
+          "expect": {
+            "adjustment": "0",
+            "closed": false,
+            "interest": "1",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "2592000000",
+              "interest_accrued": "1194444",
+              "interest_paid": "1666667",
+              "last_accrual_ts": 1801728000,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "71666666"
+            },
+            "principal": "0",
+            "used": "1"
+          },
+          "now": 1801728000,
+          "op": "pay"
+        },
+        {
+          "expect": "74772222",
+          "now": 1802592000,
+          "op": "payoff"
+        },
+        {
+          "amount": "2000000",
+          "expect": {
+            "adjustment": "0",
+            "closed": false,
+            "interest": "2000000",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "0",
+              "interest_accrued": "388889",
+              "interest_paid": "3666667",
+              "last_accrual_ts": 1802592000,
+              "late_fee_assessed": "716667",
+              "late_fee_checked": true,
+              "late_fee_paid": "0",
+              "outstanding_principal": "71666666"
+            },
+            "principal": "0",
+            "used": "2000000"
+          },
+          "now": 1802595600,
+          "op": "pay"
+        },
+        {
+          "amount": "18446744073709551615",
+          "expect": {
+            "adjustment": "0",
+            "closed": true,
+            "interest": "388889",
+            "late_fee": "716667",
+            "ledger": {
+              "accrual_remainder": "0",
+              "interest_accrued": "0",
+              "interest_paid": "4055556",
+              "last_accrual_ts": 1802592000,
+              "late_fee_assessed": "716667",
+              "late_fee_checked": true,
+              "late_fee_paid": "716667",
+              "outstanding_principal": "0"
+            },
+            "principal": "71666666",
+            "used": "72772222"
+          },
+          "now": 1802599200,
+          "op": "pay"
+        }
+      ],
+      "terms": {
+        "annual_ceiling_bps": 10000,
+        "duration": 2592000,
+        "early_repayment": 1,
+        "grace_seconds": 86400,
+        "interest_bps": 500,
+        "late_fee_bps": 100,
+        "min_interest_bps": 2500,
+        "principal": "100000000",
+        "start_ts": 1800000000
+      }
+    },
+    {
+      "derived": {
+        "charge_ceiling": "13150685",
+        "full_term_interest": "7770001",
+        "grace_end": 1800691200,
+        "maturity": 1800604800,
+        "max_exposure": "108770005",
+        "min_interest": "1942501",
+        "priced_recovery_from": 1800777600,
+        "terminal_claim_from": 1801296000
+      },
+      "name": "odd principal, daily small payments",
+      "steps": [
+        {
+          "amount": "13",
+          "expect": {
+            "adjustment": "0",
+            "closed": false,
+            "interest": "13",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "201398400",
+              "interest_accrued": "1109987",
+              "interest_paid": "13",
+              "last_accrual_ts": 1800086400,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "100000003"
+            },
+            "principal": "0",
+            "used": "13"
+          },
+          "now": 1800086400,
+          "op": "pay"
+        },
+        {
+          "amount": "13",
+          "expect": {
+            "adjustment": "0",
+            "closed": false,
+            "interest": "13",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "402796800",
+              "interest_accrued": "2219974",
+              "interest_paid": "26",
+              "last_accrual_ts": 1800172800,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "100000003"
+            },
+            "principal": "0",
+            "used": "13"
+          },
+          "now": 1800172800,
+          "op": "pay"
+        },
+        {
+          "amount": "13",
+          "expect": {
+            "adjustment": "0",
+            "closed": false,
+            "interest": "13",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "604195200",
+              "interest_accrued": "3329961",
+              "interest_paid": "39",
+              "last_accrual_ts": 1800259200,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "100000003"
+            },
+            "principal": "0",
+            "used": "13"
+          },
+          "now": 1800259200,
+          "op": "pay"
+        },
+        {
+          "amount": "13",
+          "expect": {
+            "adjustment": "0",
+            "closed": false,
+            "interest": "13",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "805593600",
+              "interest_accrued": "4439948",
+              "interest_paid": "52",
+              "last_accrual_ts": 1800345600,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "100000003"
+            },
+            "principal": "0",
+            "used": "13"
+          },
+          "now": 1800345600,
+          "op": "pay"
+        },
+        {
+          "amount": "13",
+          "expect": {
+            "adjustment": "0",
+            "closed": false,
+            "interest": "13",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "1006992000",
+              "interest_accrued": "5549935",
+              "interest_paid": "65",
+              "last_accrual_ts": 1800432000,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "100000003"
+            },
+            "principal": "0",
+            "used": "13"
+          },
+          "now": 1800432000,
+          "op": "pay"
+        },
+        {
+          "amount": "13",
+          "expect": {
+            "adjustment": "0",
+            "closed": false,
+            "interest": "13",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "1208390400",
+              "interest_accrued": "6659922",
+              "interest_paid": "78",
+              "last_accrual_ts": 1800518400,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "100000003"
+            },
+            "principal": "0",
+            "used": "13"
+          },
+          "now": 1800518400,
+          "op": "pay"
+        },
+        {
+          "amount": "18446744073709551615",
+          "expect": {
+            "adjustment": "1",
+            "closed": true,
+            "interest": "7769909",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "0",
+              "interest_accrued": "0",
+              "interest_paid": "7769988",
+              "last_accrual_ts": 1800604799,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "0"
+            },
+            "principal": "100000003",
+            "used": "107769913"
+          },
+          "now": 1800604799,
+          "op": "pay"
+        }
+      ],
+      "terms": {
+        "annual_ceiling_bps": 60000,
+        "duration": 604800,
+        "early_repayment": 1,
+        "grace_seconds": 86400,
+        "interest_bps": 777,
+        "late_fee_bps": 100,
+        "min_interest_bps": 2500,
+        "principal": "100000003",
+        "start_ts": 1800000000
+      }
+    },
+    {
+      "derived": {
+        "charge_ceiling": "8493150",
+        "full_term_interest": "5000000",
+        "grace_end": 1802678400,
+        "maturity": 1802592000,
+        "max_exposure": "106000000",
+        "min_interest": "0",
+        "priced_recovery_from": 1802764800,
+        "terminal_claim_from": 1803283200
+      },
+      "name": "full-term, paid early",
+      "steps": [
+        {
+          "expect": "105000000",
+          "now": 1800000001,
+          "op": "payoff"
+        },
+        {
+          "amount": "18446744073709551615",
+          "expect": {
+            "adjustment": "0",
+            "closed": true,
+            "interest": "5000000",
+            "late_fee": "0",
+            "ledger": {
+              "accrual_remainder": "0",
+              "interest_accrued": "0",
+              "interest_paid": "5000000",
+              "last_accrual_ts": 1800000000,
+              "late_fee_assessed": "0",
+              "late_fee_checked": false,
+              "late_fee_paid": "0",
+              "outstanding_principal": "0"
+            },
+            "principal": "100000000",
+            "used": "105000000"
+          },
+          "now": 1800000001,
+          "op": "pay"
+        }
+      ],
+      "terms": {
+        "annual_ceiling_bps": 10000,
+        "duration": 2592000,
+        "early_repayment": 0,
+        "grace_seconds": 86400,
+        "interest_bps": 500,
+        "late_fee_bps": 100,
+        "min_interest_bps": 2500,
+        "principal": "100000000",
+        "start_ts": 1800000000
+      }
+    },
+    {
+      "derived": {
+        "charge_ceiling": "5010958",
+        "full_term_interest": "5000000",
+        "grace_end": 1802678400,
+        "maturity": 1802592000,
+        "max_exposure": "105010958",
+        "min_interest": "0",
+        "priced_recovery_from": 1802764800,
+        "terminal_claim_from": 1803283200
+      },
+      "name": "full-term, tight ceiling clamps the late fee",
+      "steps": [
+        {
+          "expect": "105010958",
+          "now": 1802592000,
+          "op": "payoff"
+        },
+        {
+          "amount": "18446744073709551615",
+          "expect": {
+            "adjustment": "0",
+            "closed": true,
+            "interest": "5000000",
+            "late_fee": "10958",
+            "ledger": {
+              "accrual_remainder": "0",
+              "interest_accrued": "0",
+              "interest_paid": "5000000",
+              "last_accrual_ts": 1800000000,
+              "late_fee_assessed": "10958",
+              "late_fee_checked": true,
+              "late_fee_paid": "10958",
+              "outstanding_principal": "0"
+            },
+            "principal": "100000000",
+            "used": "105010958"
+          },
+          "now": 1802592001,
+          "op": "pay"
+        }
+      ],
+      "terms": {
+        "annual_ceiling_bps": 5900,
+        "duration": 2592000,
+        "early_repayment": 0,
+        "grace_seconds": 86400,
+        "interest_bps": 500,
+        "late_fee_bps": 100,
+        "min_interest_bps": 2500,
+        "principal": "100000000",
+        "start_ts": 1800000000
+      }
+    },
+    {
+      "derived": {
+        "charge_ceiling": "8493150",
+        "full_term_interest": "5000000",
+        "grace_end": 1802678400,
+        "maturity": 1802592000,
+        "max_exposure": "106000000",
+        "min_interest": "1250000",
+        "priced_recovery_from": 1802764800,
+        "terminal_claim_from": 1803283200
+      },
+      "name": "phase boundaries",
+      "steps": [
+        {
+          "expect": "Active",
+          "now": 1802591999,
+          "op": "phase"
+        },
+        {
+          "expect": "Grace",
+          "now": 1802592000,
+          "op": "phase"
+        },
+        {
+          "expect": "Grace",
+          "now": 1802678399,
+          "op": "phase"
+        },
+        {
+          "expect": "Overdue",
+          "now": 1802678400,
+          "op": "phase"
+        },
+        {
+          "expect": "Overdue",
+          "now": 1802764799,
+          "op": "phase"
+        },
+        {
+          "expect": "PricedRecovery",
+          "now": 1802764800,
+          "op": "phase"
+        },
+        {
+          "expect": "PricedRecovery",
+          "now": 1803283199,
+          "op": "phase"
+        },
+        {
+          "expect": "Terminal",
+          "now": 1803283200,
+          "op": "phase"
+        }
+      ],
+      "terms": {
+        "annual_ceiling_bps": 10000,
+        "duration": 2592000,
+        "early_repayment": 1,
+        "grace_seconds": 86400,
+        "interest_bps": 500,
+        "late_fee_bps": 100,
+        "min_interest_bps": 2500,
+        "principal": "100000000",
+        "start_ts": 1800000000
+      }
+    }
+  ],
+  "note": "V2 accounting vectors (Story 20.1). Generated by crates/loan-core/tests/vectors_v2.rs and replayed by tests/loan-math.test.ts. Integers are strings so JavaScript keeps exact values.",
+  "splits": [
+    {
+      "kind": "liquidation",
+      "lamports": "1001001002",
+      "payoff": "105000000",
+      "shortfall": "0",
+      "to_borrower": "265265265",
+      "to_recipient": "735735737",
+      "value": "150000000"
+    },
+    {
+      "kind": "priced_recovery",
+      "lamports": "1001001002",
+      "payoff": "105000000",
+      "shortfall": "0",
+      "to_borrower": "300300300",
+      "to_recipient": "700700702",
+      "value": "150000000"
+    },
+    {
+      "kind": "liquidation",
+      "lamports": "1001001002",
+      "payoff": "105000000",
+      "shortfall": "0",
+      "to_borrower": "0",
+      "to_recipient": "1001001002",
+      "value": "90000000"
+    },
+    {
+      "kind": "priced_recovery",
+      "lamports": "1001001002",
+      "payoff": "105000000",
+      "shortfall": "15000000",
+      "to_borrower": "0",
+      "to_recipient": "1001001002",
+      "value": "90000000"
+    },
+    {
+      "kind": "liquidation",
+      "lamports": "1000",
+      "payoff": "100",
+      "shortfall": "0",
+      "to_borrower": "475",
+      "to_recipient": "525",
+      "value": "200"
+    },
+    {
+      "kind": "priced_recovery",
+      "lamports": "1000",
+      "payoff": "100",
+      "shortfall": "0",
+      "to_borrower": "500",
+      "to_recipient": "500",
+      "value": "200"
+    }
+  ],
+  "triggers": [
+    {
+      "ema": 8000,
+      "expect": "Ordinary",
+      "spot": 8000,
+      "threshold": 8000
+    },
+    {
+      "ema": 7000,
+      "expect": null,
+      "spot": 8200,
+      "threshold": 8000
+    },
+    {
+      "ema": 7000,
+      "expect": "Emergency",
+      "spot": 8300,
+      "threshold": 8000
+    },
+    {
+      "ema": null,
+      "expect": null,
+      "spot": 8299,
+      "threshold": 8000
+    },
+    {
+      "ema": null,
+      "expect": "Emergency",
+      "spot": 8300,
+      "threshold": 8000
+    },
+    {
+      "ema": 9000,
+      "expect": null,
+      "spot": 7999,
+      "threshold": 8000
+    }
+  ]
+}
