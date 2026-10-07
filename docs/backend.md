@@ -169,3 +169,21 @@ The integration follows the official Ramps developer docs (quickstarts/web-solan
 - **Assisted loans.** Operations wallets mark loans the developer helped with using `pilot:markAssisted`.
 - **The report.** `pilot:gate` runs `evaluateGate` from `app/lib/pilot/gate.ts`, which excludes the developer wallets listed in `developer-wallets.json`. It is visible to operations wallets only, at `/devnet/ops`.
 - **No terms.** No amounts or terms are stored.
+
+## Connecting providers
+
+Everything is wired; each provider switches on when its keys exist. Nothing here needs code changes.
+
+1. Accept the Convex Marketplace terms on Vercel, then run `npx convex deploy` from `app/` once. That writes the hosted `NEXT_PUBLIC_CONVEX_URL` and `NEXT_PUBLIC_CONVEX_SITE_URL`.
+2. Copy `app/.env.providers.example` to `app/.env.providers` (gitignored) and fill what you have:
+   - wallet sign-in key (`node scripts/auth-keygen.mjs`),
+   - ops wallets,
+   - Telegram bot token, username and webhook secret,
+   - MoneyGram Ramps secret key and webhook host.
+3. Run `node scripts/connect-providers.mjs` for a dry run that lists what will be set and what is still missing. Then run it again with `--apply`.
+   - It sets the Convex env and registers the Telegram webhook.
+   - It turns on `NEXT_PUBLIC_TELEGRAM_ENABLED` and `NEXT_PUBLIC_MONEYGRAM_ENABLED` on Vercel only when that provider's keys are complete.
+   - It prints the MoneyGram webhook URL to paste into the partner portal.
+4. Redeploy on Vercel. Check with `node scripts/auth-e2e.mjs`, `node scripts/alerts-e2e.mjs`, and one sandbox cash-out from My loans.
+
+A blank key leaves its provider off. Its screens say it is not connected; they never pretend.

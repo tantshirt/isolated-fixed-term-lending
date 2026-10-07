@@ -7,7 +7,8 @@ import { EarlyRepayment, type Ledger, type TermsV2 } from "../loan-math-v2";
 
 export const PRIVATE_V2_ID = new PublicKey(process.env.NEXT_PUBLIC_PRIVATE_V2_PROGRAM_ID || "JAzy8NP6V8AGrAko8vfgrD44BDghN6eLwqB7vjuYhHNq");
 /** New rooms, loans and desks use V2 only where the program is deployed and verified. */
-export const PRIVATE_V2_LIVE = IS_LOCAL || process.env.NEXT_PUBLIC_PRIVATE_V2_LIVE === "1";
+/** Deployed on Devnet (docs/magicblock-evidence.json, "v2"); "0" switches the V2 screens off. */
+export const PRIVATE_V2_LIVE = IS_LOCAL || process.env.NEXT_PUBLIC_PRIVATE_V2_LIVE !== "0";
 
 export const MAX_MEMBERS_V2 = 16;
 export const DESK_MEMBERS = 16;

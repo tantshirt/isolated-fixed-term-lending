@@ -1205,5 +1205,55 @@
         }
       }
     }
+  },
+  "v2Client": {
+    "at": "2026-10-07T10:57:22.540Z",
+    "room": "H2cTo4HzTtRoGWTNxo7u8BhqgiMNpLzm6BtYUpCqf5sG",
+    "desk": "DrKQobdU3mFJd7aRoEx1enjV4nxER39DQYexuarM9MBo",
+    "loan": "2srBoHNrEL9w3sYw8RmnumbRfGRGhirYZRiGwpU7esJb",
+    "checks": {
+      "client-opens-room-and-invites": {
+        "ok": true,
+        "detail": "H2cTo4HzTtRoGWTNxo7u8BhqgiMNpLzm6BtYUpCqf5sG"
+      },
+      "lender-sees-the-borrowing-request": {
+        "ok": true,
+        "detail": 0
+      },
+      "client-opens-desk-and-publishes-policy": {
+        "ok": true,
+        "detail": "member"
+      },
+      "offer-is-under-the-desk": {
+        "ok": true,
+        "detail": "draft"
+      },
+      "borrower-verifies-the-auditor-audience": {
+        "ok": true,
+        "detail": "named"
+      },
+      "auditor-hidden-before-consent": {
+        "ok": true,
+        "detail": "hidden"
+      },
+      "auditor-reads-after-consent": {
+        "ok": true,
+        "detail": "visible"
+      },
+      "partial-repayment-applies": {
+        "ok": true,
+        "detail": "90000"
+      },
+      "top-up-adds-collateral": {
+        "ok": true,
+        "detail": "2734205"
+      },
+      "full-payoff-repays-and-returns-collateral": {
+        "ok": true,
+        "detail": {
+          "status": "repaid"
+        }
+      }
+    }
   }
 }

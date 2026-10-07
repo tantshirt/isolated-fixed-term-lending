@@ -314,3 +314,17 @@ Applied must-fixes: sandbox status words and reference label; dialog focus, Esca
 | "Create a desk", with a note that the wallet signs | Wren | "Open" read as opening an existing desk. |
 
 Applied: all 8 must-fixes; nice-to-haves 1–3 (Home/End, aria-controls on the selected tab only, plainer copy, own list styles, styled pilot error).
+
+## Private rooms with repayment rules (2026-10-07)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| The borrower's offer card is the signing review, with the same figures as the public V2 review (principal, term cost and yearly rate, early-repayment rule, most owed and the ZenLo limit, collateral, grace, late fee, the four-step timeline, the surplus sentence) | Plumb / Fovea | Same economics as a public loan, so the review is not shorter. |
+| "Who else can read this loan" is in the terms; consent sits directly above "Lock wSOL and borrow" | Fovea / Sol | Story 24.1: the audience is agreed at signing. |
+| An audience the room has not shown blocks signing, with a written alert; that check runs from the first render, and consent resets when the audience changes | Plumb / Hollis | Unverifiable is not consent; never shown as "No one". |
+| Status and recovery words match the public V2 set | Sol / Indigo | One vocabulary. |
+| The final claim needs a second click that says the surplus goes to the lender | Fovea / Plumb | Same rule as public V2. |
+| The header puts this wallet's pending loan action first | Ravi / Fovea | Mobile rule. |
+| Repay (USDC) and add collateral (wSOL) are separate fields; machine messages read as words | Wren | Avoids sending the wrong asset. |
+
+Applied: all 8 must-fixes and the 3 nice-to-haves.
