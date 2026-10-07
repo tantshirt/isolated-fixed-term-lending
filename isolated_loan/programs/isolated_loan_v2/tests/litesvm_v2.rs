@@ -1,4 +1,4 @@
-//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2, 26.1, 26.2, 26.3, 26.7). Run `anchor build` first.
+//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2, 26.1, 26.2, 26.3, 26.7, 26.8). Run `anchor build` first.
 //! Every boundary is driven by setting the clock to the exact second. The Pyth account is owned by
 //! the real receiver program, so the owner check is exercised, never bypassed.
 
@@ -1751,3 +1751,256 @@ fn jitosol_top_up_mandate_reads_its_own_feed() {
 // ---- Story 26.7: credit tiers (kept in its own file for easy rebases) ----
 #[path = "credit/mod.rs"]
 mod credit_tests;
+
+// ---- Story 26.8: secondary market ------------------------------------------------------------
+
+use isolated_loan_v2::market::{Listing, LISTING_SEED};
+
+const PRICE: u64 = 95_000_000;
+const ADDRESS: &str = "Custom(2012)"; // ConstraintAddress: a payment account for the wrong lender
+
+fn listing_pda(offer: Pubkey) -> Pubkey {
+    pda(&[LISTING_SEED, offer.as_ref()])
+}
+
+impl Env {
+    fn listing(&self, offer: Pubkey) -> Listing {
+        Listing::try_deserialize(&mut &self.svm.get_account(&listing_pda(offer)).expect("listing exists").data[..]).unwrap()
+    }
+
+    fn list(&mut self, offer: Pubkey, seller: &Keypair, price: u64, expiry: i64) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::ListPosition { seller: seller.pubkey(), offer, listing: listing_pda(offer), system_program: SYSTEM_PROGRAM }
+                .to_account_metas(None),
+            data: isolated_loan_v2::instruction::ListPosition { price, expiry }.data(),
+        };
+        self.send(ix, seller)
+    }
+
+    fn cancel_listing(&mut self, offer: Pubkey, seller: &Keypair) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::CancelListing { seller: seller.pubkey(), listing: listing_pda(offer) }.to_account_metas(None),
+            data: isolated_loan_v2::instruction::CancelListing {}.data(),
+        };
+        self.send(ix, seller)
+    }
+
+    /// `seller` is the wallet the buyer pays; normally the listing's seller.
+    fn buy(&mut self, offer: Pubkey, buyer: &Keypair, seller: Pubkey, expected_price: u64) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::BuyPosition {
+                buyer: buyer.pubkey(),
+                offer,
+                listing: listing_pda(offer),
+                seller,
+                seller_usdc: ata(seller, USDC_MINT),
+                buyer_usdc: ata(buyer.pubkey(), USDC_MINT),
+                token_program: TOKEN_PROGRAM,
+            }
+            .to_account_metas(None),
+            data: isolated_loan_v2::instruction::BuyPosition { expected_price }.data(),
+        };
+        self.send(ix, buyer)
+    }
+
+    fn close_listing(&mut self, offer: Pubkey, seller: Pubkey, payer: &Keypair) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::CloseListing { listing: listing_pda(offer), offer, seller }.to_account_metas(None),
+            data: isolated_loan_v2::instruction::CloseListing {}.data(),
+        };
+        self.send(ix, payer)
+    }
+
+    fn new_wallet(&mut self, usdc: u64) -> Keypair {
+        let k = Keypair::new();
+        self.svm.airdrop(&k.pubkey(), 10_000_000_000).unwrap();
+        self.put_ata(USDC_MINT, k.pubkey(), usdc);
+        self.put_ata(WSOL_MINT, k.pubkey(), 0);
+        k
+    }
+}
+
+#[test]
+fn a_bought_position_pays_every_later_repayment_to_the_buyer() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let (l, buyer) = (env.lender.insecure_clone(), env.stranger.insecure_clone());
+    env.at(START + 5 * DAY);
+    env.list(o, &l, PRICE, START + 10 * DAY).unwrap();
+    let rent = env.svm.get_account(&listing_pda(o)).unwrap().lamports;
+    let (l_usdc, b_usdc, l_sol) = (env.usdc(&l), env.usdc(&buyer), env.svm.get_balance(&l.pubkey()).unwrap());
+    let before = env.offer(o);
+    env.buy(o, &buyer, l.pubkey(), PRICE).unwrap();
+    // The buyer pays exactly the listed price to the seller; the listing rent returns to the seller.
+    assert_eq!(env.usdc(&l) - l_usdc, PRICE);
+    assert_eq!(b_usdc - env.usdc(&buyer), PRICE);
+    assert_eq!(env.svm.get_balance(&l.pubkey()).unwrap() - l_sol, rent);
+    assert!(!env.exists(listing_pda(o)), "the listing closes in the sale");
+    let after = env.offer(o);
+    assert_eq!(after.current_lender, buyer.pubkey());
+    assert_eq!(after.origin_lender, l.pubkey(), "the vault signer never moves");
+    // The borrower's terms and ledger never change.
+    assert_eq!((after.terms, after.ledger, after.collateral_locked, after.status), (before.terms, before.ledger, before.collateral_locked, before.status));
+
+    // Everything paid after the sale, including interest accrued before it, goes to the buyer.
+    env.at(START + 6 * DAY);
+    assert_rejected(env.repay(o, 10_000_000), &[ADDRESS]);
+    let b0 = env.usdc(&buyer);
+    env.repay_to(o, 10_000_000, buyer.pubkey(), WSOL_MINT).unwrap();
+    assert_eq!(env.usdc(&buyer) - b0, 10_000_000);
+    let payoff = env.payoff(o);
+    let l1 = env.usdc(&l);
+    env.repay_to(o, u64::MAX, buyer.pubkey(), WSOL_MINT).unwrap();
+    assert_eq!(env.usdc(&buyer) - b0, 10_000_000 + payoff);
+    assert_eq!(env.usdc(&l), l1, "the seller receives nothing after the sale");
+    assert_eq!(env.offer(o).status, StatusV2::Repaid);
+    // Only the buyer can now close the loan for its rent; the seller cannot.
+    assert_err(env.close(o), LoanV2Error::UnauthorizedLender);
+}
+
+#[test]
+fn a_purchase_racing_a_repayment_has_one_outcome() {
+    let mut env = Env::new();
+    let (l, buyer) = (env.lender.insecure_clone(), env.stranger.insecure_clone());
+    let bought = env.open_loan(1, 1);
+    let repaid = env.open_loan(2, 1);
+    env.at(START + DAY);
+    env.list(bought, &l, PRICE, START + 10 * DAY).unwrap();
+    env.list(repaid, &l, PRICE, START + 10 * DAY).unwrap();
+
+    // Purchase first: a repayment built for the old lender fails; the buyer is paid.
+    env.buy(bought, &buyer, l.pubkey(), PRICE).unwrap();
+    assert_rejected(env.repay(bought, u64::MAX), &[ADDRESS]);
+    env.repay_to(bought, u64::MAX, buyer.pubkey(), WSOL_MINT).unwrap();
+    assert_eq!(env.offer(bought).status, StatusV2::Repaid);
+
+    // Repayment first: the purchase fails and the buyer keeps their USDC.
+    env.repay(repaid, u64::MAX).unwrap();
+    let b0 = env.usdc(&buyer);
+    assert_err(env.buy(repaid, &buyer, l.pubkey(), PRICE), LoanV2Error::WrongStatus);
+    assert_eq!(env.usdc(&buyer), b0);
+    assert_eq!(env.offer(repaid).current_lender, l.pubkey());
+    // The void listing can be closed by anyone; the rent returns to the seller.
+    let s0 = env.svm.get_balance(&l.pubkey()).unwrap();
+    let rent = env.svm.get_account(&listing_pda(repaid)).unwrap().lamports;
+    let anyone = env.new_wallet(0);
+    env.close_listing(repaid, l.pubkey(), &anyone).unwrap();
+    assert_eq!(env.svm.get_balance(&l.pubkey()).unwrap() - s0, rent);
+}
+
+#[test]
+fn a_stale_listing_cannot_be_bought_after_a_sale_or_a_settlement() {
+    let mut env = Env::new();
+    let (l, first) = (env.lender.insecure_clone(), env.stranger.insecure_clone());
+    let second = env.new_wallet(1_000_000_000);
+    let o = env.open_loan(1, 1);
+    env.at(START + DAY);
+    env.list(o, &l, PRICE, START + 10 * DAY).unwrap();
+    env.buy(o, &first, l.pubkey(), PRICE).unwrap();
+    // A second buyer holding the old listing finds it gone.
+    assert_rejected(env.buy(o, &second, l.pubkey(), PRICE), &[CLOSED_VAULT]);
+    // The old seller can no longer list; the new holder can, and listing again updates it.
+    assert_err(env.list(o, &l, PRICE, START + 10 * DAY), LoanV2Error::UnauthorizedLender);
+    env.list(o, &first, PRICE, START + 10 * DAY).unwrap();
+    env.list(o, &first, PRICE + 1, START + 9 * DAY).unwrap();
+    let li = env.listing(o);
+    assert_eq!((li.seller, li.price, li.expiry), (first.pubkey(), PRICE + 1, START + 9 * DAY));
+    // The buyer signed the old price: refused, never charged more.
+    assert_err(env.buy(o, &second, first.pubkey(), PRICE), LoanV2Error::ListingPriceChanged);
+
+    // A listing whose seller no longer holds the position (sold elsewhere; state written directly) is stale.
+    let mut moved = env.offer(o);
+    moved.current_lender = l.pubkey();
+    let mut data = Vec::new();
+    moved.try_serialize(&mut data).unwrap();
+    let mut acct = env.svm.get_account(&o).unwrap();
+    acct.data[..data.len()].copy_from_slice(&data);
+    env.svm.set_account(o, acct).unwrap();
+    assert_err(env.buy(o, &second, first.pubkey(), PRICE + 1), LoanV2Error::StaleListing);
+    assert_err(env.cancel_listing(o, &l), LoanV2Error::UnauthorizedLender);
+    let anyone = env.new_wallet(0);
+    env.close_listing(o, first.pubkey(), &anyone).unwrap();
+
+    // After settlement a listing is unusable, and closable even once the loan account is closed.
+    env.price_usd(150, 150);
+    let o2 = env.open_loan(2, 1);
+    env.list(o2, &l, PRICE, START + 10 * DAY).unwrap();
+    assert_err(env.close_listing(o2, l.pubkey(), &anyone), LoanV2Error::ListingStillValid);
+    env.repay(o2, u64::MAX).unwrap();
+    assert_err(env.buy(o2, &second, l.pubkey(), PRICE), LoanV2Error::WrongStatus);
+    assert_err(env.list(o2, &l, PRICE, START + 10 * DAY), LoanV2Error::WrongStatus);
+    env.close(o2).unwrap();
+    env.close_listing(o2, l.pubkey(), &anyone).unwrap();
+    assert!(!env.exists(listing_pda(o2)));
+}
+
+#[test]
+fn an_expired_listing_or_an_overdue_loan_cannot_be_bought() {
+    let mut env = Env::new();
+    let (l, buyer) = (env.lender.insecure_clone(), env.stranger.insecure_clone());
+    let o = env.open_loan(1, 1);
+    env.at(START + DAY);
+    assert_err(env.list(o, &l, PRICE, START + DAY), LoanV2Error::ListingExpired);
+    assert_err(env.list(o, &l, 0, START + 2 * DAY), LoanV2Error::ZeroAmount);
+    env.list(o, &l, PRICE, START + 2 * DAY).unwrap();
+    env.at(START + 2 * DAY);
+    assert_err(env.buy(o, &buyer, l.pubkey(), PRICE), LoanV2Error::ListingExpired);
+    let anyone = env.new_wallet(0);
+    env.close_listing(o, l.pubkey(), &anyone).unwrap();
+
+    // Grace is still sellable; from the end of grace the loan belongs to recovery.
+    let t = env.terms(o);
+    env.at(t.grace_end() - 1);
+    env.list(o, &l, PRICE, t.grace_end() + DAY).unwrap();
+    env.at(t.grace_end());
+    assert_err(env.buy(o, &buyer, l.pubkey(), PRICE), LoanV2Error::PositionNotSellable);
+    assert_err(env.list(o, &l, PRICE, t.grace_end() + DAY), LoanV2Error::PositionNotSellable);
+    env.cancel_listing(o, &l).unwrap();
+    assert!(!env.exists(listing_pda(o)));
+}
+
+#[test]
+fn only_the_current_lender_lists_and_the_borrower_cannot_buy() {
+    let mut env = Env::new();
+    let (l, b, s) = (env.lender.insecure_clone(), env.borrower.insecure_clone(), env.stranger.insecure_clone());
+    let open = env.create(9, args(1), Pubkey::default()).unwrap();
+    assert_err(env.list(open, &l, PRICE, START + DAY), LoanV2Error::WrongStatus);
+    let o = env.open_loan(1, 1);
+    assert_err(env.list(o, &s, PRICE, START + DAY), LoanV2Error::UnauthorizedLender);
+    assert_err(env.list(o, &b, PRICE, START + DAY), LoanV2Error::UnauthorizedLender);
+    env.list(o, &l, PRICE, START + DAY).unwrap();
+    assert_err(env.cancel_listing(o, &s), LoanV2Error::UnauthorizedLender);
+    assert_err(env.buy(o, &b, l.pubkey(), PRICE), LoanV2Error::SameBorrowerAndLender);
+    // The seller cannot buy their own listing (the same token account twice, or refused outright).
+    assert_rejected(env.buy(o, &l, l.pubkey(), PRICE), &[DUPLICATE, &code(LoanV2Error::InvalidListing)]);
+    // The price goes to the listing's seller, never to a substituted wallet.
+    let other = env.new_wallet(1_000_000_000);
+    assert_err(env.buy(o, &other, s.pubkey(), PRICE), LoanV2Error::StaleListing);
+    // A buyer without enough USDC fails atomically; nothing moves.
+    let poor = env.new_wallet(PRICE - 1);
+    assert!(env.buy(o, &poor, l.pubkey(), PRICE).is_err());
+    assert_eq!(env.offer(o).current_lender, l.pubkey());
+    assert!(env.exists(listing_pda(o)));
+}
+
+#[test]
+fn a_repay_mandate_after_a_sale_pays_the_buyer() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let (l, b, buyer) = (env.lender.insecure_clone(), env.borrower.insecure_clone(), env.stranger.insecure_clone());
+    let t = env.terms(o);
+    env.create_mandate(o, repay_args(20_000_000, 100_000_000, 5 * DAY, t.maturity()), ata(b.pubkey(), USDC_MINT)).unwrap();
+    env.at(START + DAY);
+    env.list(o, &l, PRICE, START + 10 * DAY).unwrap();
+    env.buy(o, &buyer, l.pubkey(), PRICE).unwrap();
+    env.at(t.maturity() - 5 * DAY);
+    let (b0, l0) = (env.usdc(&buyer), env.usdc(&l));
+    // `execute` names the loan's current lender, now the buyer; the old lender's account is refused.
+    env.execute(o, ACTION_REPAY, 0).unwrap();
+    assert_eq!(env.usdc(&buyer) - b0, 20_000_000);
+    assert_eq!(env.usdc(&l), l0);
+}

@@ -9,6 +9,7 @@ import {
   formatWsol,
 } from "@/lib/format";
 import { parseAmount } from "@/lib/offer-validation";
+import { RESALE_NOTICE } from "@/lib/v2/market";
 import { V2_LIVE } from "@/lib/v2/program";
 import { reviewFigures, termsFrom } from "@/lib/v2/rules";
 import type { Perspective, WizardDraft } from "./useDraft";
@@ -114,6 +115,7 @@ export function StepReview({
             ? "wSOL is SOL wrapped in a token account."
             : `${unit} is a ZenLo Devnet test token priced by the real JITOSOL/USD feed, with its own caps of ${asset.maxLtvBps / 100}% max and ${asset.liquidationLtvBps / 100}% liquidation LTV.`}
         </p>
+        <p className={styles.sentence}>{borrower ? RESALE_NOTICE : "Once the loan starts you may sell this position. Payments then go to the new holder; the borrower's terms do not change."}</p>
         <dl className={styles.terms}>
           {v2rows.map((r) => (
             <div key={r.label} className={styles.termRowItem}>

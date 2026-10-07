@@ -30,6 +30,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   SameMint: "USDC and wSOL must be different tokens.",
   MintNotAllowed: "Only Devnet USDC and wrapped SOL are accepted.",
   OfferNotSettled: "Only a settled offer can be closed.",
+  // Story 26.8: secondary market.
+  PositionNotSellable: "Only a loan before the end of grace can be sold.",
+  StaleListing: "The seller no longer holds this position, so the listing is void.",
+  ListingExpired: "This listing has expired.",
+  ListingPriceChanged: "The seller changed the price. Nothing moved; review the new price.",
+  InvalidListing: "That listing does not match this loan or wallet.",
+  ListingStillValid: "This listing is still open; only its seller can cancel it.",
+  BuyerNotAllowed: "The buyer must be a wallet other than the seller and the borrower.",
 };
 
 const WALLET_MESSAGES: [RegExp, string][] = [

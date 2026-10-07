@@ -12,6 +12,7 @@ import { useOffersV2 } from "@/lib/v2/hooks";
 import type { OfferV2 } from "@/lib/v2/offers";
 import { REFINANCE_SIGNING_ALLOWANCE, refinanceCandidates } from "@/lib/v2/refinance";
 import * as v2 from "@/lib/v2/transactions";
+import { RESALE_NOTICE } from "@/lib/v2/market";
 import styles from "@/components/offer/ActionPanel.module.css";
 
 type Props = {
@@ -97,6 +98,7 @@ export function RefinancePanel({ offer, action, signer, now, balances, busy, run
           <strong>From {formatDeadline(terminalClaimFrom(startsAt))} the new lender may take all of your collateral, even if it is worth more than you owe.</strong>
         </li>
         <li>Your old loan ends as refinanced, not repaid. No cash is paid out to you.</li>
+        <li>{RESALE_NOTICE}</li>
       </ul>
       <Button
         size="lg"

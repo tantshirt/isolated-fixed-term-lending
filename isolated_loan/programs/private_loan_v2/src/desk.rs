@@ -495,7 +495,7 @@ pub fn hash_readers(readers: &[Pubkey]) -> [u8; 32] {
 }
 
 /// The caller passes the current reader list; it must hash to what the loan recorded.
-fn current_readers(t: &LoanTerms, readers: Vec<Pubkey>) -> Result<Vec<Pubkey>> {
+pub(crate) fn current_readers(t: &LoanTerms, readers: Vec<Pubkey>) -> Result<Vec<Pubkey>> {
     // Before acceptance the policy's list is a proposed audience, not an existing grant.
     // Rewriting it would grant the remaining auditors access without borrower consent.
     // Accepted revisions remain set after settlement, allowing later revocation too.

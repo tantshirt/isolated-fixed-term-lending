@@ -11,6 +11,7 @@ import { auditorHash, type LoanTermsV2 } from "@/lib/private/v2-codec";
 import { acceptV2, cancelV2, claimV2, fundV2, removeReaderV2, repayV2, shareAuditorsV2, topUpV2 } from "@/lib/private/v2-loans";
 import { audienceFor, resolveAudience, fullPayoffAmount, sharedAuditors, v2LoanState, type Audience } from "@/lib/private/v2-room-view";
 import { reviewFigures } from "@/lib/v2/rules";
+import { RESALE_NOTICE } from "@/lib/v2/market";
 import shared from "../private.module.css";
 import s from "../desk/Desk.module.css";
 import { REFINANCED_WORD } from "@/lib/phase-words";
@@ -129,6 +130,14 @@ export function V2LoanCard({ index, anchor, terms: t, messages, now, ctx }: { in
         </div>
         {t.status === "active" ? (
           <>
+            {state.role === "borrower" && !t.currentLender.equals(t.originLender) && (
+              <div>
+                <dt>You now pay</dt>
+                <dd>
+                  Your lender sold this loan. Payments go to <span className="mono">{shortKey(t.currentLender.toBase58())}</span>.
+                </dd>
+              </div>
+            )}
             <div>
               <dt>Due</dt>
               <dd className="num">{formatDeadline(f.maturity)}</dd>
@@ -210,6 +219,7 @@ export function V2LoanCard({ index, anchor, terms: t, messages, now, ctx }: { in
           <p>
             <strong>Repay any time before a settlement executes and you keep all your wSOL. After the final claim time, you can lose any surplus.</strong>
           </p>
+          <p>{RESALE_NOTICE} The new holder can then read this loan in place of the lender.</p>
           {audience.kind === "unverified" ? (
             <p role="alert" className={shared.error}>
               This loan names auditors the room has not shown. Do not sign. Ask the lender to share the auditor list.
