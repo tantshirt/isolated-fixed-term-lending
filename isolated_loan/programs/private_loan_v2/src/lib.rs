@@ -16,6 +16,7 @@ pub mod error;
 pub mod espl;
 pub mod loan;
 pub mod receipt;
+pub mod refinance;
 pub mod room;
 pub mod schedule;
 pub mod settle;
@@ -26,6 +27,7 @@ use desk::*;
 use discovery::*;
 use loan::*;
 use receipt::*;
+use refinance::*;
 use room::*;
 use settle::*;
 
@@ -119,6 +121,12 @@ pub mod private_loan_v2 {
     /// Ephemeral rollup. Borrower accepts `revision`: one accepted proposal per borrowing request.
     pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32, auditor_hash: [u8; 32]) -> Result<()> {
         loan::accept_loan(ctx, revision, auditor_hash)
+    }
+
+    /// Ephemeral rollup. Borrower moves an Active or Grace loan into a funded proposal made to them,
+    /// with fresh consent to its `revision` and auditor audience (Story 26.1).
+    pub fn refinance(ctx: Context<Refinance>, revision: u32, auditor_hash: [u8; 32], max_contribution: u64) -> Result<()> {
+        refinance::refinance(ctx, revision, auditor_hash, max_contribution)
     }
 
     /// Ephemeral rollup. Borrower pays part or all of the payoff, in any phase until settlement.

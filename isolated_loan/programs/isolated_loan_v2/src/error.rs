@@ -63,6 +63,13 @@ pub enum LoanV2Error {
     InvalidAuthorities,
     #[msg("Only the program upgrade authority can initialize the config")]
     NotUpgradeAuthority,
+    // Story 26.1. Appended so existing error codes do not move.
+    #[msg("New principal is above the old loan's payoff; refinancing never pays cash out")]
+    RefinanceCashOut,
+    #[msg("Only Active and Grace loans can refinance")]
+    RefinanceClosed,
+    #[msg("The new offer must lend the same asset against the same collateral")]
+    RefinanceMismatch,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

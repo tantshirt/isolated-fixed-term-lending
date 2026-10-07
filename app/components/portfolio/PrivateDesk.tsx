@@ -11,6 +11,7 @@ import type { BidState } from "@/lib/private/inbox";
 import { useMyRooms } from "@/lib/private/use-rooms";
 import { usePrivate } from "@/lib/private/use-private";
 import s from "./MyLoans.module.css";
+import { REFINANCED_WORD } from "@/lib/phase-words";
 
 const BID_WORDS: Record<BidState, { label: string; detail: string }> = {
   draft: { label: "Proposed", detail: "Not funded yet. Lock USDC in the room when the terms look right." },
@@ -145,6 +146,7 @@ const V2_WORDS: Record<string, string> = {
   overdueLiquidated: "Settled after grace",
   pricedRecovered: "Recovered at the market price",
   terminalClaimed: "Collateral claimed",
+  refinanced: REFINANCED_WORD,
   liquidated: "Liquidated",
 };
 

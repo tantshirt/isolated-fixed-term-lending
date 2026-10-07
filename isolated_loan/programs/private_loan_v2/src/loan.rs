@@ -40,6 +40,8 @@ pub const STATUS_LIQUIDATED: u8 = 6;
 pub const STATUS_OVERDUE_LIQUIDATED: u8 = 7;
 pub const STATUS_PRICED_RECOVERED: u8 = 8;
 pub const STATUS_TERMINAL_CLAIMED: u8 = 9;
+/// Moved into a new loan by `refinance` (Story 26.1); never counted as a repayment.
+pub const STATUS_REFINANCED: u8 = 10;
 
 #[account]
 #[derive(InitSpace)]
@@ -468,6 +470,95 @@ pub fn cancel_loan(ctx: Context<LenderMoves>) -> Result<()> {
     store(&info, &t)
 }
 
+/// The optional ER accounts an origination needs: the room deal record and, for desk loans, the
+/// pinned policy and the terms permission. Shared by `accept_loan` and `refinance` (Story 26.1).
+pub(crate) struct OriginationAccounts<'a, 'info> {
+    pub deal: Option<&'a UncheckedAccount<'info>>,
+    pub deal_permission: Option<&'a UncheckedAccount<'info>>,
+    pub vault: Option<&'a UncheckedAccount<'info>>,
+    pub magic_program: Option<&'a Program<'info, MagicProgram>>,
+    pub permission_program: Option<&'a Program<'info, PermissionProgram>>,
+    pub terms_permission: Option<&'a UncheckedAccount<'info>>,
+    pub desk_policy: Option<&'a UncheckedAccount<'info>>,
+}
+
+impl<'info> OriginationAccounts<'_, 'info> {
+    /// Desk loans re-check the pinned policy; its auditors become read-only members.
+    pub(crate) fn desk_auditors(&self, t: &LoanTerms) -> Result<Vec<Pubkey>> {
+        if t.desk == Pubkey::default() {
+            return Ok(Vec::new());
+        }
+        let policy_info = self.desk_policy.ok_or(error!(PrivateLoanError::InvalidRecord))?;
+        Ok(crate::desk::check_desk_policy(t, &policy_info.to_account_info())?.args.auditors().to_vec())
+    }
+
+    /// One accepted proposal per borrowing request: the first acceptance records itself, and any
+    /// competing proposal for the same request fails. Other requests in the room are unaffected.
+    pub(crate) fn record_deal(&self, anchor: &Account<'info, LoanAnchor>, t: &LoanTerms) -> Result<()> {
+        let deal = self.deal.ok_or(error!(PrivateLoanError::InvalidRecord))?;
+        let loan_key = anchor.key();
+        let request = t.request_index.to_le_bytes();
+        let (expected, bump) = Pubkey::find_program_address(&[ROOM_DEAL_SEED, anchor.room.as_ref(), &request], &crate::ID);
+        require_keys_eq!(deal.key(), expected, PrivateLoanError::InvalidRecord);
+        if deal.data_is_empty() {
+            let room = anchor.room;
+            let bump = [bump];
+            let missing = || error!(PrivateLoanError::InvalidRecord);
+            create_loan_record(
+                anchor,
+                &deal.to_account_info(),
+                &self.deal_permission.ok_or_else(missing)?.to_account_info(),
+                &[ROOM_DEAL_SEED, room.as_ref(), &request, &bump],
+                32,
+                vec![Member { flags: TX_LOGS_FLAG | TX_BALANCES_FLAG | TX_MESSAGE_FLAG, pubkey: t.borrower }],
+                &self.vault.ok_or_else(missing)?.to_account_info(),
+                &self.magic_program.ok_or_else(missing)?.to_account_info(),
+                &self.permission_program.ok_or_else(missing)?.to_account_info(),
+            )?;
+            deal.to_account_info().try_borrow_mut_data()?[..32].copy_from_slice(loan_key.as_ref());
+        } else {
+            let d = deal.to_account_info();
+            require_keys_eq!(*d.owner, crate::ID, PrivateLoanError::InvalidRecord);
+            let accepted = Pubkey::new_from_array(d.try_borrow_data()?[..32].try_into().unwrap());
+            require_keys_eq!(accepted, loan_key, PrivateLoanError::CompetingOfferAccepted);
+        }
+        Ok(())
+    }
+
+    /// Adds the consented auditors to the loan's terms permission.
+    pub(crate) fn grant_auditors(&self, anchor: &Account<'info, LoanAnchor>, info: &AccountInfo<'info>, t: &LoanTerms, auditors: &[Pubkey]) -> Result<()> {
+        if auditors.is_empty() {
+            return Ok(());
+        }
+        let missing = || error!(PrivateLoanError::InvalidRecord);
+        let (_, terms_bump) = Pubkey::find_program_address(&[LOAN_TERMS_SEED, anchor.key().as_ref()], &crate::ID);
+        crate::desk::set_loan_readers(
+            anchor,
+            info,
+            terms_bump,
+            &self.terms_permission.ok_or_else(missing)?.to_account_info(),
+            &self.vault.ok_or_else(missing)?.to_account_info(),
+            &self.magic_program.ok_or_else(missing)?.to_account_info(),
+            &self.permission_program.ok_or_else(missing)?.to_account_info(),
+            crate::desk::loan_readers(t, auditors),
+        )
+    }
+}
+
+/// Starts `t` now after the origination LTV check: maximum contractual exposure against the
+/// conservative spot value of the required collateral. Returns the started terms.
+pub(crate) fn check_origination(t: &mut LoanTerms, price_update: &AccountInfo, clock: &Clock) -> Result<TermsV2> {
+    t.start_ts = clock.unix_timestamp;
+    let terms = t.core_terms()?;
+    terms.validate().map_err(core_error)?;
+    let exposure = terms.max_exposure().map_err(core_error)?;
+    let price = loan_core::oracle::read_sol_usd_price(price_update, clock).map_err(core_error)?;
+    let value = math::collateral_value_usdc(t.collateral_required, price.price, price.conf, price.exponent).map_err(core_error)?;
+    let ltv = math::current_ltv_bps(exposure, value).map_err(core_error)?;
+    require!(ltv <= t.max_ltv_bps, PrivateLoanError::InsufficientCollateral);
+    Ok(terms)
+}
+
 /// Borrower approves the same `revision`: collateral in, principal out. Origination LTV uses
 /// the maximum contractual exposure. `auditor_hash` is the audience the borrower was shown;
 /// for a desk loan it must match the pinned policy, which is checked again here, and the named
@@ -481,52 +572,12 @@ pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32, auditor_hash: [u8
     require!(t.revision == revision && t.funded_revision == revision, PrivateLoanError::StaleRevision);
     require!(t.auditor_hash == auditor_hash, PrivateLoanError::AuditorMismatch);
     a.check_accounts(&t)?;
-    let auditors: Vec<Pubkey> = if t.desk != Pubkey::default() {
-        let policy_info = a.desk_policy.as_ref().ok_or(error!(PrivateLoanError::InvalidRecord))?;
-        crate::desk::check_desk_policy(&t, &policy_info.to_account_info())?.args.auditors().to_vec()
-    } else {
-        Vec::new()
-    };
-
-    // One accepted proposal per borrowing request: the first acceptance records itself, and any
-    // competing proposal for the same request fails. Other requests in the room are unaffected.
-    let deal = a.deal.as_ref().ok_or(error!(PrivateLoanError::InvalidRecord))?;
-    let loan_key = a.anchor.key();
-    let request = t.request_index.to_le_bytes();
-    let (expected, bump) = Pubkey::find_program_address(&[ROOM_DEAL_SEED, a.anchor.room.as_ref(), &request], &crate::ID);
-    require_keys_eq!(deal.key(), expected, PrivateLoanError::InvalidRecord);
-    if deal.data_is_empty() {
-        let room = a.anchor.room;
-        let bump = [bump];
-        let missing = || error!(PrivateLoanError::InvalidRecord);
-        create_loan_record(
-            &a.anchor,
-            &deal.to_account_info(),
-            &a.deal_permission.as_ref().ok_or_else(missing)?.to_account_info(),
-            &[ROOM_DEAL_SEED, room.as_ref(), &request, &bump],
-            32,
-            vec![Member { flags: TX_LOGS_FLAG | TX_BALANCES_FLAG | TX_MESSAGE_FLAG, pubkey: t.borrower }],
-            &a.vault.as_ref().ok_or_else(missing)?.to_account_info(),
-            &a.magic_program.as_ref().ok_or_else(missing)?.to_account_info(),
-            &a.permission_program.as_ref().ok_or_else(missing)?.to_account_info(),
-        )?;
-        deal.to_account_info().try_borrow_mut_data()?[..32].copy_from_slice(loan_key.as_ref());
-    } else {
-        let d = deal.to_account_info();
-        require_keys_eq!(*d.owner, crate::ID, PrivateLoanError::InvalidRecord);
-        let accepted = Pubkey::new_from_array(d.try_borrow_data()?[..32].try_into().unwrap());
-        require_keys_eq!(accepted, loan_key, PrivateLoanError::CompetingOfferAccepted);
-    }
+    let er = a.origination();
+    let auditors = er.desk_auditors(&t)?;
+    er.record_deal(&a.anchor, &t)?;
 
     let clock = Clock::get()?;
-    t.start_ts = clock.unix_timestamp;
-    let terms = t.core_terms()?;
-    terms.validate().map_err(core_error)?;
-    let exposure = terms.max_exposure().map_err(core_error)?;
-    let price = loan_core::oracle::read_sol_usd_price(&a.price_update, &clock).map_err(core_error)?;
-    let value = math::collateral_value_usdc(t.collateral_required, price.price, price.conf, price.exponent).map_err(core_error)?;
-    let ltv = math::current_ltv_bps(exposure, value).map_err(core_error)?;
-    require!(ltv <= t.max_ltv_bps, PrivateLoanError::InsufficientCollateral);
+    let terms = check_origination(&mut t, &a.price_update, &clock)?;
 
     transfer(&a.token_program, &a.borrower_wsol, &a.loan_wsol, &a.borrower.to_account_info(), None, t.collateral_required)?;
     loan_signer!(a.anchor, nonce, seeds);
@@ -536,20 +587,7 @@ pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32, auditor_hash: [u8
     t.collateral_locked = t.collateral_required;
     t.status = STATUS_ACTIVE;
     t.accepted_revision = revision;
-    if !auditors.is_empty() {
-        let missing = || error!(PrivateLoanError::InvalidRecord);
-        let (_, terms_bump) = Pubkey::find_program_address(&[LOAN_TERMS_SEED, a.anchor.key().as_ref()], &crate::ID);
-        crate::desk::set_loan_readers(
-            &a.anchor,
-            &info,
-            terms_bump,
-            &a.terms_permission.as_ref().ok_or_else(missing)?.to_account_info(),
-            &a.vault.as_ref().ok_or_else(missing)?.to_account_info(),
-            &a.magic_program.as_ref().ok_or_else(missing)?.to_account_info(),
-            &a.permission_program.as_ref().ok_or_else(missing)?.to_account_info(),
-            crate::desk::loan_readers(&t, &auditors),
-        )?;
-    }
+    er.grant_auditors(&a.anchor, &info, &t, &auditors)?;
     store(&info, &t)
 }
 
@@ -824,6 +862,20 @@ impl LenderClaim<'_> {
         require_ata(&self.loan_wsol, &self.anchor.key(), &self.anchor.wsol_mint)?;
         require_ata(&self.lender_wsol, &t.current_lender, &self.anchor.wsol_mint)?;
         require_ata(&self.borrower_wsol, &t.borrower, &self.anchor.wsol_mint)
+    }
+}
+
+impl<'info> BorrowerMoves<'info> {
+    fn origination(&self) -> OriginationAccounts<'_, 'info> {
+        OriginationAccounts {
+            deal: self.deal.as_ref(),
+            deal_permission: self.deal_permission.as_ref(),
+            vault: self.vault.as_ref(),
+            magic_program: self.magic_program.as_ref(),
+            permission_program: self.permission_program.as_ref(),
+            terms_permission: self.terms_permission.as_ref(),
+            desk_policy: self.desk_policy.as_ref(),
+        }
     }
 }
 

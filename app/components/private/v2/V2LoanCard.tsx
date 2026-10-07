@@ -13,6 +13,7 @@ import { audienceFor, resolveAudience, fullPayoffAmount, sharedAuditors, v2LoanS
 import { reviewFigures } from "@/lib/v2/rules";
 import shared from "../private.module.css";
 import s from "../desk/Desk.module.css";
+import { REFINANCED_WORD } from "@/lib/phase-words";
 
 const STATUS: Record<string, string> = {
   draft: "Draft offer",
@@ -24,6 +25,7 @@ const STATUS: Record<string, string> = {
   overdueLiquidated: "Settled after grace",
   pricedRecovered: "Recovered at the market price",
   terminalClaimed: "Collateral claimed",
+  refinanced: REFINANCED_WORD,
 };
 
 type Ctx = { base: Connection; er: Connection; signer: LoanSigner; room: PublicKey; onDone: () => void };

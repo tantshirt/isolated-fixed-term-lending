@@ -3942,6 +3942,178 @@
       ]
     },
     {
+      "name": "refinance",
+      "docs": [
+        "Ephemeral rollup. Borrower moves an Active or Grace loan into a funded proposal made to them,",
+        "with fresh consent to its `revision` and auditor audience (Story 26.1)."
+      ],
+      "discriminator": [
+        16,
+        87,
+        1,
+        165,
+        192,
+        240,
+        231,
+        242
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "signer": true
+        },
+        {
+          "name": "old_anchor"
+        },
+        {
+          "name": "old_terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "old_anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "old_loan_wsol",
+          "writable": true
+        },
+        {
+          "name": "old_lender_usdc",
+          "writable": true
+        },
+        {
+          "name": "new_anchor",
+          "docs": [
+            "Writable: on first acceptance of its request it pays rent for the room deal record."
+          ],
+          "writable": true
+        },
+        {
+          "name": "new_terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "new_anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_loan_usdc",
+          "writable": true
+        },
+        {
+          "name": "new_loan_wsol",
+          "writable": true
+        },
+        {
+          "name": "borrower_usdc",
+          "writable": true
+        },
+        {
+          "name": "borrower_wsol",
+          "writable": true
+        },
+        {
+          "name": "price_update"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "deal",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "deal_permission",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "optional": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "optional": true,
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "permission_program",
+          "optional": true,
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        },
+        {
+          "name": "terms_permission",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "desk_policy",
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "revision",
+          "type": "u32"
+        },
+        {
+          "name": "auditor_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "max_contribution",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "refund_ticket",
       "docs": [
         "Ephemeral rollup. Anyone refunds a liquidator's dead tickets to their own USDC account."
@@ -5410,6 +5582,26 @@
       "code": 6049,
       "name": "AuditorMismatch",
       "msg": "The auditor audience differs from the one shown for signing"
+    },
+    {
+      "code": 6050,
+      "name": "RefinanceCashOut",
+      "msg": "New principal is above the old loan's payoff; refinancing never pays cash out"
+    },
+    {
+      "code": 6051,
+      "name": "RefinanceClosed",
+      "msg": "Only Active and Grace loans can refinance"
+    },
+    {
+      "code": 6052,
+      "name": "RefinanceMismatch",
+      "msg": "The new loan must lend the same asset against the same collateral"
+    },
+    {
+      "code": 6053,
+      "name": "PaymentAboveLimit",
+      "msg": "Payment exceeds the bound the borrower signed"
     }
   ],
   "types": [

@@ -1708,6 +1708,188 @@
       "args": []
     },
     {
+      "name": "refinance_into",
+      "docs": [
+        "Story 26.1. The borrower moves an Active or Grace loan into an open offer, atomically: the",
+        "old lender receives exactly the old payoff (the new principal plus the borrower's",
+        "contribution), collateral moves vault to vault, and the new loan starts now after passing",
+        "origination against a fresh price with its own terms. The old loan ends `Refinanced`.",
+        "`max_contribution` is the most the borrower signed for, in case interest accrues meanwhile."
+      ],
+      "discriminator": [
+        155,
+        207,
+        112,
+        65,
+        153,
+        242,
+        89,
+        15
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "docs": [
+            "Signs every refinance; pays the new collateral vault's rent and receives the old one's."
+          ],
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "old_offer"
+          ]
+        },
+        {
+          "name": "old_offer",
+          "writable": true
+        },
+        {
+          "name": "old_wsol_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  115,
+                  111,
+                  108,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  45,
+                  118,
+                  50
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "old_offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "old_lender"
+        },
+        {
+          "name": "old_lender_usdc",
+          "writable": true
+        },
+        {
+          "name": "new_offer",
+          "writable": true
+        },
+        {
+          "name": "new_lender",
+          "docs": [
+            "Receives the USDC vault rent the new lender paid at create."
+          ],
+          "writable": true
+        },
+        {
+          "name": "new_usdc_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  45,
+                  118,
+                  50
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "new_offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_lender_usdc",
+          "docs": [
+            "Receives any USDC in the new offer's vault beyond its principal; refinancing never pays the borrower.",
+            "The same account as `old_lender_usdc` in a same-lender rollover. Token accounts are only",
+            "written by the token program here, so the duplicate is safe."
+          ],
+          "writable": true
+        },
+        {
+          "name": "wsol_mint"
+        },
+        {
+          "name": "new_wsol_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  115,
+                  111,
+                  108,
+                  45,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  45,
+                  118,
+                  50
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "new_offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "borrower_usdc",
+          "writable": true
+        },
+        {
+          "name": "borrower_wsol",
+          "writable": true
+        },
+        {
+          "name": "price_update"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "max_contribution",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "repay",
       "docs": [
         "Pays up to `amount`: accrued interest, then late fee, then principal. A payment at or above",
@@ -2058,6 +2240,19 @@
       ]
     },
     {
+      "name": "RefinancedV2",
+      "discriminator": [
+        53,
+        134,
+        141,
+        206,
+        234,
+        154,
+        191,
+        190
+      ]
+    },
+    {
       "name": "SettledV2",
       "discriminator": [
         5,
@@ -2221,6 +2416,21 @@
       "code": 6029,
       "name": "NotUpgradeAuthority",
       "msg": "Only the program upgrade authority can initialize the config"
+    },
+    {
+      "code": 6030,
+      "name": "RefinanceCashOut",
+      "msg": "New principal is above the old loan's payoff; refinancing never pays cash out"
+    },
+    {
+      "code": 6031,
+      "name": "RefinanceClosed",
+      "msg": "Only Active and Grace loans can refinance"
+    },
+    {
+      "code": 6032,
+      "name": "RefinanceMismatch",
+      "msg": "The new offer must lend the same asset against the same collateral"
     }
   ],
   "types": [
@@ -2699,6 +2909,53 @@
       }
     },
     {
+      "name": "RefinancedV2",
+      "docs": [
+        "Story 26.1. `payoff_old == new_principal + contribution`, all paid to the old lender."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "payoff_old",
+            "type": "u64"
+          },
+          {
+            "name": "new_principal",
+            "type": "u64"
+          },
+          {
+            "name": "contribution",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_moved",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_returned",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_added",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "RequestStatusV2",
       "type": {
         "kind": "enum",
@@ -2863,6 +3120,9 @@
           },
           {
             "name": "Cancelled"
+          },
+          {
+            "name": "Refinanced"
           }
         ]
       }

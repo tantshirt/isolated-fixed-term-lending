@@ -6,6 +6,7 @@ import { v2LoanView } from "@/lib/models/loan-view";
 import type { PriceSnapshot } from "@/lib/offer-status";
 import { offerV2Href, type OfferV2 } from "@/lib/v2/offers";
 import styles from "./OfferRow.module.css";
+import { REFINANCED_WORD } from "@/lib/phase-words";
 
 const WORDS: Record<OfferV2["status"], string> = {
   open: "Open offer",
@@ -16,6 +17,7 @@ const WORDS: Record<OfferV2["status"], string> = {
   pricedRecovered: "Recovered",
   terminalClaimed: "Collateral claimed",
   cancelled: "Cancelled",
+  refinanced: REFINANCED_WORD,
 };
 
 /** A repayment-rules (V2) offer in the same row layout as V1 offers. */

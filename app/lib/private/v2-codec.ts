@@ -28,6 +28,7 @@ export const LOAN_STATUS_V2 = {
   7: "overdueLiquidated",
   8: "pricedRecovered",
   9: "terminalClaimed",
+  10: "refinanced",
 } as const;
 export type LoanStatusV2 = (typeof LOAN_STATUS_V2)[keyof typeof LOAN_STATUS_V2];
 
