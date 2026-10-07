@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { PHASE_WORDS } from "@/lib/phase-words";
+import { PHASE_WORDS, REFINANCED_WORD } from "@/lib/phase-words";
 import { PublicKey } from "@solana/web3.js";
 import { useMemo, useState } from "react";
 import { Spot } from "@/components/brand/Spot";
@@ -39,6 +39,7 @@ const TITLES: Record<OfferV2["status"], string> = {
   pricedRecovered: "Recovered at the market price",
   terminalClaimed: "Collateral claimed",
   cancelled: "Cancelled",
+  refinanced: REFINANCED_WORD,
 };
 
 const PHASE_TITLES: Record<NonNullable<LoanView["phase"]>, string> = PHASE_WORDS;

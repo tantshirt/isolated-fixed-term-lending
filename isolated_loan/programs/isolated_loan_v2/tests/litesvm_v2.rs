@@ -1,4 +1,4 @@
-//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2, 26.2). Run `anchor build` first.
+//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2, 26.1, 26.2). Run `anchor build` first.
 //! Every boundary is driven by setting the clock to the exact second. The Pyth account is owned by
 //! the real receiver program, so the owner check is exercised, never bypassed.
 
@@ -287,6 +287,10 @@ impl Env {
 
     fn create_with(&mut self, id: u64, a: TermsArgs, restricted: Pubkey, mint: Pubkey, extra: Vec<AccountMeta>) -> Result<Pubkey, String> {
         let lender = self.lender.insecure_clone();
+        self.create_by(&lender, id, a, restricted, mint, extra)
+    }
+
+    fn create_by(&mut self, lender: &Keypair, id: u64, a: TermsArgs, restricted: Pubkey, mint: Pubkey, extra: Vec<AccountMeta>) -> Result<Pubkey, String> {
         let offer = offer_pda(lender.pubkey(), id);
         let mut accounts = isolated_loan_v2::accounts::CreateOffer {
                 lender: lender.pubkey(),
@@ -306,7 +310,7 @@ impl Env {
             accounts,
             data: isolated_loan_v2::instruction::CreateOffer { offer_id: id, args: a, restricted_borrower: restricted }.data(),
         };
-        self.send(ix, &lender).map(|_| offer)
+        self.send(ix, lender).map(|_| offer)
     }
 
     fn accept_as(&mut self, offer: Pubkey, b: &Keypair) -> Result<(), String> {
@@ -444,6 +448,59 @@ impl Env {
             data: isolated_loan_v2::instruction::CloseOffer {}.data(),
         };
         self.send(ix, &l)
+    }
+
+    /// Story 26.1: `b` moves `old` into the open offer `new`, signing for at most `max` USDC.
+    #[allow(clippy::too_many_arguments)]
+    fn refinance_with(&mut self, old: Pubkey, new: Pubkey, b: &Keypair, max: u64, mint: Pubkey, price: Pubkey, extra: Vec<AccountMeta>) -> Result<(), String> {
+        let (o, n) = (self.offer(old), self.offer(new));
+        let mut accounts = isolated_loan_v2::accounts::RefinanceInto {
+            borrower: b.pubkey(),
+            old_offer: old,
+            old_wsol_vault: pda(&[WSOL_VAULT_SEED, old.as_ref()]),
+            old_lender: o.current_lender,
+            old_lender_usdc: ata(o.current_lender, USDC_MINT),
+            new_offer: new,
+            new_lender: n.origin_lender,
+            new_usdc_vault: pda(&[USDC_VAULT_SEED, new.as_ref()]),
+            wsol_mint: mint,
+            new_wsol_vault: pda(&[WSOL_VAULT_SEED, new.as_ref()]),
+            borrower_usdc: ata(b.pubkey(), USDC_MINT),
+            borrower_wsol: ata(b.pubkey(), mint),
+            price_update: price,
+            token_program: TOKEN_PROGRAM,
+            system_program: SYSTEM_PROGRAM,
+        }
+        .to_account_metas(None);
+        accounts.extend(extra);
+        let ix = Instruction { program_id: ID, accounts, data: isolated_loan_v2::instruction::RefinanceInto { max_contribution: max }.data() };
+        self.send(ix, b)
+    }
+
+    fn refinance(&mut self, old: Pubkey, new: Pubkey, max: u64) -> Result<(), String> {
+        let (b, price) = (self.borrower.insecure_clone(), self.price);
+        self.refinance_with(old, new, &b, max, WSOL_MINT, price, vec![])
+    }
+
+    /// Repays `offer` to `lender` (the loan's current lender) from the main borrower.
+    fn repay_to(&mut self, offer: Pubkey, amount: u64, lender: Pubkey, mint: Pubkey) -> Result<(), String> {
+        let b = self.borrower.insecure_clone();
+        let ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::Repay {
+                borrower: b.pubkey(),
+                offer,
+                wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
+                borrower_usdc: ata(b.pubkey(), USDC_MINT),
+                lender,
+                lender_usdc: ata(lender, USDC_MINT),
+                borrower_wsol: ata(b.pubkey(), mint),
+                token_program: TOKEN_PROGRAM,
+            }
+            .to_account_metas(None),
+            data: isolated_loan_v2::instruction::Repay { amount }.data(),
+        };
+        self.send(ix, &b)
     }
 
     fn terms(&self, offer: Pubkey) -> acc::TermsV2 {
@@ -1058,4 +1115,208 @@ fn wsol_path_is_unchanged_by_collateral_configs() {
         loan_core::math::collateral_value_usdc_decimals(COLLATERAL, 9, 150 * USD, (150 * USD / 1000) as u64, -8).unwrap(),
         loan_core::math::collateral_value_usdc(COLLATERAL, 150 * USD, (150 * USD / 1000) as u64, -8).unwrap()
     );
+}
+
+// ---- Story 26.1: refinance and rollover -----------------------------------------------------
+
+/// An open offer from `lender` with `principal` and `collateral`, otherwise the default terms.
+fn offer_from(env: &mut Env, lender: &Keypair, id: u64, principal: u64, collateral: u64, restricted: Pubkey) -> Pubkey {
+    let a = TermsArgs { principal, collateral_amount: collateral, ..args(1) };
+    env.create_by(lender, id, a, restricted, WSOL_MINT, vec![]).unwrap()
+}
+
+#[test]
+fn refinance_pays_the_old_lender_exactly_the_payoff_with_a_contribution() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let (l, b, s) = (env.lender.insecure_clone(), env.borrower.insecure_clone(), env.stranger.insecure_clone());
+    let n = offer_from(&mut env, &s, 7, 90_000_000, 950_000_000, Pubkey::default());
+    env.at(START + DAY);
+    env.price_usd(150, 150);
+    let payoff = env.payoff(o);
+    assert_eq!(payoff, 101_250_000);
+    let contribution = payoff - 90_000_000;
+    // The borrower's signed bound is enforced.
+    assert_err(env.refinance(o, n, contribution - 1), LoanV2Error::PaymentAboveLimit);
+    let (l0, b0, s0, bw0) = (env.usdc(&l), env.usdc(&b), env.usdc(&s), env.wsol(&b));
+    env.refinance(o, n, contribution).unwrap();
+
+    assert_eq!(env.usdc(&l) - l0, payoff, "the old lender receives exactly payoff_old");
+    assert_eq!(b0 - env.usdc(&b), contribution, "the borrower pays only the contribution");
+    assert_eq!(env.usdc(&s), s0, "the new principal left the new lender at create");
+    assert_eq!(env.wsol(&b) - bw0, COLLATERAL - 950_000_000, "collateral above the new requirement comes back");
+
+    let old = env.offer(o);
+    assert_eq!((old.status, old.settled_ts, old.collateral_locked), (StatusV2::Refinanced, START + DAY, 0));
+    assert_eq!(old.ledger.outstanding_principal, 0);
+    assert!(old.status.is_settled() && old.status != StatusV2::Repaid);
+    assert!(!env.exists(pda(&[WSOL_VAULT_SEED, o.as_ref()])));
+
+    let new = env.offer(n);
+    assert_eq!((new.status, new.borrower, new.current_lender), (StatusV2::Active, b.pubkey(), s.pubkey()));
+    assert_eq!((new.terms.start_ts, new.collateral_locked, new.ledger.outstanding_principal), (START + DAY, 950_000_000, 90_000_000));
+    assert_eq!(env.balance(pda(&[WSOL_VAULT_SEED, n.as_ref()])), 950_000_000);
+    assert!(!env.exists(pda(&[USDC_VAULT_SEED, n.as_ref()])));
+    // The old lender can close the settled account.
+    env.close(o).unwrap();
+}
+
+#[test]
+fn same_lender_rollover_in_grace_with_no_contribution_and_a_top_up() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let (l, b) = (env.lender.insecure_clone(), env.borrower.insecure_clone());
+    env.at(env.terms(o).maturity() + 3_600);
+    env.price_usd(150, 150);
+    let payoff = env.payoff(o);
+    assert_eq!(payoff, 106_000_000, "full interest plus the one-time late fee");
+    // A renewal offer restricted to this borrower, for exactly the payoff.
+    let l0 = env.usdc(&l);
+    let n = offer_from(&mut env, &l, 2, payoff, 1_100_000_000, b.pubkey());
+    let (b0, bw0) = (env.usdc(&b), env.wsol(&b));
+    env.refinance(o, n, 0).unwrap();
+    assert_eq!(env.usdc(&l), l0, "the lender's new principal paid off its own old loan");
+    assert_eq!(env.usdc(&b), b0, "zero contribution");
+    assert_eq!(bw0 - env.wsol(&b), 80_000_000, "the borrower tops up to the new requirement");
+    assert_eq!(env.offer(o).status, StatusV2::Refinanced);
+    let new = env.offer(n);
+    assert_eq!((new.status, new.collateral_locked, new.terms.principal), (StatusV2::Active, 1_100_000_000, payoff));
+    assert_eq!(env.balance(pda(&[WSOL_VAULT_SEED, n.as_ref()])), 1_100_000_000);
+}
+
+#[test]
+fn refinance_never_pays_cash_out() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let s = env.stranger.insecure_clone();
+    let n = offer_from(&mut env, &s, 7, 101_250_001, COLLATERAL, Pubkey::default());
+    env.at(START + DAY);
+    env.price_usd(150, 150);
+    assert_err(env.refinance(o, n, u64::MAX), LoanV2Error::RefinanceCashOut);
+    assert_eq!(env.offer(o).status, StatusV2::Active);
+    assert_eq!(env.offer(n).status, StatusV2::Open);
+}
+
+#[test]
+fn refinance_closes_exactly_when_grace_ends() {
+    let mut env = Env::new();
+    let first = env.open_loan(1, 1);
+    let second = env.open_loan(2, 1);
+    let s = env.stranger.insecure_clone();
+    let n1 = offer_from(&mut env, &s, 10, 50_000_000, COLLATERAL, Pubkey::default());
+    let n2 = offer_from(&mut env, &s, 11, 50_000_000, COLLATERAL, Pubkey::default());
+    let grace_end = env.terms(first).grace_end();
+    env.at(grace_end - 1);
+    env.price_usd(150, 150);
+    env.refinance(first, n1, u64::MAX).unwrap();
+    env.at(grace_end);
+    env.price_usd(150, 150);
+    assert_err(env.refinance(second, n2, u64::MAX), LoanV2Error::RefinanceClosed);
+    assert_eq!(env.offer(second).status, StatusV2::Active);
+}
+
+#[test]
+fn a_restricted_renewal_rejects_another_borrower() {
+    let mut env = Env::new();
+    let (l, b, s) = (env.lender.insecure_clone(), env.borrower.insecure_clone(), env.stranger.insecure_clone());
+    let theirs = env.create(1, args(1), Pubkey::default()).unwrap();
+    env.accept_as(theirs, &s).unwrap();
+    let mine = env.open_loan(2, 1);
+    let renewal = offer_from(&mut env, &l, 3, PRINCIPAL, COLLATERAL, b.pubkey());
+    env.at(START + DAY);
+    env.price_usd(150, 150);
+    let price = env.price;
+    assert_err(env.refinance_with(theirs, renewal, &s, u64::MAX, WSOL_MINT, price, vec![]), LoanV2Error::RestrictedBorrower);
+    // Nobody refinances a loan they did not borrow.
+    assert_err(env.refinance_with(mine, renewal, &s, u64::MAX, WSOL_MINT, price, vec![]), LoanV2Error::UnauthorizedBorrower);
+    env.refinance(mine, renewal, u64::MAX).unwrap();
+    assert_eq!(env.offer(renewal).borrower, b.pubkey());
+}
+
+#[test]
+fn refinance_racing_repay_and_liquidation_yields_one_terminal_state() {
+    let mut env = Env::new();
+    let s = env.stranger.insecure_clone();
+    let refinanced = env.open_loan(1, 1);
+    let repaid = env.open_loan(2, 1);
+    let liquidated = env.open_loan(3, 1);
+    let spare = offer_from(&mut env, &s, 20, 50_000_000, COLLATERAL, Pubkey::default());
+    let n1 = offer_from(&mut env, &s, 21, 50_000_000, COLLATERAL, Pubkey::default());
+    let n2 = offer_from(&mut env, &s, 22, 50_000_000, COLLATERAL, Pubkey::default());
+    let n3 = offer_from(&mut env, &s, 23, 50_000_000, COLLATERAL, Pubkey::default());
+    env.at(START + DAY);
+    env.price_usd(150, 150);
+    let either = [CLOSED_VAULT, &code(LoanV2Error::WrongStatus)];
+
+    // Refinance first: repay, liquidation and a second refinance all fail.
+    env.refinance(refinanced, n1, u64::MAX).unwrap();
+    assert_rejected(env.repay(refinanced, u64::MAX), &either);
+    assert_rejected(env.refinance(refinanced, spare, u64::MAX), &either);
+    env.price_usd(100, 100);
+    assert_rejected(env.liquidate(refinanced, &s), &either);
+    assert_eq!(env.offer(refinanced).status, StatusV2::Refinanced);
+
+    // Repay first: refinance fails.
+    env.price_usd(150, 150);
+    env.repay(repaid, u64::MAX).unwrap();
+    assert_rejected(env.refinance(repaid, n2, u64::MAX), &either);
+    assert_eq!(env.offer(repaid).status, StatusV2::Repaid);
+
+    // Liquidation first: refinance fails.
+    env.price_usd(100, 100);
+    env.liquidate(liquidated, &s).unwrap();
+    env.price_usd(150, 150);
+    assert_rejected(env.refinance(liquidated, n3, u64::MAX), &either);
+    assert_eq!(env.offer(liquidated).status, StatusV2::Liquidated);
+    // The unused offers are untouched.
+    for o in [spare, n2, n3] {
+        assert_eq!(env.offer(o).status, StatusV2::Open);
+    }
+}
+
+#[test]
+fn the_new_loan_must_pass_origination_at_a_fresh_price() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let s = env.stranger.insecure_clone();
+    let n = offer_from(&mut env, &s, 7, 90_000_000, COLLATERAL, Pubkey::default());
+    env.at(START + DAY);
+    // 95.4 USDC of new exposure against 1.02 wSOL at 120 (~122 USDC) is ~78%, above 70%.
+    env.price_usd(120, 120);
+    assert_err(env.refinance(o, n, u64::MAX), LoanV2Error::InsufficientCollateral);
+    // A stale price is never used.
+    env.post(150 * USD, (150 * USD / 1000) as u64, 150 * USD, (150 * USD / 1000) as u64, START);
+    assert_err(env.refinance(o, n, u64::MAX), LoanV2Error::StalePrice);
+    assert_eq!(env.offer(o).status, StatusV2::Active);
+    env.price_usd(150, 150);
+    env.refinance(o, n, u64::MAX).unwrap();
+}
+
+#[test]
+fn jitosol_refinance_moves_jitosol_and_reads_its_own_feed() {
+    let mut env = Env::new();
+    env.configure_jito(true);
+    env.jito_usd(180, 180);
+    let o = open_jito_loan(&mut env, 1);
+    let (jito, jp, extra) = (env.jito, env.jito_price, env.jito_extra());
+    let (b, s) = (env.borrower.insecure_clone(), env.stranger.insecure_clone());
+    let n = env.create_by(&s, 5, jito_terms(), Pubkey::default(), jito, extra.clone()).unwrap();
+    env.at(START + DAY);
+    env.jito_usd(180, 180);
+    env.price_usd(150, 150);
+    let sol_price = env.price;
+    assert_err(env.refinance_with(o, n, &b, u64::MAX, jito, jp, vec![]), LoanV2Error::CollateralNotConfigured);
+    assert_err(env.refinance_with(o, n, &b, u64::MAX, jito, sol_price, extra.clone()), LoanV2Error::InvalidFeedId);
+    let b_jito0 = env.balance(ata(b.pubkey(), jito));
+    env.refinance_with(o, n, &b, u64::MAX, jito, jp, extra).unwrap();
+    assert_eq!(env.offer(o).status, StatusV2::Refinanced);
+    let new = env.offer(n);
+    assert_eq!((new.status, new.wsol_mint, new.collateral_locked), (StatusV2::Active, jito, JITO_COLLATERAL));
+    assert_eq!(env.balance(pda(&[WSOL_VAULT_SEED, n.as_ref()])), JITO_COLLATERAL);
+    assert_eq!(env.balance(ata(b.pubkey(), jito)), b_jito0, "jitoSOL moved vault to vault");
+    env.at(START + 5 * DAY);
+    let payoff = env.payoff(n);
+    env.repay_to(n, payoff, s.pubkey(), jito).unwrap();
+    assert_eq!(env.offer(n).status, StatusV2::Repaid);
+    assert_eq!(env.balance(ata(b.pubkey(), jito)), b_jito0 + JITO_COLLATERAL, "every jitoSOL atom came back");
 }

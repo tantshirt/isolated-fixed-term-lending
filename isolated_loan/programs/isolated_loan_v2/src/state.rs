@@ -45,6 +45,9 @@ pub enum StatusV2 {
     PricedRecovered,
     TerminalClaimed,
     Cancelled,
+    /// Moved into a new loan by `refinance_into` (Story 26.1). Appended so existing discriminants
+    /// do not move; never counted as a repayment.
+    Refinanced,
 }
 
 impl StatusV2 {

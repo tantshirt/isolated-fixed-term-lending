@@ -102,6 +102,15 @@ pub enum PrivateLoanError {
     LastDeskAdmin,
     #[msg("The auditor audience differs from the one shown for signing")]
     AuditorMismatch,
+    // Story 26.1. Appended so existing error codes do not move.
+    #[msg("New principal is above the old loan's payoff; refinancing never pays cash out")]
+    RefinanceCashOut,
+    #[msg("Only Active and Grace loans can refinance")]
+    RefinanceClosed,
+    #[msg("The new loan must lend the same asset against the same collateral")]
+    RefinanceMismatch,
+    #[msg("Payment exceeds the bound the borrower signed")]
+    PaymentAboveLimit,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

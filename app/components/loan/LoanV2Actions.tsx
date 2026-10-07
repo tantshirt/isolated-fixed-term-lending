@@ -21,6 +21,7 @@ import type { OfferV2 } from "@/lib/v2/offers";
 import { reviewFigures } from "@/lib/v2/rules";
 import * as v2 from "@/lib/v2/transactions";
 import type { V2Role } from "./LoanV2View";
+import { RefinancePanel } from "./RefinancePanel";
 import styles from "@/components/offer/ActionPanel.module.css";
 
 /** Seconds of accrual a signature allows for while it is reviewed and confirmed. */
@@ -219,6 +220,7 @@ export function LoanV2Actions({ offer, view, role, price, now, balances, onMoved
           </>,
           topUpLamports && balances && balances.wsol < topUpLamports ? `You hold ${formatWsol(balances.wsol)} wSOL. Wrap SOL first.` : null,
         )}
+        <RefinancePanel offer={offer} action={can("refinance")} signer={signer} now={now} balances={balances} busy={busy} run={run} panel={panel} />
       </>
     );
   }

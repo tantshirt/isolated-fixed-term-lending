@@ -281,9 +281,9 @@ Program ID `8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m`. Its authorities are t
 
 The vault and field names keep `wsol`; for a configured asset, `OfferV2.wsol_mint` and `RequestV2.wsol_mint` hold that asset's mint and the "wSOL vault" holds it. Neither layout changed.
 
-**Collateral resolution (Story 26.2).** Canonical wSOL always uses the built-in constants (SOL/USD, 9 decimals, 70% / 85% caps), and any extra account passed with it is ignored, so active wSOL loans need no migration. Any other collateral mint must pass its `CollateralConfig` as the **first remaining account** of `create_offer`, `create_request`, `accept_offer`, `fund_request`, `liquidate`, `liquidate_overdue` and `claim_priced_recovery`. The program checks that the account is owned by the program, is a `CollateralConfig`, names this mint and sits at `["collateral", mint]`. Origination (create, accept, fund) also requires `enabled`, the mint's decimals to match, and the terms' max and liquidation LTV to be within the config's caps (checked again at accept and fund, so a tightened or disabled asset stops pending offers and requests). Servicing (liquidation, overdue liquidation, priced recovery) reads the config's feed and decimals even when the asset is disabled, so disabling never freezes recovery. Repay, add collateral and the terminal claim read no price and need no config. Valuation is `floor(amount × (price − conf) / 10^(decimals − 6 − exponent))` with every oracle check from `loan_core::oracle::read_price`. A `local-mints` build (never deployed) with no config passed keeps pricing a self-made mint as SOL so Surfpool walkthroughs still run.
+**Collateral resolution (Story 26.2).** Canonical wSOL always uses the built-in constants (SOL/USD, 9 decimals, 70% / 85% caps), and any extra account passed with it is ignored, so active wSOL loans need no migration. Any other collateral mint must pass its `CollateralConfig` as the **first remaining account** of `create_offer`, `create_request`, `accept_offer`, `fund_request`, `refinance_into`, `liquidate`, `liquidate_overdue` and `claim_priced_recovery`. The program checks that the account is owned by the program, is a `CollateralConfig`, names this mint and sits at `["collateral", mint]`. Origination (create, accept, fund) also requires `enabled`, the mint's decimals to match, and the terms' max and liquidation LTV to be within the config's caps (checked again at accept and fund, so a tightened or disabled asset stops pending offers and requests). Servicing (liquidation, overdue liquidation, priced recovery) reads the config's feed and decimals even when the asset is disabled, so disabling never freezes recovery. Repay, add collateral and the terminal claim read no price and need no config. Valuation is `floor(amount × (price − conf) / 10^(decimals − 6 − exponent))` with every oracle check from `loan_core::oracle::read_price`. A `local-mints` build (never deployed) with no config passed keeps pricing a self-made mint as SOL so Surfpool walkthroughs still run.
 
-Statuses: `Open`, `Active`, `Repaid`, `Liquidated`, `OverdueLiquidated`, `PricedRecovered`, `TerminalClaimed`, `Cancelled`. Every instruction that settles a loan requires `Active`, so a loan reaches exactly one terminal status.
+Statuses: `Open`, `Active`, `Repaid`, `Liquidated`, `OverdueLiquidated`, `PricedRecovered`, `TerminalClaimed`, `Cancelled`, `Refinanced` (Story 26.1, appended last so no discriminant moved). Every instruction that settles a loan requires `Active`, so a loan reaches exactly one terminal status. `Refinanced` is never a repayment.
 
 ### Instructions
 
@@ -294,6 +294,7 @@ Statuses: `Open`, `Active`, `Repaid`, `Liquidated`, `OverdueLiquidated`, `Priced
 | `accept_offer` | borrower ≠ lender, matching `restricted_borrower` if set | Open | LTV of **max exposure** ≤ max LTV at the fresh spot. Principal out, collateral in, ledger opened |
 | `repay(amount)` | borrower | Active, **any phase** | Interest, then late fee, then principal, paid directly to the current lender. `amount ≥ payoff` closes the loan, takes only the payoff, and returns all collateral. `amount` bounds the signature. |
 | `add_collateral(amount)` | borrower | Active | No oracle needed |
+| `refinance_into(max_contribution)` | borrower of the old loan, ≠ the new offer's lender, matching its `restricted_borrower` if set | old loan Active **and** in its Active or Grace phase; new offer Open | Story 26.1, one atomic instruction. Settles the old loan for `payoff_old` (the same `apply_payment` as a full repay, with the pro-rata final adjustment and any late fee): the new offer's principal goes from its USDC vault to the old `current_lender`, the borrower adds `contribution = payoff_old − new_principal` (≤ `max_contribution`). `new_principal > payoff_old` fails. Collateral moves vault to vault: the new loan locks exactly its `collateral_required`, excess returns to the borrower and any gap comes from the borrower. The new loan starts now after the max-exposure LTV check against a fresh price of the collateral's own feed, within the asset's current caps. Old loan → `Refinanced`, `settled_ts = now`; new loan → `Active`. Rent: new USDC vault to the new origin lender, old wSOL vault to the borrower. |
 | `liquidate` | anyone except the borrower | Active or Grace | Spot **and** EMA LTV ≥ threshold, or spot ≥ threshold + 300. The caller pays the payoff and takes payoff × 1.05 in wSOL; the surplus goes to the borrower |
 | `liquidate_overdue` | anyone except the borrower | from grace end | The same split regardless of LTV; needs a valid spot |
 | `claim_priced_recovery` | current lender | from grace end + 24 h | Payoff-equivalent wSOL with no bonus; surplus to the borrower; uncovered payoff recorded as `shortfall` |
@@ -304,9 +305,28 @@ Statuses: `Open`, `Active`, `Repaid`, `Liquidated`, `OverdueLiquidated`, `Priced
 | `rotate_authorities(next)` | `authorities.governance` | — | Replaces the keys; the result must still validate |
 | `set_collateral_config(feed_id, max_ltv_bps, liquidation_ltv_bps, enabled)` | `authorities.governance` | — | Creates or updates `["collateral", mint]`. Rejects wSOL and USDC, decimals outside 3–18, a zero feed id, max LTV of 0 or above 70%, liquidation LTV above 85% or less than 5 points above max. Mint and decimals cannot change after the first write. |
 
-Fails closed: wrong status; a signer other than the named party; a restricted borrower mismatch; any Pyth owner, feed, age, band or exponent failure on a priced path, where the feed is the collateral's own; an early call (`TooEarly`); a zero amount; any USDC mint other than canonical USDC; any collateral mint other than canonical wSOL without its `CollateralConfig` (`CollateralNotConfigured`), or with a disabled one at origination (`CollateralDisabled`); terms above the asset's caps (`InvalidTerms`); a config write by anyone but governance (`WrongAuthority`). The borrower cannot liquidate their own loan; the duplicate-account guard or `BorrowerCannotLiquidate` stops it.
+Fails closed: wrong status; a signer other than the named party; a refinance after grace (`RefinanceClosed`), into more than the payoff (`RefinanceCashOut`), into another asset or itself (`RefinanceMismatch`), or above the signed contribution (`PaymentAboveLimit`); a restricted borrower mismatch; any Pyth owner, feed, age, band or exponent failure on a priced path, where the feed is the collateral's own; an early call (`TooEarly`); a zero amount; any USDC mint other than canonical USDC; any collateral mint other than canonical wSOL without its `CollateralConfig` (`CollateralNotConfigured`), or with a disabled one at origination (`CollateralDisabled`); terms above the asset's caps (`InvalidTerms`); a config write by anyone but governance (`WrongAuthority`). The borrower cannot liquidate their own loan; the duplicate-account guard or `BorrowerCannotLiquidate` stops it.
 
-`programs/isolated_loan_v2/tests/litesvm_v2.rs` (25 tests) covers each boundary to the second, including jitoSOL accept and repay, liquidation, priced recovery and request funding on the JITOSOL/USD feed, an unconfigured or substituted config, a disabled config, non-governance writes, and the unchanged wSOL path.
+`programs/isolated_loan_v2/tests/litesvm_v2.rs` (33 tests) covers each boundary to the second, including jitoSOL accept and repay, liquidation, priced recovery and request funding on the JITOSOL/USD feed, an unconfigured or substituted config, a disabled config, non-governance writes, and the unchanged wSOL path. Refinance tests cover a contribution and a zero-contribution same-lender rollover in grace, cash-out rejection, the exact grace-end second, a restricted renewal, refinance racing repay and liquidation (one terminal state), the new loan's LTV and price freshness, and a jitoSOL refinance.
+
+#### `refinance_into` accounts (Story 26.1)
+
+| Account | Constraint |
+| --- | --- |
+| `borrower` | signer, writable; `old_offer.borrower` |
+| `old_offer` | writable; `Active` |
+| `old_wsol_vault` | `["wsol-vault-v2", old_offer]`; closed, rent to the borrower |
+| `old_lender`, `old_lender_usdc` | `old_offer.current_lender` and its USDC account; receives `payoff_old` |
+| `new_offer` | writable; `Open`, a different account, same USDC and collateral mint |
+| `new_lender` | `new_offer.origin_lender`; receives the USDC vault rent |
+| `new_usdc_vault` | `["usdc-vault-v2", new_offer]`; emptied and closed |
+| `wsol_mint` | the shared collateral mint |
+| `new_wsol_vault` | `["wsol-vault-v2", new_offer]`; created, paid by the borrower |
+| `borrower_usdc`, `borrower_wsol` | the borrower's token accounts for the contribution and the collateral difference |
+| `price_update` | the collateral's feed; every loan-core oracle check |
+| remaining[0] | the `CollateralConfig` for a non-wSOL mint, enabled |
+
+Events: `SettledV2` (status `Refinanced`, `paid = payoff_old`), `AcceptedV2` for the new loan, and `RefinancedV2` with `payoff_old`, `new_principal`, `contribution` and the collateral moved, returned and added.
 
 ## Private V2 program (`private_loan_v2`, Stories 22.1–22.2)
 
@@ -335,6 +355,7 @@ Program ID `JAzy8NP6V8AGrAko8vfgrD44BDghN6eLwqB7vjuYhHNq`. V1 rooms and loans st
 - **Acceptance.** `accept_loan` checks the maximum-exposure LTV at a fresh price and creates or verifies the deal for `request_index`.
 - **Repayment and top-up.** `repay(amount)` and `add_collateral(amount)` follow the shared accounting. Both bump `ledger_revision`.
 - **Lender recovery.** `claim_priced_recovery` and `claim_terminal` follow the public V2 rules.
+- **Refinance (Story 26.1).** `refinance(revision, auditor_hash, max_contribution)` runs in the ER, inside one rollup domain: the old `LoanTerms` must be `Active` in its Active or Grace phase and the new one `Funded`, proposed to this borrower, at exactly `revision` with exactly `auditor_hash` (fresh consent). The new loan is originated with `accept_loan`'s own steps (desk policy re-check, the request's deal record, max-exposure LTV at a fresh price, consented auditors added as readers). The old lender receives `payoff_old` from the new loan's custody plus the borrower's contribution; collateral moves custody to custody as on the public program. The old loan ends `STATUS_REFINANCED = 10` and bumps its `ledger_revision`, so any open quote goes stale. Accounts: `borrower`, `old_anchor`, `old_terms`, `old_loan_wsol`, `old_lender_usdc`, `new_anchor`, `new_terms`, `new_loan_usdc`, `new_loan_wsol`, `borrower_usdc`, `borrower_wsol`, `price_update`, `token_program`, then the same optional ER accounts as `accept_loan`.
 - **`watch_loan`.**
   - Before grace ends it quotes only when the risk trigger fires: spot and EMA, or spot alone 300 bps past the line.
   - After grace it quotes regardless of LTV.
@@ -343,7 +364,7 @@ Program ID `JAzy8NP6V8AGrAko8vfgrD44BDghN6eLwqB7vjuYhHNq`. V1 rooms and loans st
   - The watch runs through the terminal-claim window.
 - **Not yet built.** Rebinding a watch after the lender changes belongs to the secondary market (Epic 26).
 
-Tests: `programs/private_loan_v2` has 10 unit tests and 7 LiteSVM settlement tests (`npm run test:litesvm`). The Devnet TEE proof is `scripts/private/v2-rooms.ts`.
+Tests: `programs/private_loan_v2` has 19 unit tests, 7 LiteSVM settlement tests and 4 LiteSVM refinance tests (`npm run test:litesvm`). The Devnet TEE proof is `scripts/private/v2-rooms.ts`.
 
 ### Desks and auditors (Stories 23.1, 24.1)
 

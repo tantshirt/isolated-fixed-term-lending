@@ -128,6 +128,9 @@ export function v2LoanState(t: LoanTermsV2, me: PublicKey, now: number): V2LoanS
     case "repaid":
       next = "Repaid. The collateral went back to the borrower.";
       break;
+    case "refinanced":
+      next = "Refinanced into a new loan. The old lender was paid in full; this is not a repayment.";
+      break;
     case "cancelled":
       next = "Cancelled.";
       break;

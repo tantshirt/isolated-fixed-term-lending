@@ -123,6 +123,60 @@ pub struct Repay<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+/// Story 26.1: the borrower moves an Active or Grace loan (`old_offer`) into an open offer
+/// (`new_offer`). Phase, payoff, cash-out and LTV are checked in the handler.
+#[derive(Accounts)]
+pub struct RefinanceInto<'info> {
+    /// Signs every refinance; pays the new collateral vault's rent and receives the old one's.
+    #[account(mut)]
+    pub borrower: Signer<'info>,
+    #[account(
+        mut,
+        has_one = borrower @ LoanV2Error::UnauthorizedBorrower,
+        constraint = old_offer.status == StatusV2::Active @ LoanV2Error::WrongStatus,
+    )]
+    pub old_offer: Box<Account<'info, OfferV2>>,
+    #[account(mut, seeds = [WSOL_VAULT_SEED, old_offer.key().as_ref()], bump, token::mint = old_offer.wsol_mint, token::authority = old_offer)]
+    pub old_wsol_vault: Box<Account<'info, TokenAccount>>,
+    /// CHECK: the old loan's current lender, who receives the whole payoff.
+    #[account(address = old_offer.current_lender)]
+    pub old_lender: UncheckedAccount<'info>,
+    #[account(mut, token::mint = old_offer.usdc_mint, token::authority = old_lender)]
+    pub old_lender_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(
+        mut,
+        constraint = new_offer.status == StatusV2::Open @ LoanV2Error::WrongStatus,
+        constraint = new_offer.key() != old_offer.key() @ LoanV2Error::RefinanceMismatch,
+        constraint = new_offer.usdc_mint == old_offer.usdc_mint @ LoanV2Error::RefinanceMismatch,
+        constraint = new_offer.wsol_mint == old_offer.wsol_mint @ LoanV2Error::RefinanceMismatch,
+    )]
+    pub new_offer: Box<Account<'info, OfferV2>>,
+    /// Receives the USDC vault rent the new lender paid at create.
+    #[account(mut, address = new_offer.origin_lender)]
+    pub new_lender: SystemAccount<'info>,
+    #[account(mut, seeds = [USDC_VAULT_SEED, new_offer.key().as_ref()], bump, token::mint = new_offer.usdc_mint, token::authority = new_offer)]
+    pub new_usdc_vault: Box<Account<'info, TokenAccount>>,
+    #[account(constraint = wsol_mint.key() == old_offer.wsol_mint @ LoanV2Error::RefinanceMismatch)]
+    pub wsol_mint: Box<Account<'info, Mint>>,
+    #[account(
+        init,
+        payer = borrower,
+        token::mint = wsol_mint,
+        token::authority = new_offer,
+        seeds = [WSOL_VAULT_SEED, new_offer.key().as_ref()],
+        bump,
+    )]
+    pub new_wsol_vault: Box<Account<'info, TokenAccount>>,
+    #[account(mut, token::mint = old_offer.usdc_mint, token::authority = borrower)]
+    pub borrower_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut, token::mint = old_offer.wsol_mint, token::authority = borrower)]
+    pub borrower_wsol: Box<Account<'info, TokenAccount>>,
+    /// CHECK: Pyth price update; owner, feed, age and band are checked in loan-core.
+    pub price_update: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
 #[derive(Accounts)]
 pub struct AddCollateral<'info> {
     #[account(mut)]

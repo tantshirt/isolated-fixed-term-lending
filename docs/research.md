@@ -277,6 +277,8 @@ contribution  = payoff_old - new_principal        # borrower pays this; must be 
 - `new_principal > payoff_old` is rejected. Refinancing never pays cash out to the borrower.
 - The old lender receives exactly `payoff_old`: `new_principal` from the new lender plus `contribution` from the borrower, in the same instruction.
 - Collateral moves vault to vault. The new loan must pass origination against a fresh price with its own terms: `max_exposure` LTV within the new max LTV.
+- The new loan locks exactly its offer's required collateral. Collateral above that returns to the borrower; any gap comes from the borrower in the same instruction.
+- The borrower signs a bound, `max_contribution`, so interest accruing between quote and execution can never take more than they saw.
 - The old loan's terminal status is `Refinanced`, separate from `Repaid`. It never counts as a repayment in history.
 - Same-lender rollover is a renewal offer restricted to that borrower. Nothing refinances without the borrower's signature; there is no auto-refinance.
 - No new rounding: every amount is already in atoms.
