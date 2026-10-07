@@ -17,6 +17,8 @@ import { parseAmount } from "@/lib/offer-validation";
 import { plannedLtvBps } from "@/lib/risk";
 import { V2_LIVE } from "@/lib/v2/program";
 import type { Perspective, WizardDraft } from "./useDraft";
+import { WSOL_ASSET } from "@/lib/models/collateral";
+import type { CollateralAsset } from "@/lib/models";
 import styles from "./OfferPreview.module.css";
 
 /** The offer exactly as a borrower will read it, updating while the lender types. */
@@ -26,17 +28,20 @@ export function OfferPreview({
   price,
   live,
   perspective = "lender",
+  asset = WSOL_ASSET,
 }: {
   draft: WizardDraft;
   owed: bigint | null;
   price: LivePrice | null;
   live: boolean;
   perspective?: Perspective;
+  /** The chosen collateral (Story 26.2); `price` is its own feed. */
+  asset?: CollateralAsset;
 }) {
   // A lender previews what a borrower reads, and a borrower what a lender reads.
   const lenderReads = perspective === "borrower";
   const principal = parseAmount(draft.principal, 6);
-  const lamports = parseAmount(draft.collateral, 9);
+  const lamports = parseAmount(draft.collateral, asset.decimals);
   const ltv =
     price && owed && lamports ? plannedLtvBps(owed, lamports, price) : null;
 
@@ -78,8 +83,8 @@ export function OfferPreview({
         />
         <Figure
           label={lenderReads ? "Collateral locked" : "You lock"}
-          value={lamports ? atomsToNumber(lamports, 9) : 0}
-          unit="wSOL"
+          value={lamports ? atomsToNumber(lamports, asset.decimals) : 0}
+          unit={asset.symbol}
           exact={lamports === null ? "—" : formatWsol(lamports)}
           format={fmt.wsol}
         />
@@ -90,7 +95,7 @@ export function OfferPreview({
           <>
             Due within <b>{formatDuration(draft.durationSeconds)}</b>, then <b>{formatDuration(draft.rules.graceSeconds)}</b> of grace.{" "}
             {draft.rules.earlyRepayment === "pro-rata" ? "Early repayment pays interest for the time used." : "Early repayment pays the full-term interest."}{" "}
-            Unpaid a week after grace, the lender may take all the wSOL.
+            Unpaid a week after grace, the lender may take all the {asset.label}.
           </>
         ) : lenderReads ? (
           <>

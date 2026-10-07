@@ -14,14 +14,17 @@ import { StepTerms } from "@/components/create/StepTerms";
 import { useDraft } from "@/components/create/useDraft";
 import { Button } from "@/components/ui/Button";
 import { messageFromAnchorError } from "@/lib/anchor-errors";
-import { useBalances, useDevConfig, usePrice } from "@/lib/client/hooks";
+import { useDevConfig } from "@/lib/client/hooks";
+import { useCollateralBalances } from "@/lib/client/collateral-price";
 import { useSigner } from "@/lib/client/signer-context";
 import { useToast } from "@/lib/client/toast";
 import { formatUsdc, formatWsol } from "@/lib/format";
 import { parseDraft, validateAmountStep, validateRiskStep, validateTermsStep, type DraftErrors } from "@/lib/offer-validation";
 import { RequestService } from "@/lib/request-service";
+import { hasOwnFeed } from "@/lib/models/collateral";
 import { V2_LIVE } from "@/lib/v2/program";
 import { rulesProblem } from "@/lib/v2/rules";
+import { draftReceipt, type DraftReceipt } from "@/lib/draft-receipt";
 import { requestV2Href } from "@/lib/v2/offers";
 import { requestHref } from "@/lib/requests";
 import { SubmissionError, signatureUrl } from "@/lib/transaction-lifecycle";
@@ -47,7 +50,7 @@ const TIPS = [
   "Lenders read exactly this before they fund.",
 ] as const;
 
-type Posted = { href: string; principal: bigint; collateral: bigint };
+type Posted = DraftReceipt & { href: string; principal: bigint; collateral: bigint };
 
 /** Step 0 picks public or private; public continues through the four-step wizard. */
 export function RequestWizard() {
@@ -104,12 +107,14 @@ function PublicWizard() {
   const step = Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= 4 ? requestedStep : 1;
   const heading = useRef<HTMLHeadingElement>(null);
   const [direction, setDirection] = useState(1);
-  const { price } = usePrice();
   const { config } = useDevConfig();
   const { signer, publicKey, setConnectOpen, bumpRefresh } = useSigner();
-  const balances = useBalances(publicKey, config);
   const toast = useToast();
-  const { draft, update, reset, owed, principal, hydrated } = useDraft(price, DRAFT_KEY);
+  const { draft, update, reset, owed, principal, hydrated, asset, price } = useDraft(DRAFT_KEY);
+  // `balances.wsol` is the chosen collateral's balance (wSOL, or jitoSOL (test) when picked).
+  const balances = useCollateralBalances(publicKey, config, asset);
+  const unit = asset.label;
+  const wrappable = !hasOwnFeed(asset);
   const [signature, setSignature] = useState<string | null>(null);
   const [busy, setBusy] = useState<"post" | "wrap" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -172,19 +177,21 @@ function PublicWizard() {
       return;
     }
     if (needsWrap) {
-      setError(`You hold ${formatWsol(balances!.wsol)} wSOL. Wrap the difference first.`);
+      setError(wrappable ? `You hold ${formatWsol(balances!.wsol)} wSOL. Wrap the difference first.` : `You hold ${formatWsol(balances!.wsol)} ${unit}. Lock less, or fund this wallet with test tokens.`);
       return;
     }
     setBusy("post");
     try {
+      const receipt = draftReceipt({ draft, asset, owed, price });
       const result = await new RequestService(signer, config).create(draft);
       setSignature(result.signature || null);
       setPosted({
         href: (V2_LIVE ? requestV2Href : requestHref)({ borrower: publicKey.toBase58(), requestId: BigInt(result.requestId) }),
         principal: parsed.principal,
         collateral: parsed.collateralAmount,
+        ...receipt,
       });
-      toast({ tone: "success", title: "Request is live", detail: `You locked ${formatWsol(parsed.collateralAmount)} wSOL.` });
+      toast({ tone: "success", title: "Request is live", detail: `You locked ${formatWsol(parsed.collateralAmount)} ${unit}.` });
       bumpRefresh();
       reset();
     } catch (e) {
@@ -239,7 +246,7 @@ function PublicWizard() {
             >
               <h1 className={styles.question}>Your request is live</h1>
               <p className={styles.moved}>
-                You locked <span className="num">{formatWsol(posted.collateral)}</span> wSOL. Lenders on Discover can see it now;
+                You locked <span className="num">{formatWsol(posted.collateral)}</span> {posted.asset.label}. Lenders on Discover can see it now;
                 the first to fund it sends you <span className="num">{formatUsdc(posted.principal)}</span> USDC at once.
               </p>
               <div className={styles.doneActions}>
@@ -273,7 +280,7 @@ function PublicWizard() {
               }}
             >
               <h1 ref={heading} tabIndex={-1} className={styles.question}>
-                {current.question}
+                {step === 3 ? `How much ${unit} will you lock?` : current.question}
               </h1>
               {step === 1 && (
                 <StepAmount draft={draft} update={update} errors={errors} balance={null} onEnter={next} perspective="borrower" />
@@ -281,11 +288,20 @@ function PublicWizard() {
               {step === 2 && (
                 <StepTerms draft={draft} update={update} errors={errors} principal={principal} owed={owed} perspective="borrower" />
               )}
-              {step === 3 && <StepRisk draft={draft} update={update} errors={errors} price={price} owed={owed} perspective="borrower" />}
+              {step === 3 && <StepRisk draft={draft} update={update} errors={errors} price={price} owed={owed} perspective="borrower" asset={asset} />}
               {step === 4 && (
                 <>
-                  <StepReview draft={draft} owed={owed} price={price} onEdit={go} perspective="borrower" />
-                  {signer && needsWrap && (
+                  <StepReview asset={asset} draft={draft} owed={owed} price={price} onEdit={go} perspective="borrower" />
+                  {signer && needsWrap && !wrappable && (
+                    <div className={own.wrap}>
+                      <p>
+                        You hold <span className="num">{formatWsol(balances!.wsol)}</span> {unit}. This request locks{" "}
+                        <span className="num">{formatWsol(parsed!.collateralAmount)}</span>. {unit} is a Devnet test token; fund this wallet
+                        with it, or lock less.
+                      </p>
+                    </div>
+                  )}
+                  {signer && needsWrap && wrappable && (
                     <div className={own.wrap}>
                       <p>
                         You hold <span className="num">{formatWsol(balances!.wsol)}</span> wSOL. This request locks{" "}
@@ -316,7 +332,7 @@ function PublicWizard() {
                   </Button>
                 ) : (
                   <Button size="lg" loading={busy === "post"} disabled={busy === "wrap" || (Boolean(signer) && needsWrap)} onClick={post}>
-                    {busy === "post" ? "Waiting for wallet and chain…" : signer ? "Lock wSOL and post request" : "Connect to post request"}
+                    {busy === "post" ? "Waiting for wallet and chain…" : signer ? `Lock ${unit} and post request` : "Connect to post request"}
                   </Button>
                 )}
               </div>
@@ -344,7 +360,7 @@ function PublicWizard() {
         )}
       </div>
       <aside className={styles.aside} aria-label="Lender's view of this request">
-        <OfferPreview draft={draft} owed={owed} price={price} live={Boolean(posted)} perspective="borrower" />
+        <OfferPreview asset={posted?.asset ?? asset} draft={posted?.draft ?? draft} owed={posted ? posted.owed : owed} price={posted ? posted.price : price} live={Boolean(posted)} perspective="borrower" />
         {step > 0 && <Tip>{posted ? "Posted. Lenders can fund it from Discover." : TIPS[step - 1]}</Tip>}
       </aside>
     </div>

@@ -7,7 +7,9 @@ import { useMemo, useState } from "react";
 import { Spot } from "@/components/brand/Spot";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { HealthMeter } from "@/components/offer/HealthMeter";
-import { useBalances, useChainNow, useDevConfig, usePrice } from "@/lib/client/hooks";
+import { useChainNow, useDevConfig } from "@/lib/client/hooks";
+import { useCollateralBalances, useCollateralPrice } from "@/lib/client/collateral-price";
+import { collateralForMint } from "@/lib/models/collateral";
 import { useSigner } from "@/lib/client/signer-context";
 import { formatBpsAsPercent, formatDeadline, formatDuration, formatUsdc, formatWsol, shortKey } from "@/lib/format";
 import { annualizedBps, chargeCeiling, EarlyRepayment, fullTermInterest, minInterest } from "@/lib/loan-math-v2";
@@ -52,11 +54,14 @@ export function LoanV2View({ lender, offerId }: { lender: string; offerId: strin
 
 function Loaded({ offerKey }: { offerKey: string }) {
   const { offer, error, reload } = useOfferV2(offerKey);
-  const { price } = usePrice();
+  // Story 26.2: the loan's own collateral sets the feed, balance and labels.
+  const asset = collateralForMint(offer?.wsolMint);
+  const unit = asset.label;
+  const { price } = useCollateralPrice(asset);
   const now = useChainNow();
   const { publicKey } = useSigner();
   const { config } = useDevConfig();
-  const balances = useBalances(publicKey, config);
+  const balances = useCollateralBalances(publicKey, config, asset);
   const [moved, setMoved] = useState<string | null>(null);
 
   if (error)
@@ -82,13 +87,13 @@ function Loaded({ offerKey }: { offerKey: string }) {
   // The next action in one line, above the details, so phones see it first.
   const next = (() => {
     if (!view) return null;
-    if (offer.status === "open") return role === "lender" ? "Waiting for a borrower. You can cancel any time." : `Lock ${formatWsol(offer.collateralRequired)} wSOL to borrow ${formatUsdc(t.principal)} USDC.`;
+    if (offer.status === "open") return role === "lender" ? "Waiting for a borrower. You can cancel any time." : `Lock ${formatWsol(offer.collateralRequired)} ${unit} to borrow ${formatUsdc(t.principal)} USDC.`;
     if (offer.status !== "active") return null;
     const due = view.deadlines.find((d) => d.kind === (view.phase === "Active" ? "maturity" : "grace-end"));
     if (role === "borrower")
       return view.phase === "Active" || view.phase === "Grace"
-        ? `Repay ${formatUsdc(view.payoff)} USDC${due ? ` by ${formatDeadline(due.at)}` : ""} to get all your wSOL back.`
-        : `Repay ${formatUsdc(view.payoff)} USDC now to keep your wSOL; a settlement can happen at any time.`;
+        ? `Repay ${formatUsdc(view.payoff)} USDC${due ? ` by ${formatDeadline(due.at)}` : ""} to get all your ${unit} back.`
+        : `Repay ${formatUsdc(view.payoff)} USDC now to keep your ${unit}; a settlement can happen at any time.`;
     if (role === "lender") return view.actions.some((a) => a.by === "lender" && a.available) ? "A recovery step is open to you below." : "Payments come straight to your wallet.";
     return view.actions.some((a) => a.by === "anyone" && a.available) ? "Anyone may settle this loan now." : publicKey ? null : "Connect a wallet to act on this loan.";
   })();
@@ -111,7 +116,7 @@ function Loaded({ offerKey }: { offerKey: string }) {
         <div className={styles.figures}>
           <Figure label={offer.status === "active" ? "To close it now" : "Principal"} value={`${formatUsdc(view && offer.status === "active" ? view.payoff : t.principal)} USDC`} />
           <Figure label="Principal still owed" value={`${formatUsdc(offer.status === "active" ? offer.ledger.outstandingPrincipal : offer.status === "open" ? t.principal : 0n)} USDC`} />
-          <Figure label="Collateral locked" value={`${formatWsol(offer.status === "open" ? offer.collateralRequired : offer.collateralLocked)} wSOL`} />
+          <Figure label="Collateral locked" value={`${formatWsol(offer.status === "open" ? offer.collateralRequired : offer.collateralLocked)} ${unit}`} />
         </div>
 
         {view?.risk && (
@@ -162,8 +167,8 @@ function Loaded({ offerKey }: { offerKey: string }) {
               ))}
             </dl>
             <p className={styles.blockNote}>
-              Repayment stays open until a settlement executes. After grace, anyone may pay what is owed and take wSOL worth that plus 5%, returning the rest. From priced
-              recovery, the lender may take wSOL worth what is owed and return the rest. From the final claim, the lender may take all of it, even if it is worth more
+              Repayment stays open until a settlement executes. After grace, anyone may pay what is owed and take {unit} worth that plus 5%, returning the rest. From priced
+              recovery, the lender may take {unit} worth what is owed and return the rest. From the final claim, the lender may take all of it, even if it is worth more
               than the debt.
             </p>
           </section>

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { LivePrice } from "@/lib/client/hooks";
+import { useCollateralPrice } from "@/lib/client/collateral-price";
 import { debt } from "@/lib/loan-math";
 import { parseAmount, type OfferDraft } from "@/lib/offer-validation";
 import { validStoredDraft } from "@/lib/simulation";
 import { minCollateralLamports } from "@/lib/risk";
 import { maxExposure } from "@/lib/loan-math-v2";
 import { V2_LIVE } from "@/lib/v2/program";
+import { WSOL_ASSET, draftCollateral } from "@/lib/models/collateral";
 import { DEFAULT_RULES, readRules, termsFrom, type RepaymentRules } from "@/lib/v2/rules";
 
 export type Cushion = 0 | 10 | 25 | 50;
@@ -48,9 +49,10 @@ function lamportsToString(l: bigint): string {
 /**
  * Draft survives a refresh within the session. In auto mode the collateral is the
  * minimum that meets max LTV at the live price, plus a cushion against a falling price,
- * rounded up to 4 decimals so it reads cleanly.
+ * rounded up to 4 decimals so it reads cleanly. The price is the chosen collateral's own feed
+ * (Story 26.2): SOL/USD for wSOL, JITOSOL/USD for jitoSOL (test).
  */
-export function useDraft(price: LivePrice | null, KEY = CREATE_KEY) {
+export function useDraft(KEY = CREATE_KEY) {
   const [draft, setDraft] = useState<WizardDraft>(DEFAULT_DRAFT);
   const [hydrated, setHydrated] = useState(false);
 
@@ -66,7 +68,13 @@ export function useDraft(price: LivePrice | null, KEY = CREATE_KEY) {
           ["auto", "manual"].includes(value.draft.collateralMode) &&
           [0, 10, 25, 50].includes(value.draft.cushion)
         )
-          setDraft({ ...DEFAULT_DRAFT, ...(value.draft as WizardDraft), rules: readRules(value.draft.rules) });
+          setDraft({
+            ...DEFAULT_DRAFT,
+            ...(value.draft as WizardDraft),
+            rules: readRules(value.draft.rules),
+            // A saved asset this deployment no longer enables falls back to wSOL.
+            collateralMint: draftCollateral(value.draft.collateralMint) && V2_LIVE ? value.draft.collateralMint : undefined,
+          });
       }
     } catch {}
     setHydrated(true);
@@ -79,6 +87,8 @@ export function useDraft(price: LivePrice | null, KEY = CREATE_KEY) {
     } catch {}
   }, [draft, hydrated, KEY]);
 
+  const asset = (V2_LIVE && draftCollateral(draft.collateralMint)) || WSOL_ASSET;
+  const { price } = useCollateralPrice(asset);
   const principal = parseAmount(draft.principal, 6);
   const owed =
     principal !== null &&
@@ -126,5 +136,5 @@ export function useDraft(price: LivePrice | null, KEY = CREATE_KEY) {
     } catch {}
   };
 
-  return { draft: effective, update, reset, owed, principal, hydrated, terms, exposure };
+  return { draft: effective, update, reset, owed, principal, hydrated, terms, exposure, asset, price };
 }

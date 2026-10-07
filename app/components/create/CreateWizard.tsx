@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { Button } from "@/components/ui/Button";
 import { messageFromAnchorError } from "@/lib/anchor-errors";
-import { useBalances, useDevConfig, usePrice } from "@/lib/client/hooks";
+import { useBalances, useDevConfig } from "@/lib/client/hooks";
 import { useSigner } from "@/lib/client/signer-context";
 import { useToast } from "@/lib/client/toast";
 import { formatUsdc } from "@/lib/format";
@@ -29,6 +29,7 @@ import { StepTerms } from "./StepTerms";
 import { useDraft } from "./useDraft";
 import { V2_LIVE } from "@/lib/v2/program";
 import { rulesProblem } from "@/lib/v2/rules";
+import { draftReceipt, type DraftReceipt } from "@/lib/draft-receipt";
 import styles from "./CreateWizard.module.css";
 
 const STEPS = [
@@ -48,11 +49,9 @@ const TIPS = [
   "This preview is exactly what borrowers will read.",
 ] as const;
 
-type Created = {
+type Created = DraftReceipt & {
   href: string;
   principal: bigint;
-  draft: ReturnType<typeof useDraft>["draft"];
-  owed: bigint | null;
 };
 
 export function CreateWizard() {
@@ -65,12 +64,11 @@ export function CreateWizard() {
       : 1;
   const heading = useRef<HTMLHeadingElement>(null);
   const [direction, setDirection] = useState(1);
-  const { price } = usePrice();
   const { config } = useDevConfig();
   const { signer, publicKey, setConnectOpen, bumpRefresh } = useSigner();
   const balances = useBalances(publicKey, config);
   const toast = useToast();
-  const { draft, update, reset, owed, principal, hydrated } = useDraft(price);
+  const { draft, update, reset, owed, principal, hydrated, asset, price } = useDraft();
   const [signature, setSignature] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +137,7 @@ export function CreateWizard() {
     }
     setBusy(true);
     try {
+      const receipt = draftReceipt({ draft, asset, owed, price });
       const result = await new DevnetLoanService(signer, config).execute({
         action: "create",
         draft,
@@ -150,8 +149,7 @@ export function CreateWizard() {
       setCreated({
         href: V2_LIVE ? `/devnet/loans/${publicKey.toBase58()}/${offerId}` : `/devnet/offers/${publicKey.toBase58()}/${offerId}`,
         principal: parsed.principal,
-        draft,
-        owed,
+        ...receipt,
       });
       toast({
         tone: "success",
@@ -269,7 +267,7 @@ export function CreateWizard() {
               }}
             >
               <h1 ref={heading} tabIndex={-1} className={styles.question}>
-                {current.question}
+                {step === 3 ? `How much ${asset.label} secures the loan?` : current.question}
               </h1>
               {step === 1 && (
                 <StepAmount
@@ -296,10 +294,12 @@ export function CreateWizard() {
                   errors={errors}
                   price={price}
                   owed={owed}
+                  asset={asset}
                 />
               )}
               {step === 4 && (
                 <StepReview
+                  asset={asset}
                   draft={draft}
                   owed={owed}
                   price={price}
@@ -357,9 +357,10 @@ export function CreateWizard() {
         aria-label="Borrower's view of this offer"
       >
         <OfferPreview
+          asset={created?.asset ?? asset}
           draft={created?.draft ?? draft}
           owed={created ? created.owed : owed}
-          price={price}
+          price={created ? created.price : price}
           live={Boolean(created)}
         />
         <Tip>

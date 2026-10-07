@@ -7,6 +7,8 @@ import { submitTransaction } from "../transaction-lifecycle";
 import type { EarlyRepayment, TermsV2 } from "../loan-math-v2";
 import { getProgramV2, offerV2Pda, requestV2Pda, requestVaultV2Pda, usdcVaultV2Pda, wsolVaultV2Pda } from "./program";
 import type { OfferV2, RequestV2 } from "./offers";
+import { collateralAsset } from "../models/collateral";
+import { collateralPriceAccount, collateralRemainingAccounts, submitCollateralTx } from "./collateral-accounts";
 
 type AnySigner = Keypair | LoanSigner;
 
@@ -34,7 +36,8 @@ const ensureAta = (payer: PublicKey, owner: PublicKey | string, mint: PublicKey 
   createAssociatedTokenAccountIdempotentInstruction(payer, ata(mint, owner), new PublicKey(owner), new PublicKey(mint));
 
 function mints(usdc = DEVNET_USDC_MINT, wsol = NATIVE_WSOL_MINT) {
-  if (!IS_LOCAL && (!usdc.equals(DEVNET_USDC_MINT) || !wsol.equals(NATIVE_WSOL_MINT))) throw new Error("Devnet loans use canonical Devnet USDC and native wSOL.");
+  if (!IS_LOCAL && (!usdc.equals(DEVNET_USDC_MINT) || (!wsol.equals(NATIVE_WSOL_MINT) && !collateralAsset(wsol.toBase58()))))
+    throw new Error("Devnet loans use canonical Devnet USDC and native wSOL or an enabled collateral asset.");
   return { usdc, wsol };
 }
 
@@ -55,6 +58,7 @@ export async function sendCreateOfferV2(
       lender, offer, usdcMint: usdc, wsolMint: wsol, usdcVault: usdcVaultV2Pda(offer), lenderUsdc: ata(usdc, lender),
       tokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     })
+    .remainingAccounts(collateralRemainingAccounts(wsol))
     .transaction();
   return { offer, signature: await submitTransaction(connection, signer, tx) };
 }
@@ -73,6 +77,7 @@ export async function sendCancelOfferV2(signerLike: AnySigner, o: OfferV2, conne
 
 export async function sendAcceptOfferV2(signerLike: AnySigner, o: OfferV2, priceUpdate = PYTH_PRICE_UPDATE_ACCOUNT, connection = getConnection()): Promise<string> {
   const signer = asSigner(signerLike);
+  priceUpdate = collateralPriceAccount(o.wsolMint, priceUpdate);
   const borrower = signer.publicKey;
   const offer = new PublicKey(o.publicKey);
   const tx = await getProgramV2(signer, connection)
@@ -83,8 +88,9 @@ export async function sendAcceptOfferV2(signerLike: AnySigner, o: OfferV2, price
       tokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     })
     .preInstructions([ensureAta(borrower, borrower, o.usdcMint), ensureAta(borrower, borrower, o.wsolMint)])
+    .remainingAccounts(collateralRemainingAccounts(o.wsolMint))
     .transaction();
-  return submitTransaction(connection, signer, tx);
+  return submitCollateralTx(connection, signer, o.wsolMint, tx);
 }
 
 /** `amount` is the most the borrower signs for; at or above the payoff it closes the loan. */
@@ -119,6 +125,7 @@ export async function sendAddCollateralV2(signerLike: AnySigner, o: OfferV2, lam
 /** Risk liquidation (`overdue: false`) or overdue liquidation after grace (`overdue: true`). */
 export async function sendLiquidateV2(signerLike: AnySigner, o: OfferV2, overdue: boolean, priceUpdate = PYTH_PRICE_UPDATE_ACCOUNT, connection = getConnection()): Promise<string> {
   const signer = asSigner(signerLike);
+  priceUpdate = collateralPriceAccount(o.wsolMint, priceUpdate);
   const caller = signer.publicKey;
   const offer = new PublicKey(o.publicKey);
   const program = getProgramV2(signer, connection);
@@ -130,13 +137,15 @@ export async function sendLiquidateV2(signerLike: AnySigner, o: OfferV2, overdue
       borrowerWsol: ata(o.wsolMint, o.borrower!), tokenProgram: TOKEN_PROGRAM_ID,
     })
     .preInstructions([ensureAta(caller, caller, o.wsolMint), ensureAta(caller, o.currentLender, o.usdcMint), ensureAta(caller, o.borrower!, o.wsolMint)])
+    .remainingAccounts(collateralRemainingAccounts(o.wsolMint))
     .transaction();
-  return submitTransaction(connection, signer, tx);
+  return submitCollateralTx(connection, signer, o.wsolMint, tx);
 }
 
 /** Priced recovery (`terminal: false`) or the terminal whole-collateral claim (`terminal: true`). */
 export async function sendLenderClaimV2(signerLike: AnySigner, o: OfferV2, terminal: boolean, priceUpdate = PYTH_PRICE_UPDATE_ACCOUNT, connection = getConnection()): Promise<string> {
   const signer = asSigner(signerLike);
+  if (!terminal) priceUpdate = collateralPriceAccount(o.wsolMint, priceUpdate);
   const lender = signer.publicKey;
   const offer = new PublicKey(o.publicKey);
   const program = getProgramV2(signer, connection);
@@ -147,8 +156,9 @@ export async function sendLenderClaimV2(signerLike: AnySigner, o: OfferV2, termi
       borrowerWsol: ata(o.wsolMint, o.borrower!), tokenProgram: TOKEN_PROGRAM_ID,
     })
     .preInstructions([ensureAta(lender, lender, o.wsolMint), ensureAta(lender, o.borrower!, o.wsolMint)])
+    .remainingAccounts(terminal ? [] : collateralRemainingAccounts(o.wsolMint))
     .transaction();
-  return submitTransaction(connection, signer, tx);
+  return terminal ? submitTransaction(connection, signer, tx) : submitCollateralTx(connection, signer, o.wsolMint, tx);
 }
 
 export async function sendCloseOfferV2(signerLike: AnySigner, o: OfferV2, connection = getConnection()): Promise<string> {
@@ -157,10 +167,10 @@ export async function sendCloseOfferV2(signerLike: AnySigner, o: OfferV2, connec
   return submitTransaction(connection, signer, tx);
 }
 
-export async function sendCreateRequestV2(signerLike: AnySigner, requestId: bigint, terms: TermsInput, connection = getConnection()): Promise<{ request: PublicKey; signature: string }> {
+export async function sendCreateRequestV2(signerLike: AnySigner, requestId: bigint, terms: TermsInput, connection = getConnection(), collateralMint?: PublicKey): Promise<{ request: PublicKey; signature: string }> {
   const signer = asSigner(signerLike);
   const borrower = signer.publicKey;
-  const { usdc, wsol } = mints();
+  const { usdc, wsol } = mints(undefined, collateralMint);
   const request = requestV2Pda(borrower, requestId);
   const tx = await getProgramV2(signer, connection)
     .methods.createRequest(bnU64(requestId), args(terms))
@@ -169,6 +179,7 @@ export async function sendCreateRequestV2(signerLike: AnySigner, requestId: bigi
       tokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     })
     .preInstructions([ensureAta(borrower, borrower, usdc), ensureAta(borrower, borrower, wsol)])
+    .remainingAccounts(collateralRemainingAccounts(wsol))
     .transaction();
   return { request, signature: await submitTransaction(connection, signer, tx) };
 }
@@ -186,6 +197,7 @@ export async function sendCancelRequestV2(signerLike: AnySigner, r: RequestV2, c
 
 export async function sendFundRequestV2(signerLike: AnySigner, r: RequestV2, offerId: bigint, priceUpdate = PYTH_PRICE_UPDATE_ACCOUNT, connection = getConnection()): Promise<{ offer: PublicKey; signature: string }> {
   const signer = asSigner(signerLike);
+  priceUpdate = collateralPriceAccount(r.wsolMint, priceUpdate);
   const lender = signer.publicKey;
   const request = new PublicKey(r.publicKey);
   const offer = offerV2Pda(lender, offerId);
@@ -197,8 +209,9 @@ export async function sendFundRequestV2(signerLike: AnySigner, r: RequestV2, off
       systemProgram: SystemProgram.programId,
     })
     .preInstructions([ensureAta(lender, r.borrower, r.usdcMint)])
+    .remainingAccounts(collateralRemainingAccounts(r.wsolMint))
     .transaction();
-  return { offer, signature: await submitTransaction(connection, signer, tx) };
+  return { offer, signature: await submitCollateralTx(connection, signer, r.wsolMint, tx) };
 }
 
 export async function sendCloseRequestV2(signerLike: AnySigner, r: RequestV2, connection = getConnection()): Promise<string> {
