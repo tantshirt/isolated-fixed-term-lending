@@ -1,0 +1,13 @@
+{
+  "note": "Wallets controlled by the ZenLo developer. Activity signed by or involving any of these never counts toward pilot or customer-gate metrics. Add a wallet here before using it for any Devnet run.",
+  "wallets": [
+    { "address": "3dh3Bxu1hJzH3aHfwNAibRqTxyrPsUFyteiuGxycoohh", "role": "deployer, legacy AI admin, evidence lender" },
+    { "address": "Da8h3MkHJPFnZEcNRQzkPPe94AGj6zGmDJrGtyuqUoH7", "role": "private cranker" },
+    { "address": "8wohrpifR962YAwTQjcQjtejSfxbXWeRNGW5B5q16wLq", "role": "private AI worker" },
+    { "address": "14YjSNFR7Em7uNgopu6vRq1fBnhBaKypVps9575sKmtL", "role": "SOAR authority, lab sponsor" },
+    { "address": "8MXk23SniGQQ2v7BtZBt56VGcQRVPzuzTSb6g586UnCa", "role": "evidence borrower" },
+    { "address": "GgmkKZ8FrGdnR972bU3W6BShCwKrbzoDMhGerDdE1dgX", "role": "evidence borrower" },
+    { "address": "BNi7NrKsHjSgndUL9catj5iXaieiwGA4ABA8z2ioJQw7", "role": "cycle evidence borrower" },
+    { "address": "yQiwC3EsGUw5qqGt4Jq6z6SXo7DoWk48eWLjv2LM8hn", "role": "request evidence borrower" }
+  ]
+}
