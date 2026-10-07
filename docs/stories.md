@@ -447,3 +447,237 @@ Acceptance:
 
 - A scripted Devnet run covers public offer → accept → repay, request → fund → expire → claim, and private room → invite → inbox → card → two bids → accept → repay, with both wallets' My loans pages updated.
 - The full design council reviews every screen and records its ruling.
+
+## Desk-first roadmap (approved 2026-10-07)
+
+Epics 19–28 come from the consolidated roadmap: find a counterparty, agree terms, fund, manage, settle, reuse the relationship. Private lender desks are the first commercial hypothesis. Stages 0–4 build up to a customer gate; Stage 5 is that gate; Stages 6–7 stay queued until it passes.
+
+Rules that apply to every story below:
+
+- New economics ship in separate V2 programs (`isolated_loan_v2`, `private_loan_v2`) with their own program IDs and versioned accounts. Legacy loans keep their original programs, layouts, codecs and servicing. V2 economics never apply retroactively.
+- Convex holds consented profiles, preferences, operational metadata, notifications, provider sessions, activity projections and durable jobs. Private conversations, full private books, raw income proofs and viewing keys never go to Convex, telemetry, exports or notifications.
+- Desk pricing caps are product controls. Devnet policy fixtures are labelled test settings and make no jurisdiction-compliance claim. Legal work is out of scope for this Devnet build.
+- A provider capability is specific to network and mint. An unsupported operation stays unavailable with a stated reason, and any simulation of it is labelled.
+- Long-duration Devnet settlement fixtures start early. Production rules are never shortened to produce seven-day recovery evidence.
+- Each story ships its program and client changes, interface, simulation behavior, tests and docs together. It is Done only when acceptance evidence exists.
+
+## Epic 19. Foundation (Stage 0–1)
+
+### Story 19.1. Lender pilot kit
+
+Acceptance:
+
+- `docs/pilot/` has an interview script, an onboarding guide, an observation checklist and a comprehension check covering funding authority, auditor access and terminal collateral loss.
+- A list of developer wallets excluded from every pilot metric is checked in, and the metrics code reads it.
+- Onboarding reuses the existing room invites and join requests (Epic 17). No new invite system.
+
+### Story 19.2. Convex and wallet sign-in
+
+Acceptance:
+
+- Convex is provisioned through the Vercel Marketplace, with separate dev, preview and production deployments.
+- A wallet challenge is domain-bound, expires within 5 minutes and can be used once. Tests reject a replayed nonce, the wrong domain, an expired challenge and the wrong signer.
+- Verification issues a short-lived JWT that Convex accepts through custom JWT auth. Authorization comes from the verified identity, never from a wallet address the client supplies.
+- Changing the connected wallet clears wallet-specific state and the backend session.
+
+### Story 19.3. Durable jobs, capabilities and operations
+
+Acceptance:
+
+- Jobs have a deduplication key, bounded retries with backoff, a last error, and reconciliation of any uncertain transaction signature before a resubmit.
+- A capability table keyed by network, mint and provider drives every provider action in the interface.
+- Flags can pause new originations or a single provider without blocking repayment, liquidation or claims on existing loans.
+- Monitors report job and watch lag, oracle freshness, stuck provider sessions, uncertain signatures and authorization failures.
+- The cranker runs in shadow inside Convex and its decisions are diffed against Vercel Cron. Only one scheduler is active at a time, and cutover happens after 7 days of zero diffs.
+
+### Story 19.4. Versioned models and the shared loan view
+
+Acceptance:
+
+- Typed, versioned models exist for loan terms and accounting, collateral assets (mint, decimals, feed, risk limits), desks, auditor grants, automation mandates and provider capabilities.
+- A single client `LoanView` gives payoff, remaining principal, risk, deadlines and the actions available now, for legacy and V2 loans alike. Every screen reads it rather than recomputing.
+
+### Story 19.5. Governance
+
+Acceptance:
+
+- A 2-of-3 Squads multisig with independent signers and a default 24-hour time lock holds the V2 upgrade authorities through its vault PDA.
+- A V2 `Config` account separates the AI admin, AI worker, liquidation-pool admin, credential issuer and keeper. Only the vault can rotate them. `AI_ADMIN` is no longer reused for financial administration, and no single-key bypass remains.
+- Devnet evidence shows one time-locked upgrade, one key rotation and one recovery.
+- Operational keys cannot change financial policy, and a test proves it.
+
+### Story 19.6. Official asset registry
+
+Acceptance:
+
+- `app/public/brands/registry.json` records each logo's source, retrieval date, file hash, approved variants and intended placement.
+- Logos are official artwork with their original proportions and colors. A logo appears only where that provider is actually used; anything not yet sourced is shown as a text label.
+
+## Epic 20. Shared V2 accounting (Stage 2)
+
+### Story 20.1. Accounting engine and parity vectors
+
+Acceptance:
+
+- `loan-core` tracks original and outstanding principal, accrued and paid interest, last accrual time, the fractional remainder, assessed and paid late fees, the minimum-interest policy, and the maturity, grace, recovery and terminal-claim timestamps.
+- Accrual happens before principal changes. Payments apply to interest, then permitted late fees, then principal. Pro-rata accrual uses outstanding principal and stops at maturity. The remainder carries forward, so many small payments do not inflate rounding.
+- Minimum interest is enforced once, at final payoff, minus interest already paid. Charge ceilings apply before the final payable amount is fixed. Origination checks the maximum contractual exposure; health and settlement use current payoff. Principal at zero is never treated as repaid while charges remain.
+- `vectors-v2.json` is read by both the Rust and TypeScript tests. Property tests cover cap precedence, remainder bounds, payment order and token conservation, and show that pro-rata with no partial payments equals legacy `debt()`.
+- `docs/research.md` states every formula and rounding direction. The note, the vectors and the tests change together.
+
+### Story 20.2. Pricing ceilings
+
+Acceptance:
+
+- Every V2 loan carries an annual pricing ceiling: from the desk policy, or one the lender declares under a protocol maximum labelled a Devnet test setting.
+- The ceiling is applied cumulatively, minus charges already paid, and rounds down. It takes precedence over full-term interest, the minimum-interest floor and any included fees.
+- The interface shows term cost, annualized pricing and current payoff separately, and states the calculation basis and year convention. Optional provider and network fees are shown apart from lending charges.
+
+### Story 20.3. Spot and EMA oracle policy
+
+Acceptance:
+
+- The canonical Pyth owner, verification, feed, timestamp, confidence and exponent checks are preserved. The EMA uses its own confidence interval.
+- Ordinary risk liquidation requires both the conservative spot and the EMA valuations to cross the threshold. Emergency liquidation accepts a valid conservative spot alone at three LTV points above the threshold. An invalid spot price never qualifies.
+- The interface explains the emergency exception to wick protection, and the note says EMA does not remove the risk of callers choosing among recent valid updates.
+
+## Epic 21. Public V2 program (Stage 2)
+
+### Story 21.1. `isolated_loan_v2` core
+
+Acceptance:
+
+- New program ID and versioned `OfferV2` and `RequestV2` accounts with the V2 ledger and an immutable `origin_lender` plus a mutable `current_lender`. PDA signing uses the immutable identity; repayment and claims go to the current lender.
+- Instructions: create, cancel, accept, partial or full repay, add collateral (no oracle needed to deposit), close.
+- Partial payments go to the current lender. Before signing, the review shows the payment's effect and that the deadline is unchanged. Health refreshes when a valid price is available.
+- The lender chooses full-term or pro-rata early repayment within limits. The borrower sees the same rule on the listing, the review and the active loan, including any cap or minimum-interest adjustment.
+- The Create and Request wizards add repayment policy, pricing ceiling, grace and late fee. Simulation and Learn use the same V2 math.
+- The legacy LiteSVM suite still passes against the legacy program, unchanged. Long-duration Devnet fixtures are opened on deploy day.
+
+### Story 21.2. Grace, recovery and surplus return
+
+Acceptance:
+
+- Grace defaults to 24 hours and is configurable up to 48. The late fee is a one-time 1% of principal unpaid at maturity, configurable up to 5%, subject to the ceiling.
+- Before grace ends, maturity alone does not allow overdue liquidation; risk liquidation remains possible. After grace, anyone may pay the payoff in USDC regardless of LTV, receive the 5% incentive, and the surplus returns to the borrower.
+- From 24 hours after grace, the lender may take debt-equivalent collateral with no bonus, the surplus returns, and any shortfall is recorded. This needs a valid oracle.
+- From 7 days after grace, the lender may claim all remaining collateral without an oracle. Signing reviews and the active loan disclose the possible loss of surplus.
+- Repayment stays available until a settlement executes. Repayment and competing settlement calls resolve to exactly one terminal result.
+- LiteSVM covers every exact boundary, stale and missing oracles, surplus and shortfall, and repayment races. Devnet evidence comes from the fixtures in 21.1.
+
+### Story 21.3. Public reference liquidator
+
+Acceptance:
+
+- A keeper funded with operator-owned Devnet USDC enforces a per-action cap, a total-capital cap and a minimum payout. It takes a fresh transaction review before each action and reconciles uncertain signatures.
+- It reports depleted capital and failures. It never uses user automation allowances as capital, and the interface never promises guaranteed execution.
+
+## Epic 22. Multi-loan private rooms (Stage 3)
+
+### Story 22.1. `private_loan_v2` rooms with many loans
+
+Acceptance:
+
+- L1 loan anchors are namespaced by an immutable creator and nonce. Initial private setup requires the creator's authorization, binding to the room and valid membership.
+- Sequential room indexes and registry entries are allocated atomically inside the rollup. The index is metadata, not signing authority across domains.
+- Each borrowing request still accepts only one proposal, while a room can hold many loans. Each loan keeps its own custody, accounting and read permissions.
+- Roles are explicit. The room-owner bypass in `propose_terms` does not exist in V2. Authorities come from `Config`.
+- This closes accepted risks S6 (loan-id squatting) and S7 (one loan per room), with tests.
+
+### Story 22.2. Private V2 protections
+
+Acceptance:
+
+- Private loans use the V2 ledger: partial repayment, add collateral, fair early repayment, grace, late fee, priced fallback and terminal claim, with the same vectors as the public program.
+- `watch_loan` follows the V2 boundaries and the spot plus EMA policy. Watches last through recovery and are rebound when ownership changes. Stale quote revisions are invalidated.
+- Losing tickets are refunded in full and winning-ticket excess funding is returned, each exactly once.
+- Before this story starts, Devnet evidence shows the EMA fields can be read inside the PER.
+
+## Epic 23. Private lender desks (Stage 3)
+
+### Story 23.1. Desk accounts, roles and policies
+
+Acceptance:
+
+- A desk has an identity, private membership, immutable policy versions and a loan book. A desk is not a pooled treasury; each loan records its originating and current lender wallet.
+- Roles: an administrator manages profile, membership and future policies; a lender proposes and funds from their own wallet; an auditor reads consented executed terms, status and receipts; a borrower acts on their own loans. Administration grants no spending or private-read authority.
+- Policies cover assets, principal, annual pricing, duration, repayment mode, LTV, grace, fees, settlement and auditor scope, and the program enforces them at propose and accept.
+- Tests cover cross-desk isolation, policy binding, role separation and the absence of an administrator spending bypass.
+
+### Story 23.2. Desk workspace
+
+Acceptance:
+
+- Private gains Desks alongside Workspace and Liquidations. A desk has Overview, Loans, Policy and People.
+- Overview leads with urgent loans and pending signatures. Every position names its funding wallet. Aggregate exposure is labelled a loan-book total, not a shared treasury. Totals are computed only in an authorized context.
+- On mobile, access, identity and the next action come before introductory artwork.
+- The static "Your private desk" panel is replaced.
+
+## Epic 24. Desk MVP completion (Stage 4)
+
+### Story 24.1. Auditor consent
+
+Acceptance:
+
+- For desk loans, named auditors and their scope are shown at signing, and both parties consent once to that audience.
+- Adding a reader to an existing loan needs new consent. Removing one revokes future access. Chat, rejected proposals and raw income proofs stay excluded unless separately shared.
+- Non-desk loans keep selected-loan disclosure grants. Before this story starts, Devnet evidence shows permission members can change after creation and that read-only members cannot see balances.
+
+### Story 24.2. Complete private portfolios
+
+Acceptance:
+
+- My loans includes the wallet's authenticated private borrowing and lending positions, read with its own private sign-in.
+- Public and private totals are named separately. Locked or unavailable private data never appears as zero.
+
+### Story 24.3. Alerts and reminders
+
+Acceptance:
+
+- Alerts fire after 25%, 50% and 75% of the initial collateral-price buffer is used. The absolute remaining buffer is shown, with escalation at 5%, 2% and liquidation eligibility.
+- The baseline is rebased after a confirmed principal reduction or collateral addition, using the next valid price. Alerts are deduplicated and have recovery hysteresis.
+- Reminders cover maturity, grace end, the priced-recovery window and the terminal-claim time.
+- Telegram is linked by wallet consent and a one-use bot link. Private notifications are generic. Monitoring receives only the deadlines and risk bands the user separately authorized.
+
+### Story 24.4. MoneyGram sandbox cash-out
+
+Acceptance:
+
+- Cash-out is offered after a confirmed USDC receipt or from an available balance, using server-created sessions, the hosted widget, and reviewed signing that checks network, mint, amount, recipient and payer.
+- The Ramps transaction id and `mgiTransactionId` are stored. The Ed25519 webhook signature is verified over the documented timestamp, host and unmodified body for the right environment, with replay protection and deduplication.
+- Reconciliation uses `GET /v1/transactions/{id}/status?sync=true`. Funds received, pickup ready, paid out and refund states are distinct.
+- Coverage and quotes come from the provider. A sandbox reference never implies real cash availability. Borrowers in cash-out-only countries are told they need USDC to repay. The screen says this step is not private.
+- Tests cover unsupported mints and networks, rejected signatures, uncertain transactions, forged and replayed webhooks, reconciliation and refunds.
+
+### Story 24.5. Gate metrics
+
+Acceptance:
+
+- A dashboard counts activated desks, confirmed loans per desk, originations without developer intervention and returning lenders, excluding the developer wallets from 19.1.
+
+## Epic 25. Customer gate (Stage 5)
+
+### Story 25.1. Two-week observed lender pilot
+
+Acceptance:
+
+- Five independent lender operators have activated desks, and at least 80% originate without developer intervention after onboarding.
+- Ten confirmed loans across three desks, with three lenders returning for another loan. Developer-generated activity does not count.
+- Participants pass the comprehension check from 19.1. No critical custody, authorization or settlement defect is unresolved.
+- If the gate fails, activation and workflow fixes come before Epic 26.
+
+## Epic 26. Expansion backlog (Stage 6, prioritized by measured lender needs)
+
+Each item becomes a full story when it is pulled forward.
+
+- Refinancing and rollover: atomic, borrower-consented, within one execution domain, with an explicit borrower contribution when needed. No implicit cash-out. Same-lender rollover uses a renewal offer only that borrower can accept. Recorded as Refinanced, separate from repayment history.
+- jitoSOL collateral: asset-specific mint, decimals, feed and risk configuration at provisional 60% max LTV and 70% liquidation, preferring a verified direct JITOSOL/USD feed.
+- Private liquidation operations beyond 22.2, and user automation mandates for top-up and repayment, bound to loan, action, source, destination, trigger, expiry, cumulative cap and fee cap.
+- MoneyGram cash-in as a separate repayment-funding journey.
+- Shielded deposits and withdrawals through Umbra (Privacy Cash as the evaluated alternative), enabled per asset only after exact-mint support and a full recovery test. Provider viewing keys use the narrowest scope.
+- Private repayment history, SAS credentials, Reclaim income proofs, and an invited wSOL credit pilot at 80% / 85% / 88%.
+- Secondary loan market with atomic purchase, and activity and tax-oriented transaction-record export with replayable cursors.
+
+## Epic 27. Advanced privacy (Stage 7, research only)
+
+- Confidential settlement and Arcium computations stay research-only until a paying desk shows a concrete need and asset compatibility, redemption, custody, liquidation and recovery are proven.

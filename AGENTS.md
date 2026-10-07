@@ -1,6 +1,6 @@
 # Agent guide
 
-This repo is ZenLo, an isolated fixed-term USDC / wSOL loan on Solana. The local program and first interface are implemented. The approved redesign adds a wallet-free simulation and a genuine Devnet experience.
+This repo is ZenLo, an isolated fixed-term USDC / wSOL loan on Solana. The public and private programs, the interface and the Devnet experience are implemented (Epics 1–18). The approved desk-first roadmap (Epics 19–27) adds private lender desks, borrower protections in separate V2 programs, a Convex backend and Squads governance.
 
 You do not need any extra planning tools. The work queue is in this repo.
 
@@ -9,6 +9,7 @@ You do not need any extra planning tools. The work queue is in this repo.
 1. Ask which lane the person is on, if they have not said. The lanes are not tied to a name.
    - Program lane: the Anchor program, accounts, vaults, and loan instructions.
    - Oracle and client lane: Pyth checks, tests, client scripts, and docs.
+   - Desk lane: the desk-first roadmap. Take the next Open row whose dependencies are Done.
 2. Open [docs/sprint-plan.md](docs/sprint-plan.md). Take the next story in that lane whose status is Open.
 3. Open that story in [docs/stories.md](docs/stories.md). Implement only its acceptance checks.
 4. Before you invent a number, a seed, or a status, read the section the story points at.
@@ -25,6 +26,12 @@ That file describes ZenLo: the pebble-and-wave mark (no mascot), abstract pebble
 
 ## Leave these alone
 
-Do not start the frontend build, an indexer, Trident fuzzing, or a devnet deploy while any Epic 1–6 story is still Open. Do not add partial liquidation, auto-refinance, per-second interest, or a USDC price feed. Do not weaken the Pyth owner check so a test can pass.
+Do not weaken the Pyth owner check so a test can pass. Do not add partial liquidation, auto-refinance, or a USDC price feed.
+
+The legacy programs (`isolated_loan` `CKvMga…`, `private_loan` `HwK4hx…`) keep their week-1 economics: flat full-term interest, no partial repayment, no top-up, no grace. Never change their account layouts or apply V2 rules to their loans. Pro-rata accrual, partial repayment, top-up, grace, late fees and borrower-consented refinancing belong only in the V2 programs, following [docs/research.md](docs/research.md).
+
+Never move private conversations, private books, raw income proofs or viewing keys into Convex, telemetry, exports or notifications. Do not shorten the seven-day recovery window to produce evidence. Do not install Light, Inco, Arcium or a confidential-token stack; they are research references.
+
+Open pull requests but do not merge them. The repo owner merges.
 
 If a formula in the research note disagrees with a test you trust, change the note and the test in the same change. Do not silently pick a third rule.
