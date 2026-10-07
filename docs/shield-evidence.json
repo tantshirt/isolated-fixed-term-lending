@@ -1,0 +1,32 @@
+{
+  "story": "26.6",
+  "network": "devnet",
+  "spike": {
+    "checkedAt": "2026-10-07",
+    "umbra": {
+      "programId": "DSuKkyqGVGgo4QtPABfxKJKygUDACbUhirnuv63mEpAJ",
+      "relayerInfo": "https://relayer.api-devnet.umbraprivacy.com/v1/relayer/info",
+      "supportedMints": ["So11111111111111111111111111111111111111112"],
+      "zenloUsdcSupported": false,
+      "sdk": "@umbra-privacy/sdk@4.0.0"
+    },
+    "privacyCash": {
+      "supported": false,
+      "reason": "No public Devnet relayer; official SDK is mainnet-only."
+    }
+  },
+  "umbra": {
+    "status": "TODO: run the manual recovery test in docs/devnet.md with a real wallet",
+    "verifiedAt": null,
+    "wallet": null,
+    "mint": "So11111111111111111111111111111111111111112",
+    "shieldLamports": null,
+    "shieldQueueSignature": null,
+    "shieldedBalanceAfterShield": null,
+    "storageCleared": null,
+    "shieldedBalanceAfterRecover": null,
+    "unshieldQueueSignature": null,
+    "shieldedBalanceAfterUnshield": null,
+    "notes": null
+  }
+}

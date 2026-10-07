@@ -24,3 +24,7 @@ Added on 2026-10-07 for the landing page and use cases (Story 19.7). Each appear
 - MoneyGram: the horizontal color logo from the header of [corporate.moneygram.com](https://corporate.moneygram.com). The full brand center is [partner-gated](https://zeroheight.com/833c7683f/p/464181-brand-center); confirm usage with MoneyGram before mainnet.
 
 Helius has no logo because nothing in the app uses Helius yet.
+
+Added on 2026-10-07 for Story 26.6:
+
+- Umbra: the logo mark from the header of [umbraprivacy.com](https://umbraprivacy.com) (`/assets/umbra-logo-mark.svg`), shown only beside the Shield wSOL panel and always with the word Umbra.

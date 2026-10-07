@@ -9,6 +9,7 @@ export const PROVIDER_LOGOS = {
   vercel: { file: "vercel.svg", ratio: 1, name: "Vercel", mark: true },
   telegram: { file: "telegram.svg", ratio: 1, name: "Telegram", mark: true },
   moneygram: { file: "moneygram.svg", ratio: 262 / 68, name: "MoneyGram", mark: false, scale: 1.4 },
+  umbra: { file: "umbra.svg", ratio: 1, name: "Umbra", mark: true },
 } as const;
 
 export type ProviderLogoId = keyof typeof PROVIDER_LOGOS;

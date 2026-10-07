@@ -111,3 +111,34 @@ Run each step with `npx tsx --env-file=.env.local scripts/v2-fixtures.ts --run s
 - **Before sending**: it re-reads the loan and the price, simulates the transaction, and records the signature before confirming.
 - **In Convex**: it runs every minute when `KEEPER_ENABLED=1` and `KEEPER_SECRET` are set on the deployment. Capital, settlements, failures and depletion appear in `/ops/health`.
 - **No guarantee**: it never promises to act. Any wallet can settle the same loans.
+
+## Umbra wSOL shielding (Story 26.6)
+
+Spike, 7 October 2026:
+
+- **Umbra**: Devnet program `DSuKkyqGVGgo4QtPABfxKJKygUDACbUhirnuv63mEpAJ`. The relayer (`https://relayer.api-devnet.umbraprivacy.com/v1/relayer/info`) lists wSOL `So11111111111111111111111111111111111111112` but not ZenLo's Devnet USDC `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`. Umbra's docs say Devnet and localnet support wSOL only.
+- **Privacy Cash**: blocked. There is no public Devnet relayer, and the official SDK is mainnet-only.
+
+The app uses `@umbra-privacy/sdk` 4.0.0 (pinned exact). It covers direct deposits into an encrypted balance and withdrawals back to the wallet, decrypts the balance locally and signs through Wallet Standard, so it needs no ZK prover. `app/lib/umbra/session.ts` is the only module that imports it. The My loans panel loads that module on first use.
+
+What it does:
+
+- **Shield / Unshield wSOL**: moves wSOL between the wallet's token account and the Umbra encrypted balance. It is a wallet step before a deposit or after a withdrawal. ZenLo's loan mints and programs are unchanged.
+- **Visible on chain**: the amount, the time and the wallet address of each shield and unshield. Only the balance held in between is hidden.
+- **Keys**: one wallet signature over Umbra's consent message derives the master seed. The SDK keeps it in memory, so closing the tab forgets it. Nothing is written to localStorage, IndexedDB, Convex, telemetry, exports or notifications. `app/lib/umbra/key-leak.test.ts` enforces this.
+- **Recover shielded balance**: discards the session, asks the same wallet to sign again (which gives the same keys), and re-reads the encrypted balance from Devnet.
+- **Switch**: `NEXT_PUBLIC_UMBRA_ENABLED=1`. Leave it off until the recovery test below has passed and been recorded.
+
+### Manual recovery test (needs a real wallet)
+
+Run this with Phantom, Backpack or Solflare set to Devnet, holding about 0.2 SOL and at least 0.05 wSOL:
+
+1. Build with `NEXT_PUBLIC_UMBRA_ENABLED=1` and open `/devnet/me`. Connect the wallet.
+2. Choose **Unlock with wallet signature** and sign Umbra's consent message. Write down the shielded balance (usually 0).
+3. Shield 0.05 wSOL. Approve the registration transactions (first time only) and the deposit. Record the queue signature from the wallet history. Check that the shielded balance went up by 0.05 minus Umbra's fee.
+4. Clear the site's storage (DevTools → Application → Clear site data) and reload. The panel should show the shielded balance as Hidden.
+5. Choose **Recover shielded balance** and sign again. The balance from step 3 should come back.
+6. Unshield the full shielded amount. Check that the wallet's wSOL went up and the shielded balance is 0.
+7. Fill in the `umbra` entry in [shield-evidence.json](shield-evidence.json) with the wallet, the signatures and the balances seen. Then set `NEXT_PUBLIC_UMBRA_ENABLED=1` on the deployment.
+
+If step 3 or 6 reports that Umbra's confirmation is pending, wait a minute and choose Recover. If tokens stay staged after a dropped callback, use Umbra's `getStagedSolRecovererFunction`; the UI does not offer that yet.
