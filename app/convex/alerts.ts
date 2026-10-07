@@ -1,7 +1,10 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { requireWallet } from "./auth";
-import { newNonce } from "../lib/auth/siws";
+import { MAX_ATTEMPTS } from "../lib/jobs/policy";
+import { providerAllowed } from "../lib/ops-flags";
+import { api } from "./_generated/api";
+import { newNonce, isWalletAddress } from "../lib/auth/siws";
 
 const LINK_TTL_MS = 10 * 60_000;
 const MAX_SUBSCRIPTIONS = 50;
@@ -71,7 +74,7 @@ export const subscribe = mutation({
   },
   handler: async (ctx, a) => {
     const wallet = await requireWallet(ctx);
-    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a.loan)) throw new Error("Not a loan address");
+    if (!isWalletAddress(a.loan)) throw new Error("Not a loan address");
     if (a.kind === "private" && !a.deadlines) throw new Error("Private alerts need the deadlines you choose to share.");
     const existing = (await ctx.db.query("alertSubscriptions").withIndex("by_wallet", (q) => q.eq("wallet", wallet)).collect()).filter((s) => s.active);
     const same = existing.find((s) => s.loan === a.loan);
@@ -106,15 +109,52 @@ export const activeSubscriptions = internalQuery({
     const out = [];
     for (const s of subs) {
       const chat = await ctx.db.query("telegramChats").withIndex("by_wallet", (q) => q.eq("wallet", s.wallet)).first();
-      out.push({ ...s, chatId: chat?.chatId ?? null });
+      out.push({ ...s, chatId: chat?.chatId ?? null, chatLinkId: chat?._id ?? null });
     }
     return out;
   },
 });
 
-export const saveState = internalMutation({
-  args: { id: v.id("alertSubscriptions"), state: v.any() },
-  handler: async (ctx, { id, state }) => {
-    await ctx.db.patch(id, { state });
+/** State and its notifications commit together; stale scans cannot restore withdrawn consent. */
+export const commitScan = internalMutation({
+  args: {
+    id: v.id("alertSubscriptions"),
+    expectedRevision: v.number(),
+    chatLinkId: v.id("telegramChats"),
+    state: v.any(),
+    messages: v.array(v.object({ key: v.string(), text: v.string() })),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, { id, expectedRevision, chatLinkId, state, messages }) => {
+    const sub = await ctx.db.get(id);
+    const chat = await ctx.db.get(chatLinkId);
+    if (!sub?.active || (sub.revision ?? 0) !== expectedRevision || !chat || chat.wallet !== sub.wallet) return false;
+    const now = Date.now();
+    for (const message of messages) {
+      const dedupKey = `alert:${id}:${chatLinkId}:${message.key}`;
+      const existing = await ctx.db.query("jobs").withIndex("by_dedup", (q) => q.eq("dedupKey", dedupKey)).unique();
+      if (!existing) await ctx.db.insert("jobs", {
+        kind: "telegram-send", dedupKey,
+        payload: { subscriptionId: id, chatLinkId, chatId: chat.chatId, text: message.text },
+        status: "queued", attempts: 0, maxAttempts: MAX_ATTEMPTS,
+        nextRunAt: now, createdAt: now, updatedAt: now,
+      });
+    }
+    await ctx.db.patch(id, { state, revision: expectedRevision + 1 });
+    return true;
+  },
+});
+
+/** Called immediately before delivery, including retries after a provider outage. */
+export const deliveryAllowed = internalQuery({
+  args: { subscriptionId: v.string(), chatLinkId: v.string(), chatId: v.string() },
+  returns: v.union(v.literal("allowed"), v.literal("revoked"), v.literal("paused")),
+  handler: async (ctx, { subscriptionId, chatLinkId, chatId }): Promise<"allowed" | "revoked" | "paused"> => {
+    const sid = ctx.db.normalizeId("alertSubscriptions", subscriptionId);
+    const cid = ctx.db.normalizeId("telegramChats", chatLinkId);
+    const sub = sid ? await ctx.db.get(sid) : null;
+    const chat = cid ? await ctx.db.get(cid) : null;
+    if (!sub?.active || !chat || chat.wallet !== sub.wallet || chat.chatId !== chatId) return "revoked";
+    return providerAllowed("telegram", await ctx.runQuery(api.ops.flags, {})).allowed ? "allowed" : "paused";
   },
 });

@@ -1,6 +1,7 @@
 // Desk workspace view model (Story 23.2). Pure: works on records already read through the TEE
 // with the viewer's own token. A loan the viewer cannot read stays "not shared", never zero.
 import type { PublicKey } from "@solana/web3.js";
+import { parseAmount } from "../offer-validation";
 import {
   MAX_GRACE_SECONDS,
   MAX_LATE_FEE_BPS,
@@ -161,8 +162,19 @@ export function policyRows(p: DeskPolicyV2): [string, string][] {
 
 export type PolicyDraft = Omit<DeskPolicyV2, "version" | "publishedAt">;
 
+/** Editable USDC amounts must validate before bigint conversion reaches the render path. */
+export function policyAmounts(minUsdc: string, maxUsdc: string): Pick<PolicyDraft, "minPrincipal" | "maxPrincipal"> | string {
+  const minPrincipal = parseAmount(minUsdc, 6);
+  const maxPrincipal = parseAmount(maxUsdc, 6);
+  if (minPrincipal === null || maxPrincipal === null) return "Enter loan amounts with up to 6 decimal places.";
+  if (minPrincipal > 18_446_744_073_709_551_615n || maxPrincipal > 18_446_744_073_709_551_615n) return "A loan amount is too large.";
+  return { minPrincipal, maxPrincipal };
+}
+
 /** Mirrors `PolicyArgs::validate` plus the protocol bounds, so a bad policy is caught before signing. */
 export function policyDraftProblem(p: PolicyDraft): string | null {
+  const numbers = [p.minDurationSeconds, p.maxDurationSeconds, p.maxAnnualCeilingBps, p.maxInterestBps, p.repaymentModes, p.maxLtvBps, p.maxLiquidationLtvBps, p.minGraceSeconds, p.maxLateFeeBps];
+  if (numbers.some((n) => !Number.isSafeInteger(n) || n < 0)) return "Enter valid non-negative numbers for the policy limits.";
   if (p.maxAnnualCeilingBps <= 0) return "Set an annual pricing ceiling.";
   if (p.maxAnnualCeilingBps > PROTOCOL_MAX_ANNUAL_CEILING_BPS) return "The annual pricing ceiling is above ZenLo's Devnet limit.";
   if (p.maxPrincipal <= 0n || p.minPrincipal > p.maxPrincipal) return "The smallest loan must not be larger than the largest.";

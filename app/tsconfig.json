@@ -42,6 +42,7 @@
     ".next-check/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "scripts/private-v2-client.ts"
   ]
 }

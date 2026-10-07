@@ -14,23 +14,26 @@ export type ParityReport = {
 export const PARITY_GRACE_MS = 3 * 60_000;
 
 export function crankParity(observations: CrankObservation[], now: number, graceMs = PARITY_GRACE_MS): ParityReport {
-  const shadowFirstDue = new Map<string, number>();
+  const shadowDue = new Map<string, number[]>();
   const liveTriggered = new Map<string, number[]>();
   let shadowScans = 0;
   let liveRuns = 0;
   for (const o of observations) {
     if (o.source === "shadow") {
       shadowScans++;
-      for (const c of o.due) if (!shadowFirstDue.has(c) || shadowFirstDue.get(c)! > o.at) shadowFirstDue.set(c, o.at);
+      for (const c of o.due) shadowDue.set(c, [...(shadowDue.get(c) ?? []), o.at]);
     } else {
       liveRuns++;
       for (const c of o.triggered) liveTriggered.set(c, [...(liveTriggered.get(c) ?? []), o.at]);
     }
   }
-  const missedByLive = [...shadowFirstDue]
-    .filter(([c, at]) => now - at > graceMs && !(liveTriggered.get(c) ?? []).some((t) => t >= at - graceMs && t <= at + graceMs))
+  const nearby = (times: number[], at: number) => times.some((t) => Math.abs(t - at) <= graceMs);
+  const missedByLive = [...shadowDue]
+    .filter(([c, times]) => times.some((at) => now - at > graceMs && !nearby(liveTriggered.get(c) ?? [], at)))
     .map(([c]) => c)
     .sort();
-  const unseenByShadow = [...liveTriggered.keys()].filter((c) => !shadowFirstDue.has(c)).sort();
+  const unseenByShadow = [...liveTriggered]
+    .filter(([c, times]) => times.some((at) => !nearby(shadowDue.get(c) ?? [], at)))
+    .map(([c]) => c).sort();
   return { missedByLive, unseenByShadow, shadowScans, liveRuns };
 }

@@ -9,7 +9,7 @@ import { EarlyRepayment } from "@/lib/loan-math-v2";
 import type { RoomMessage } from "@/lib/private/room-codec";
 import { auditorHash, type LoanTermsV2 } from "@/lib/private/v2-codec";
 import { acceptV2, cancelV2, claimV2, fundV2, removeReaderV2, repayV2, shareAuditorsV2, topUpV2 } from "@/lib/private/v2-loans";
-import { audienceFor, sharedAuditors, v2LoanState, type Audience } from "@/lib/private/v2-room-view";
+import { audienceFor, resolveAudience, fullPayoffAmount, sharedAuditors, v2LoanState, type Audience } from "@/lib/private/v2-room-view";
 import { reviewFigures } from "@/lib/v2/rules";
 import shared from "../private.module.css";
 import s from "../desk/Desk.module.css";
@@ -41,6 +41,7 @@ export function V2LoanCard({ index, anchor, terms: t, messages, now, ctx }: { in
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [usdc, setUsdc] = useState("");
+  const [fullPayoff, setFullPayoff] = useState(false);
   const [wsol, setWsol] = useState("");
   const [consent, setConsent] = useState(false);
 
@@ -50,9 +51,9 @@ export function V2LoanCard({ index, anchor, terms: t, messages, now, ctx }: { in
     let live = true;
     const list = keyList ? keyList.split(",") : [];
     (async () => {
-      const hash = list.length ? await auditorHash(list.map((k) => new PublicKey(k))) : null;
+      const resolved = await resolveAudience(t, list, (keys) => auditorHash(keys.map((k) => new PublicKey(k))));
       if (live) {
-        setAudience(audienceFor(t, list, hash));
+        setAudience(resolved);
         setConsent(false);
       }
     })();
@@ -67,6 +68,7 @@ export function V2LoanCard({ index, anchor, terms: t, messages, now, ctx }: { in
     try {
       await f();
       setUsdc("");
+      setFullPayoff(false);
       setWsol("");
       ctx.onDone();
     } catch (e) {
@@ -75,7 +77,8 @@ export function V2LoanCard({ index, anchor, terms: t, messages, now, ctx }: { in
       setBusy(null);
     }
   };
-  const atoms = (() => {
+  const fullAmount = fullPayoffAmount(t, now);
+  const atoms = fullPayoff ? fullAmount : (() => {
     const [w, fr = ""] = usdc.trim().split(".");
     return /^\d+$/.test(w || "x") && /^\d{0,6}$/.test(fr) ? BigInt(w) * 1_000_000n + BigInt(fr.padEnd(6, "0")) : null;
   })();
@@ -238,11 +241,11 @@ export function V2LoanCard({ index, anchor, terms: t, messages, now, ctx }: { in
         <div className={s.form}>
           <label>
             Repay (USDC)
-            <input className={`${shared.input} num`} inputMode="decimal" value={usdc} onChange={(e) => setUsdc(e.target.value)} />
+            <input className={`${shared.input} num`} inputMode="decimal" value={fullPayoff ? formatUsdc(fullAmount).replace(/,/g, "") : usdc} onChange={(e) => { setFullPayoff(false); setUsdc(e.target.value); }} />
           </label>
           <div className={s.actions}>
             {state.payoff !== null && (
-              <Button variant="ghost" onClick={() => setUsdc(formatUsdc(state.payoff!).replace(/,/g, ""))}>
+              <Button variant="ghost" onClick={() => setFullPayoff(true)}>
                 Fill full payoff
               </Button>
             )}
@@ -250,6 +253,11 @@ export function V2LoanCard({ index, anchor, terms: t, messages, now, ctx }: { in
               Repay USDC
             </Button>
           </div>
+          {fullPayoff && (
+            <p className={`${shared.hint} ${s.wide}`}>
+              This allows up to {formatUsdc(fullAmount)} USDC, including two minutes for signing. Only what is owed when it lands is taken. If signing takes longer, refresh the payoff before approving.
+            </p>
+          )}
           <label>
             Add collateral (wSOL)
             <input className={`${shared.input} num`} inputMode="decimal" value={wsol} onChange={(e) => setWsol(e.target.value)} />

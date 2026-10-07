@@ -4517,6 +4517,31 @@
               }
             ]
           }
+        },
+        {
+          "name": "ai_config",
+          "docs": [
+            "before updating its worker. Required even when absent so rotation cannot skip revocation."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         }
       ],
       "args": [

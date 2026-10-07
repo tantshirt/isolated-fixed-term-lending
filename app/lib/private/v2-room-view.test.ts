@@ -55,3 +55,34 @@ test("recovery opens for the lender only at the right phase", () => {
   const late = v2LoanState(loan("active", start - 7 * 86_400), lender, NOW);
   assert.deepEqual(late.actions, ["claim-priced", "claim-terminal"]);
 });
+
+
+test("full payoff remains a close after signing delay and across maturity", async () => {
+  const { fullPayoffAmount } = await import("./v2-room-view");
+  const { applyPayment, payoff } = await import("../loan-math-v2");
+  const t = loan("active", NOW - 7 * 86_400);
+  const cap = fullPayoffAmount(t, NOW);
+  assert.ok(cap > payoff(t.terms, t.ledger, NOW));
+  for (const delay of [1, 30, 120]) {
+    const [, payment] = applyPayment(t.terms, t.ledger, NOW + delay, cap);
+    assert.equal(payment.closed, true);
+    assert.equal(payment.used, payoff(t.terms, t.ledger, NOW + delay));
+  }
+  const nearDue = t.terms.startTs + t.terms.duration - 60;
+  const [, late] = applyPayment(t.terms, t.ledger, nearDue + 90, fullPayoffAmount(t, nearDue));
+  assert.equal(late.closed, true);
+  assert.ok(late.lateFee > 0n);
+});
+
+test("auditor revocation resumes from the audience still authorized on chain", async () => {
+  const { resolveAudience } = await import("./v2-room-view");
+  const keys = [auditor, stranger].map((k) => k.toBase58());
+  const hash = async (ks: string[]) => new Uint8Array(createHash("sha256").update(Buffer.concat(ks.map((k) => new PublicKey(k).toBuffer()))).digest());
+  const t = loan("active", NOW - 3600, await hash([keys[1]]));
+  const thread = keys.map((k, i) => msg(i, lender, auditorBody(t.roomIndex, new PublicKey(k))));
+  const original = sharedAuditors(thread, t);
+  assert.deepEqual(await resolveAudience(t, original, hash), { kind: "named", auditors: [keys[1]] });
+  assert.deepEqual(await resolveAudience({ ...t, status: "funded" }, original, hash), { kind: "unverified" });
+  assert.deepEqual(await resolveAudience({ ...t, auditorHash: new Uint8Array(32) }, original, hash), { kind: "none" });
+  assert.deepEqual(await resolveAudience({ ...t, auditorHash: await hash([borrower.toBase58()]) }, original, hash), { kind: "unverified" });
+});

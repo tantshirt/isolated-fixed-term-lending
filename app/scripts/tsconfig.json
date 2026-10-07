@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["private-v2-client.ts"],
+  "exclude": ["../node_modules"]
+}

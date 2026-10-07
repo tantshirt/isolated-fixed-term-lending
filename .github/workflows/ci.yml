@@ -33,6 +33,9 @@ jobs:
       # tests/loan-math.test.ts checks the app's math and PDAs, so it needs the app's packages.
       - run: npm ci
         working-directory: app
+      # This live evidence script imports the program workspace's helpers and needs both installs.
+      - run: npx tsc --noEmit --project scripts/tsconfig.json
+        working-directory: app
       # The default build pins canonical USDC and wSOL; tests fail if it does not.
       - name: Build programs
         run: |
@@ -55,7 +58,7 @@ jobs:
         run: |
           cargo test --manifest-path programs/isolated_loan/Cargo.toml --test litesvm
           cargo test --manifest-path programs/isolated_loan_v2/Cargo.toml --test litesvm_v2
-          cargo test --manifest-path programs/private_loan_v2/Cargo.toml --lib --test settle
+          cargo test --manifest-path programs/private_loan_v2/Cargo.toml --lib --test settle --test governance
           cargo test --manifest-path programs/private_loan/Cargo.toml --test settle --test worker_claim
       - name: Fuzz (2000 cases)
         run: npm run test:fuzz
