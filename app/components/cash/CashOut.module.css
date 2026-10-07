@@ -9,6 +9,11 @@
   min-width: 0;
 }
 
+.compact {
+  margin-top: 0;
+  padding: 1rem;
+}
+
 .panel h2 {
   font-size: var(--text-lg);
 }

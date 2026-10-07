@@ -1,5 +1,5 @@
 /**
- * MoneyGram Ramps cash-out (Story 24.4), following the official Ramps developer docs:
+ * MoneyGram Ramps cash-out (Story 24.4) and cash-in (Story 26.5), following the official Ramps developer docs:
  * quickstarts/web-solana, guides/web-solana and reference/transaction-status-webhooks.
  * Pure helpers shared by Convex and tests; no secrets here.
  */
@@ -188,3 +188,80 @@ export const SANDBOX_CASH_OUT_WORDS: Record<string, string> = {
 
 /** Polling stops here; `funds_received` is deliberately not terminal. */
 export const CASH_OUT_TERMINAL = new Set(["paid_out", "failed", "quote_expired", "refunded", "refund_failed"]);
+
+/** Which way the money moves. "in" is a cash deposit that lands USDC in the wallet (Story 26.5). */
+export type CashDirection = "in" | "out";
+export const KIND_FOR: Record<CashDirection, WebhookTransaction["kind"]> = { in: "deposit", out: "withdrawal" };
+
+/**
+ * Ramps cash-in statuses. A deposit is complete only when MoneyGram has sent the USDC; cash handed
+ * to an agent (`funds_received`) is not yet USDC in the wallet. Unknown statuses stay in flight.
+ */
+export const CASH_IN_WORDS: Record<string, string> = {
+  created: "Started",
+  pending_commit: "Waiting for you to confirm in MoneyGram",
+  awaiting_funds: "Waiting for your cash at a MoneyGram agent",
+  funds_received: "MoneyGram received your cash. USDC is not in your wallet yet.",
+  pending_transfer: "MoneyGram is sending USDC to your wallet",
+  completed: "USDC sent to your wallet",
+  failed: "Failed",
+  expired: "Expired before the cash was paid in",
+  quote_expired: "The quote expired",
+  refund_requested: "Refund requested",
+  refund_mgi_pending: "Refund in progress",
+  refund_mgi_success: "Refund in progress",
+  refunded: "Refunded: MoneyGram returned your cash",
+  refund_failed: "Refund failed",
+};
+
+/** Sandbox deposits never imply that real cash was taken. */
+export const SANDBOX_CASH_IN_WORDS: Record<string, string> = {
+  ...CASH_IN_WORDS,
+  awaiting_funds: "Sandbox: waiting for the test payment (no real cash)",
+  funds_received: "Sandbox: test payment received. USDC is not in your wallet yet.",
+  completed: "Sandbox: test USDC sent to your wallet",
+};
+
+/** Final for a deposit: nothing can change it. */
+export const CASH_IN_FINAL = new Set(["completed", "refunded", "refund_failed"]);
+/** Stops polling; a failed or expired deposit can still move into a refund. */
+export const CASH_IN_TERMINAL = new Set([...CASH_IN_FINAL, "failed", "expired", "quote_expired"]);
+const REFUND_STATES = new Set(["refund_requested", "refund_mgi_pending", "refund_mgi_success", "refunded", "refund_failed"]);
+
+export function isTerminal(direction: CashDirection, status: string): boolean {
+  return (direction === "in" ? CASH_IN_TERMINAL : CASH_OUT_TERMINAL).has(status);
+}
+
+/**
+ * The status to store, or null to ignore it. Cash-out keeps the provider's word (Story 24.4).
+ * A deposit never leaves a final state, and a failed or expired deposit only moves into a refund,
+ * so a late or replayed status cannot reopen it.
+ */
+export function nextCashStatus(direction: CashDirection, current: string, incoming: string): string | null {
+  if (direction === "out" || current === incoming) return incoming;
+  if (CASH_IN_FINAL.has(current)) return null;
+  if (CASH_IN_TERMINAL.has(current) && !REFUND_STATES.has(incoming)) return null;
+  return incoming;
+}
+
+/**
+ * A deposit notification must name Solana USDC at this environment's mint. Ramps may write the
+ * asset as `USDC`, `solana:USDC:<mint>` or the bare mint; any other asset, chain or mint is refused.
+ */
+export function depositAssetOk(tx: WebhookTransaction, env: RampsEnv): { ok: true } | { ok: false; reason: "wrong-network" | "wrong-asset" | "wrong-mint" } {
+  if (tx.network !== undefined && !/^(sol|solana)$/i.test(tx.network)) return { ok: false, reason: "wrong-network" };
+  const asset = tx.amount_out_asset;
+  if (asset === undefined) return { ok: true };
+  const mint = RAMPS[env].usdcMint;
+  if (asset === "USDC" || asset === mint) return { ok: true };
+  const parts = asset.split(":");
+  if (parts.length === 3 && /^(sol|solana)$/i.test(parts[0]) && parts[1] === "USDC") return parts[2] === mint ? { ok: true } : { ok: false, reason: "wrong-mint" };
+  if (parts.length === 1 && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(asset)) return { ok: false, reason: "wrong-mint" };
+  return { ok: false, reason: "wrong-asset" };
+}
+
+/** USDC still needed to repay from this wallet, in atoms; zero when the balance already covers it. */
+export function cashInShortfall(payoffAtoms: bigint, usdcAtoms: bigint | null): bigint {
+  const have = usdcAtoms ?? 0n;
+  return payoffAtoms > have ? payoffAtoms - have : 0n;
+}

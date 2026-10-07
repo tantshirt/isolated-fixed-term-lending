@@ -3,7 +3,8 @@ import { httpAction, type ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { domainAllowed, isWalletAddress, newNonce, verifyChallenge, challengeMessage } from "../lib/auth/siws";
 import { issueJwt, publicJwks, readOwnJwt } from "./lib/jwt";
-import { RAMPS, verifyWebhook } from "../lib/cash/moneygram";
+import { RAMPS } from "../lib/cash/moneygram";
+import { handleWebhook } from "../lib/cash/webhook";
 
 const http = httpRouter();
 
@@ -188,8 +189,9 @@ http.route({
 });
 
 /**
- * MoneyGram cash-out session (Story 24.4). The caller proves its wallet with a ZenLo token; the
- * Ramps session is created server-side for that wallet only.
+ * MoneyGram session for cash-out (Story 24.4) and cash-in (Story 26.5). The caller proves its
+ * wallet with a ZenLo token; the Ramps session is created server-side for that wallet only, so a
+ * cash-in can only ever deliver USDC to the signed-in wallet.
  */
 http.route({
   path: "/cash/session",
@@ -221,16 +223,16 @@ http.route({
   handler: httpAction(async (ctx, req) => {
     const env = process.env.MONEYGRAM_ENV === "production" ? "production" : "sandbox";
     const host = process.env.MONEYGRAM_WEBHOOK_HOST ?? new URL(process.env.CONVEX_SITE_URL!).hostname;
-    const result = verifyWebhook({ signature: req.headers.get("Signature"), rawBody: await req.text(), host, webhookKey: RAMPS[env].webhookKey, now: Date.now() });
-    if (!result.ok) {
-      await ctx.runMutation(internal.auth.recordFailure, { reason: `moneygram-${result.reason}` });
-      return new Response(null, { status: result.reason === "stale" ? 200 : 401 });
-    }
-    const tx = result.transaction;
-    if (!(await ctx.runMutation(internal.cash.claimEvent, { key: `${tx.id}:${tx.status}` }))) return new Response(null, { status: 200 });
-    const row = await ctx.runQuery(internal.cash.byMgi, { mgiTransactionId: tx.id });
-    if (row) await ctx.scheduler.runAfter(0, internal.cashNode.reconcile, { rampsId: row.rampsId });
-    return new Response(null, { status: 200 });
+    const outcome = await handleWebhook(
+      { signature: req.headers.get("Signature"), rawBody: await req.text(), host, webhookKey: RAMPS[env].webhookKey, env, now: Date.now() },
+      {
+        claimEvent: (key) => ctx.runMutation(internal.cash.claimEvent, { key }),
+        findRow: (mgiTransactionId) => ctx.runQuery(internal.cash.byMgi, { mgiTransactionId }),
+        reconcile: (rampsId) => ctx.scheduler.runAfter(0, internal.cashNode.reconcile, { rampsId }),
+        recordFailure: (reason) => ctx.runMutation(internal.auth.recordFailure, { reason }),
+      },
+    );
+    return new Response(null, { status: outcome.status });
   }),
 });
 

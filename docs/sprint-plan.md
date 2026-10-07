@@ -120,7 +120,7 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 17 | [26.2 Per-asset collateral and jitoSOL](stories.md) | 19.5, 20.3 | Open |
 | 18 | [26.1 Refinance and rollover](stories.md) | 26.2 | Open |
 | 19 | [26.3 Automation mandates](stories.md) and [26.4 Private liquidation operations](stories.md) | 26.1, 26.2 | Open |
-| 20 | [26.5 MoneyGram cash-in](stories.md) | row 16 | Open |
+| 20 | [26.5 MoneyGram cash-in](stories.md) | row 16 | Open (built and tested locally; needs MoneyGram sandbox keys and confirmation that the sandbox supports Solana USDC deposits) |
 | 21 | [26.6 Shielded deposits and withdrawals](stories.md) | — | Open (spike first) |
 | 22 | [26.7 Credit](stories.md) | 26.2, 26.3 | Open |
 | 23 | [26.8 Secondary market and activity export](stories.md) | 26.1, 26.3 | Open |
