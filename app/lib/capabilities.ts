@@ -4,7 +4,7 @@
  */
 export type Network = "devnet" | "localnet" | "mainnet";
 export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra" | "sas" | "reclaim";
-export type Operation = "originate" | "service" | "refinance" | "automate" | "cash-out" | "cash-in" | "notify" | "shield" | "credential";
+export type Operation = "originate" | "service" | "refinance" | "automate" | "cash-out" | "cash-in" | "notify" | "shield" | "credential" | "resell" | "export";
 
 export type Capability = {
   provider: Provider;
@@ -70,7 +70,44 @@ export const CAPABILITIES: Capability[] = [
     available: process.env.NEXT_PUBLIC_MANDATES_ENABLED === "1",
     reason: "Automatic top-ups and repayments are not enabled on this deployment yet.",
   },
+  {
+    provider: "zenlo-public",
+    network: "devnet",
+    mint: DEVNET_USDC,
+    operation: "resell",
+    // Story 26.8: list_position / buy_position on isolated_loan_v2. On once the upgrade has passed
+    // the Squads vault and its 24-hour time lock.
+    available: process.env.NEXT_PUBLIC_SECONDARY_MARKET_ENABLED === "1",
+    reason: "Selling positions is not enabled on this deployment yet.",
+  },
+  {
+    provider: "zenlo-public",
+    network: "devnet",
+    mint: "*",
+    operation: "export",
+    // Story 26.8: client-only CSV of on-chain activity; no server holds the rows.
+    available: process.env.NEXT_PUBLIC_EXPORT_ENABLED === "1",
+    reason: "Activity export is not enabled on this deployment yet.",
+  },
   { provider: "zenlo-private", network: "devnet", mint: DEVNET_USDC, operation: "originate", available: true },
+  {
+    provider: "zenlo-private",
+    network: "devnet",
+    mint: DEVNET_USDC,
+    operation: "resell",
+    // Story 26.8: transfer_position on private_loan_v2, inside the rollup, with the reader swap.
+    available: process.env.NEXT_PUBLIC_SECONDARY_MARKET_ENABLED === "1",
+    reason: "Selling positions is not enabled on this deployment yet.",
+  },
+  {
+    provider: "zenlo-private",
+    network: "devnet",
+    mint: "*",
+    operation: "export",
+    // Private rows are assembled only in the browser from rollup reads.
+    available: process.env.NEXT_PUBLIC_EXPORT_ENABLED === "1",
+    reason: "Activity export is not enabled on this deployment yet.",
+  },
   { provider: "zenlo-private", network: "devnet", mint: DEVNET_USDC, operation: "service", available: true },
   {
     provider: "moneygram",

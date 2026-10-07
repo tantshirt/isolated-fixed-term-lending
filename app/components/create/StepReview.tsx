@@ -9,6 +9,7 @@ import {
   formatWsol,
 } from "@/lib/format";
 import { parseAmount } from "@/lib/offer-validation";
+import { RESALE_NOTICE } from "@/lib/v2/market";
 import { V2_LIVE } from "@/lib/v2/program";
 import { reviewFigures, termsFrom } from "@/lib/v2/rules";
 import type { Perspective, WizardDraft } from "./useDraft";
@@ -106,6 +107,7 @@ export function StepReview({
           The price can fall before the deadline too: if the liquidation LTV is crossed on both the live and the average price, or the
           live price runs three points past it, a liquidator can settle early. wSOL is SOL wrapped in a token account.
         </p>
+        <p className={styles.sentence}>{borrower ? RESALE_NOTICE : "Once the loan starts you may sell this position. Payments then go to the new holder; the borrower's terms do not change."}</p>
         <dl className={styles.terms}>
           {v2rows.map((r) => (
             <div key={r.label} className={styles.termRowItem}>

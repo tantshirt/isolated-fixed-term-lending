@@ -49,6 +49,9 @@ export const requestVaultV2Pda = (request: PublicKey) => pda([REQUEST_WSOL_V2_SE
 /** Governance `CollateralConfig` for a non-wSOL collateral mint (Story 26.2). */
 export const COLLATERAL_CONFIG_V2_SEED = Buffer.from("collateral");
 export const collateralConfigV2Pda = (mint: PublicKey) => pda([COLLATERAL_CONFIG_V2_SEED, mint.toBuffer()]);
+/** One sale listing per loan (Story 26.8). */
+export const LISTING_V2_SEED = Buffer.from("listing");
+export const listingV2Pda = (offer: PublicKey) => pda([LISTING_V2_SEED, offer.toBuffer()]);
 
 /** Byte offsets after the 8-byte discriminator and 1-byte version, for memcmp filters. */
 export const OFFER_V2_OFFSETS = { originLender: 9, currentLender: 41, borrower: 73 } as const;

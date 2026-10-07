@@ -10,6 +10,7 @@ import { useSigner } from "@/lib/client/signer-context";
 import { formatBpsAsPercent, formatCountdown, formatDeadline, formatUsdc, formatWsol, shortKey } from "@/lib/format";
 import { URGENCY, deadlineIcs, type PortfolioItem, type Side } from "@/lib/portfolio";
 import { PrivateDesk } from "./PrivateDesk";
+import { ExportActivity } from "./ExportActivity";
 import { CashOutPanel } from "@/components/cash/CashOutPanel";
 import { CREDIT_PILOT_ENABLED } from "@/lib/credit/flag";
 import { useBalances, useDevConfig } from "@/lib/client/hooks";
@@ -199,6 +200,7 @@ export function MyLoans() {
             Create offer
           </Link>
         </div>
+        <ExportActivity wallet={wallet} />
       </header>
 
       {error && <p role="alert" className={s.error}>Devnet is not answering. {portfolio ? "These are the last received figures; current balances and loan states are unverified." : "Your loans could not be checked."} This page retries every 15 seconds.</p>}

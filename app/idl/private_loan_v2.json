@@ -5962,6 +5962,109 @@
       "args": []
     },
     {
+      "name": "transfer_position",
+      "docs": [
+        "Ephemeral rollup. Seller (current lender) and buyer together: the buyer pays `price` from",
+        "their private USDC balance, becomes the current lender, and the read permission swaps from",
+        "seller to buyer (Story 26.8). Follow with `rebind_watch`."
+      ],
+      "discriminator": [
+        139,
+        130,
+        102,
+        147,
+        135,
+        77,
+        113,
+        222
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "docs": [
+            "The current lender."
+          ],
+          "signer": true
+        },
+        {
+          "name": "buyer",
+          "signer": true
+        },
+        {
+          "name": "anchor",
+          "writable": true
+        },
+        {
+          "name": "terms",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "buyer_usdc",
+          "writable": true
+        },
+        {
+          "name": "seller_usdc",
+          "writable": true
+        },
+        {
+          "name": "terms_permission",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "permission_program",
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "current",
+          "type": {
+            "vec": "pubkey"
+          }
+        }
+      ]
+    },
+    {
       "name": "watch_loan",
       "docs": [
         "Ephemeral rollup. Signer-free: risk or overdue quotes, and their execution. The governance",
@@ -6524,6 +6627,16 @@
       "code": 6058,
       "name": "HistoryFull",
       "msg": "The borrower's history is full"
+    },
+    {
+      "code": 6059,
+      "name": "PositionNotSellable",
+      "msg": "Only Active and Grace loans can be transferred"
+    },
+    {
+      "code": 6060,
+      "name": "BuyerNotAllowed",
+      "msg": "The buyer must be a wallet other than the seller and the borrower"
     }
   ],
   "types": [
