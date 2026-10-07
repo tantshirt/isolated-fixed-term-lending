@@ -232,6 +232,19 @@
         "reclaim.png"
       ],
       "placement": "Credential screens only: the income-proof step of getting verified, always with a text label"
+    },
+    {
+      "id": "arcium",
+      "provider": "Arcium",
+      "file": "arcium.svg",
+      "source": "https://www.arcium.com/brand",
+      "sourcePage": "https://www.arcium.com/brand",
+      "retrieved": "2026-10-07",
+      "sha256": "817e435d0454d3021c70b636cac554f85bdf9c9dee672a4bda762fcec3c00ac3",
+      "variants": [
+        "arcium.svg"
+      ],
+      "placement": "Credit screen only: the private tier option, always with a text label"
     }
   ],
   "textLabels": [
@@ -244,11 +257,6 @@
       "provider": "Jito",
       "placement": "jitoSOL asset selection (Epic 26)",
       "sourcePage": "https://drive.google.com/drive/u/0/folders/1KuEn60FLsmQZDSDDZ15dCPyxFgQAaAtL"
-    },
-    {
-      "provider": "Arcium",
-      "placement": "Only computations that actually use it (Epic 27)",
-      "sourcePage": "https://www.arcium.com/brand"
     }
   ]
 }

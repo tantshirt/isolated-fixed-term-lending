@@ -3,7 +3,7 @@
  * capability but never enable one that was not proven. Unsupported actions carry a reason.
  */
 export type Network = "devnet" | "localnet" | "mainnet";
-export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra" | "privacy-cash" | "sas" | "reclaim";
+export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra" | "privacy-cash" | "sas" | "reclaim" | "arcium";
 export type Operation = "originate" | "service" | "refinance" | "automate" | "cash-out" | "cash-in" | "notify" | "shield" | "credential" | "resell" | "export";
 
 export type Capability = {
@@ -189,6 +189,18 @@ export const CAPABILITIES: Capability[] = [
     // Income proofs are verified server-side and discarded; on once a Reclaim app id exists.
     available: CREDIT_PILOT && !!process.env.NEXT_PUBLIC_RECLAIM_APP_ID,
     reason: "Income verification is not connected on this deployment yet.",
+  },
+  {
+    provider: "arcium",
+    network: "devnet",
+    // Story 27.1: a private tier computed by zenlo_credit_mxe from the borrower's rollup-signed
+    // history attestation and SAS income band; isolated_loan_v2 accepts its TierResult (wSOL only).
+    mint: WSOL,
+    operation: "credential",
+    // On once zenlo_credit_mxe is deployed on Arcium cluster 456 with its computation definition
+    // and the isolated_loan_v2 upgrade that reads TierResult has passed the Squads vault.
+    available: CREDIT_PILOT && (process.env.NEXT_PUBLIC_ARCIUM_ENABLED === "1" || process.env.NEXT_PUBLIC_ARCIUM_ENABLED === "true"),
+    reason: "The private tier via Arcium is not enabled on this deployment yet.",
   },
 ];
 

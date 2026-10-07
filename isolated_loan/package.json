@@ -1,9 +1,10 @@
 {
   "license": "ISC",
   "scripts": {
-    "test:rust": "cargo test -p loan-core --lib && cargo test -p loan-core --test vectors_v2 && cargo test -p governance && cargo test --manifest-path programs/isolated_loan/Cargo.toml --lib",
+    "test:rust": "cargo test -p loan-core --lib && cargo test -p loan-core --test vectors_v2 && cargo test -p governance && cargo test -p credit-tier && cargo test --manifest-path programs/isolated_loan/Cargo.toml --lib",
     "test:ts": "tsx tests/loan-math.test.ts && tsx tests/loan-math-v2.test.ts",
     "test:litesvm": "anchor build && cargo test --manifest-path programs/isolated_loan/Cargo.toml --test litesvm && cargo test --manifest-path programs/isolated_loan_v2/Cargo.toml --test litesvm_v2 && cargo test --manifest-path programs/private_loan/Cargo.toml --test settle --test worker_claim && cargo test --manifest-path programs/private_loan_v2/Cargo.toml --lib --test settle --test governance --test refinance",
+    "test:mxe": "cd programs/zenlo_credit_mxe && cargo test",
     "test:fuzz": "cargo test --release -p loan-core --test math_props --test accounting_props && cargo test --release --manifest-path programs/isolated_loan/Cargo.toml --test fuzz -- --nocapture",
     "script:repay": "tsx scripts/outcome-repay.ts",
     "script:liquidate": "tsx scripts/outcome-liquidate.ts",

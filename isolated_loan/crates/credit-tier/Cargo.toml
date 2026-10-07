@@ -1,0 +1,12 @@
+[package]
+name = "credit-tier"
+version = "0.1.0"
+description = "ZenLo Story 27.1: the plaintext credit tier rule and the HistoryAttestation / TierResult byte layouts"
+edition = "2021"
+
+[dependencies]
+anchor-lang = "1.0.2"
+
+[dev-dependencies]
+proptest = "1"
+private_loan_v2 = { path = "../../programs/private_loan_v2", features = ["no-entrypoint"] }

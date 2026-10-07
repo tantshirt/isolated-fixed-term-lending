@@ -321,3 +321,69 @@ fn credit_config_needs_every_id() {
     let stored = CreditConfig::try_deserialize(&mut &env.svm.get_account(&credit_pda()).unwrap().data[..]).unwrap();
     assert_eq!((stored.sas_program, stored.credential, stored.schema, stored.enabled), (SAS_PROGRAM_ID, c.credential, c.schema, true));
 }
+
+// ---- Story 27.1: an Arcium TierResult in place of the SAS credential ----------------------------
+
+/// A `zenlo_credit_mxe` `TierResult` at `["arcium-tier", borrower]` in the layout of
+/// `credit_tier::tier_offsets`, owned by `owner`.
+fn put_tier_result(env: &mut Env, borrower: Pubkey, owner: Pubkey, tier: u8, attested_at: i64, income_valid_until: i64) -> Pubkey {
+    use credit_tier::tier_offsets::*;
+    let key = Pubkey::find_program_address(&[credit_tier::TIER_RESULT_SEED, borrower.as_ref()], &credit_tier::CREDIT_MXE_ID).0;
+    let mut v = vec![0u8; credit_tier::TIER_RESULT_LEN];
+    v[..8].copy_from_slice(&credit_tier::TIER_RESULT_DISCRIMINATOR);
+    v[VERSION] = credit_tier::TIER_RESULT_VERSION;
+    v[BORROWER..BORROWER + 32].copy_from_slice(borrower.as_ref());
+    v[TIER] = tier;
+    v[COMPUTED_AT..COMPUTED_AT + 8].copy_from_slice(&(attested_at + 60).to_le_bytes());
+    v[ATTESTED_AT..ATTESTED_AT + 8].copy_from_slice(&attested_at.to_le_bytes());
+    v[INCOME_VALID_UNTIL..INCOME_VALID_UNTIL + 8].copy_from_slice(&income_valid_until.to_le_bytes());
+    env.put(key, owner, v);
+    key
+}
+
+#[test]
+fn arcium_tier_result_is_an_alternative_credential() {
+    let mut env = Env::new();
+    let c = setup(&mut env);
+    let (b, now, mxe) = (env.borrower.pubkey(), env.now, credit_tier::CREDIT_MXE_ID);
+    let fresh = now - DAY;
+    let until = now + 90 * DAY;
+
+    // A valid TierResult for tier 3 originates at 88%, and the tier is fixed on the loan.
+    let tr = put_tier_result(&mut env, b, mxe, 3, fresh, until);
+    let o = credit_offer(&mut env, 1, 8_800);
+    accept_credit(&mut env, o, tr).unwrap();
+    assert_eq!((env.offer(o).status, env.offer(o).credit_tier()), (StatusV2::Active, 3));
+
+    // Forged: the same bytes at the same address owned by another program are neither a
+    // TierResult nor an SAS attestation.
+    let forged = put_tier_result(&mut env, b, Pubkey::new_unique(), 3, fresh, until);
+    let o = credit_offer(&mut env, 2, 8_000);
+    assert_err(accept_credit(&mut env, o, forged), LoanV2Error::CreditTierRequired);
+
+    // Owned by the MXE but wrong in any way: ArciumTierInvalid.
+    let stranger = env.stranger.pubkey();
+    let stale = now - credit_tier::MAX_ATTESTATION_AGE_SECONDS - 1;
+    let cases: Vec<(&str, Pubkey, u8, i64, i64)> = vec![
+        ("another borrower's", stranger, 3, fresh, until),
+        ("stale attestation", b, 3, stale, until),
+        ("income credential expired", b, 3, fresh, now),
+        ("tier 0", b, 0, fresh, until),
+        ("tier too low", b, 1, fresh, until),
+    ];
+    let mut id = 10;
+    for (name, who, tier, attested_at, valid_until) in cases {
+        let tr = put_tier_result(&mut env, who, mxe, tier, attested_at, valid_until);
+        let o = credit_offer(&mut env, id, 8_500);
+        let r = accept_credit(&mut env, o, tr);
+        assert!(r.as_ref().err().is_some_and(|m| m.contains(&code(LoanV2Error::ArciumTierInvalid))), "{name}: {r:?}");
+        id += 1;
+    }
+
+    // The pilot switch applies to TierResults too.
+    let tr = put_tier_result(&mut env, b, mxe, 3, fresh, until);
+    let o = credit_offer(&mut env, 50, 8_000);
+    let g = env.governance.insecure_clone();
+    set_credit(&mut env, &g, &c, false).unwrap();
+    assert_err(accept_credit(&mut env, o, tr), LoanV2Error::ArciumTierInvalid);
+}

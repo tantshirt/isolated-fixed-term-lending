@@ -30,7 +30,7 @@ Do not weaken the Pyth owner check so a test can pass. Do not add partial liquid
 
 The legacy programs (`isolated_loan` `CKvMga…`, `private_loan` `HwK4hx…`) keep their week-1 economics: flat full-term interest, no partial repayment, no top-up, no grace. Never change their account layouts or apply V2 rules to their loans. Pro-rata accrual, partial repayment, top-up, grace, late fees and borrower-consented refinancing belong only in the V2 programs, following [docs/research.md](docs/research.md).
 
-Never move private conversations, private books, raw income proofs or viewing keys into Convex, telemetry, exports or notifications. Do not shorten the seven-day recovery window to produce evidence. Do not install Light, Inco, Arcium or a confidential-token stack; they are research references.
+Never move private conversations, private books, raw income proofs or viewing keys into Convex, telemetry, exports or notifications. Do not shorten the seven-day recovery window to produce evidence. Do not install Light, Inco or a confidential-token stack; they are research references. Arcium is used only by `zenlo_credit_mxe`; its inputs must be rollup-signed history attestations, never self-reported.
 
 Open pull requests but do not merge them. The repo owner merges.
 

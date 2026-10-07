@@ -10,6 +10,7 @@ isolated_loan = "CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef"
 private_loan = "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK"
 isolated_loan_v2 = "8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m"
 private_loan_v2 = "JAzy8NP6V8AGrAko8vfgrD44BDghN6eLwqB7vjuYhHNq"
+zenlo_credit_mxe = "828JKMx1RDffwUtWAKQ7gwyFwWEBrxoWQ5UnnJ9Upreb"
 
 [provider]
 cluster = "localnet"
@@ -19,3 +20,9 @@ wallet = "~/.config/solana/id.json"
 test = "cargo test"
 
 [hooks]
+
+# Story 27.1: zenlo_credit_mxe is its own Arcium/Anchor workspace (programs/zenlo_credit_mxe,
+# built with `arcium build` there). Its address is listed above; this workspace does not build it.
+[workspace]
+members = ["programs/isolated_loan", "programs/isolated_loan_v2", "programs/private_loan", "programs/private_loan_v2"]
+exclude = ["programs/zenlo_credit_mxe"]

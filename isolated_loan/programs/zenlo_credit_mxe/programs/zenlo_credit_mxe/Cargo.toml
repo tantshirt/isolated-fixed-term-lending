@@ -1,0 +1,44 @@
+[package]
+name = "zenlo_credit_mxe"
+version = "0.1.0"
+description = "ZenLo Story 27.1: credit tier computed by an Arcium MXE from rollup-signed history attestations"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "zenlo_credit_mxe"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "arcium-anchor/idl-build", "isolated_loan_v2/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }
+arcium-client = { default-features = false, version = "=0.15.0" }
+arcium-macros = "=0.15.0"
+arcium-anchor = "=0.15.0"
+credit-tier = { path = "../../../../crates/credit-tier" }
+isolated_loan_v2 = { path = "../../../isolated_loan_v2", features = ["no-entrypoint"] }
+
+[dev-dependencies]
+litesvm = "0.10.0"
+solana-account = "3.4.0"
+solana-clock = "3.2.1"
+solana-message = "3.0.1"
+solana-transaction = "3.0.2"
+solana-signer = "3.0.0"
+solana-keypair = "3.0.1"
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+base64 = "0.22"
+governance = { path = "../../../../crates/governance" }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

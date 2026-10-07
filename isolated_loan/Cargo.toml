@@ -3,6 +3,8 @@ members = [
     "programs/*",
     "crates/*"
 ]
+# Story 27.1: the Arcium MXE is its own workspace (arcium-anchor pins anchor-lang = 1.0.2).
+exclude = ["programs/zenlo_credit_mxe"]
 resolver = "2"
 
 [profile.release]

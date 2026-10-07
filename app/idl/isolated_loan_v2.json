@@ -3381,6 +3381,11 @@
       "code": 6049,
       "name": "ListingStillValid",
       "msg": "The listing is still valid; only the seller can cancel it"
+    },
+    {
+      "code": 6050,
+      "name": "ArciumTierInvalid",
+      "msg": "The Arcium TierResult is forged, stale, another borrower's or below the required tier"
     }
   ],
   "types": [
