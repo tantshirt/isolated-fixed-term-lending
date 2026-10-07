@@ -335,3 +335,22 @@ Program ID `JAzy8NP6V8AGrAko8vfgrD44BDghN6eLwqB7vjuYhHNq`. V1 rooms and loans st
 - **Not yet built.** Rebinding a watch after the lender changes belongs to the secondary market (Epic 26).
 
 Tests: `programs/private_loan_v2` has 10 unit tests and 7 LiteSVM settlement tests (`npm run test:litesvm`). The Devnet TEE proof is `scripts/private/v2-rooms.ts`.
+
+### Desks and auditors (Stories 23.1, 24.1)
+
+| Record | Seeds | Where | Notes |
+| --- | --- | --- | --- |
+| `DeskAnchor` | `["desk", creator, desk_id]` | Delegated | Sponsors the desk's ER-only records |
+| `DeskState` | `["desk-state", desk]` | ER-only | Up to 16 members with role bits (admin 1, lender 2, auditor 4), the current policy version and the next loan-book sequence. Admins hold the permission authority on this record only. |
+| `DeskPolicy` | `["desk-policy", desk, version_le]` | ER-only | Immutable once written. Bounds principal, duration, interest, annual pricing ceiling (required), repayment modes, LTV, minimum grace, late fee, and up to 4 named auditors. |
+| Desk loan book | `["desk-loan", desk, seq_le]` | ER-only | Loan anchor for each desk loan, readable by desk members |
+
+**Rules:**
+- **Setup.** `init_desk` makes the creator the first admin. `set_desk_member` adds, re-roles or removes a member, and a desk always keeps at least one admin.
+- **Membership and metadata access.** Membership updates supply every existing policy (in version order) and book entry (in sequence order), each with its canonical permission account. The program checks the complete list and atomically updates all metadata audiences with the member list; omissions, concurrent new records, or any failed permission update reject the transaction. Policies and book entries grant read access only, including to admins. Loan terms retain their separate borrower-consented audiences. Existing metadata permissions are repaired on the next successful membership update, including a same-role update. This pilot implementation requires the complete update to fit the network's transaction size, account and compute limits. The client checks serialized size before signing and does not split oversized updates; if any limit is exceeded, membership and permissions stay unchanged. Larger desks need a separate access-migration design before membership changes can be supported at that size.
+- **Policies.** `publish_policy` writes version n+1.
+- **Attaching a draft.** `attach_desk` is run by the loan's lender, who must also be a desk lender. It checks the terms against the current policy, records the policy version and the auditor-list hash in `LoanTerms`, adds the loan to the desk book, and bumps the revision, so funding and acceptance bind the desk terms.
+- **Acceptance.** `accept_loan(revision, auditor_hash)` requires the hash the borrower was shown. For a desk loan it re-checks the pinned policy and then adds the named auditors to the loan's read permission, using the same read flags as the parties and no authority.
+- **Admins.** An admin never appears in a loan's permission unless they are its lender, borrower or a named auditor, so administration grants neither spending nor reading.
+- **Changing readers.** `add_loan_reader` needs both the lender and the borrower to sign, so a new reader always means new consent. `remove_loan_reader` needs either one and stops future reads; it cannot unread what was already seen. Both pass the current list, which must hash to the recorded `auditor_hash`.
+- **No pooled money.** Funding always comes from the proposing lender's own private balance. A desk has no treasury.

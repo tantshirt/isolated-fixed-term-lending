@@ -90,6 +90,18 @@ pub enum PrivateLoanError {
     ZeroAmount,
     #[msg("Loan is healthy and cannot be liquidated")]
     LoanHealthy,
+    #[msg("The desk policy is incomplete or inconsistent")]
+    InvalidPolicy,
+    #[msg("These terms are outside the desk's policy")]
+    PolicyViolation,
+    #[msg("Only a desk administrator may perform this action")]
+    NotDeskAdmin,
+    #[msg("Only a desk lender may originate under this desk")]
+    NotDeskLender,
+    #[msg("A desk must keep at least one administrator")]
+    LastDeskAdmin,
+    #[msg("The auditor audience differs from the one shown for signing")]
+    AuditorMismatch,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

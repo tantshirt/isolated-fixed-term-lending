@@ -17,6 +17,11 @@ pub const AI_CONFIG_SEED: &[u8] = b"ai-config";
 pub const AI_REQUEST_SEED: &[u8] = b"ai";
 pub const LIQ_POOL_SEED: &[u8] = b"liq-pool";
 pub const QUOTE_SEED: &[u8] = b"quote";
+pub const DESK_SEED: &[u8] = b"desk";
+pub const DESK_STATE_SEED: &[u8] = b"desk-state";
+pub const DESK_POLICY_SEED: &[u8] = b"desk-policy";
+/// ER-only loan-book entry: desk + sequence → loan anchor.
+pub const DESK_LOAN_SEED: &[u8] = b"desk-loan";
 pub const RECEIPT_SEED: &[u8] = b"receipt";
 
 /// MagicBlock Devnet TEE validator (docs/architecture.md, Private protocol).

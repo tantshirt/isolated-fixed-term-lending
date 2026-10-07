@@ -7,6 +7,9 @@
 // - A competing proposal for request 0 cannot be accepted once request 0 has a deal.
 // - Loan A: partial repay (ledger moves, deadline does not), top-up, full repay returns all wSOL.
 // - Loan B stays active with a 60-second term and 24-hour grace: an overdue fixture for the watch.
+// - Desk (Stories 23.1, 24.1): an admin-only administrator cannot originate or read loans; a desk
+//   lender's loan above the policy ceiling is rejected; a compliant desk loan pins the policy, the
+//   borrower accepts the shown auditor audience, and the auditor can read the terms afterwards.
 // Results are appended to docs/magicblock-evidence.json under "v2".
 // Run: npx tsx scripts/private/v2-rooms.ts
 import { AnchorProvider, BN, Program, Wallet, type Idl } from "@coral-xyz/anchor";
@@ -23,6 +26,7 @@ import {
 } from "@magicblock-labs/ephemeral-rollups-sdk";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { collateralValueUsdc } from "../../../app/lib/loan-math";
 import { maxExposure, EarlyRepayment } from "../../../app/lib/loan-math-v2";
 import { ESPL_PROGRAM_ID, ata, eataPda } from "../../../app/lib/private/espl";
@@ -217,9 +221,10 @@ async function main() {
     return {
       borrower: borrower.kp.publicKey, anchor, terms: termsPda(anchor), borrowerUsdc: ata(borrower.kp.publicKey, USDC), borrowerWsol: ata(borrower.kp.publicKey, WSOL),
       loanUsdc: ata(anchor, USDC), loanWsol: ata(anchor, WSOL), lenderUsdc: ata(lenderKey, USDC), priceUpdate: PYTH, deal, dealPermission: permissionPdaFromAccount(deal),
-      vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID,
+      vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID, termsPermission: null, deskPolicy: null,
     };
   };
+  const NO_AUDITORS = Array(32).fill(0);
   const terms = async (p: Party, anchor: PublicKey) => {
     const i = await p.er.getAccountInfo(termsPda(anchor));
     return i ? readTermsFields(i.data as Buffer) : null;
@@ -245,13 +250,13 @@ async function main() {
   await send(lender2, await program.methods.fundLoan(1).accountsPartial(lenderMoves(lender2, B)).instruction());
   await send(lender2, await program.methods.fundLoan(1).accountsPartial(lenderMoves(lender2, C)).instruction());
   await freshPrice(borrower);
-  await send(borrower, await program.methods.acceptLoan(1).accountsPartial(borrowerMoves(A, lender.kp.publicKey, 0)).instruction());
+  await send(borrower, await program.methods.acceptLoan(1, NO_AUDITORS).accountsPartial(borrowerMoves(A, lender.kp.publicKey, 0)).instruction());
   await freshPrice(borrower);
-  await send(borrower, await program.methods.acceptLoan(1).accountsPartial(borrowerMoves(B, lender2.kp.publicKey, 1)).instruction());
+  await send(borrower, await program.methods.acceptLoan(1, NO_AUDITORS).accountsPartial(borrowerMoves(B, lender2.kp.publicKey, 1)).instruction());
   const both = [await terms(borrower, A), await terms(borrower, B)];
   expect("two-loans-active-in-one-room", both.every((t) => t?.status === 2), both.map((t) => t?.status));
   await freshPrice(borrower);
-  const competing = await rejects("CompetingOfferAccepted", async () => send(borrower, await program.methods.acceptLoan(1).accountsPartial(borrowerMoves(C, lender2.kp.publicKey, 0)).instruction()));
+  const competing = await rejects("CompetingOfferAccepted", async () => send(borrower, await program.methods.acceptLoan(1, NO_AUDITORS).accountsPartial(borrowerMoves(C, lender2.kp.publicKey, 0)).instruction()));
   expect("one-accepted-proposal-per-request", competing.ok, competing.detail);
   await send(lender2, await program.methods.cancelLoan().accountsPartial(lenderMoves(lender2, C)).instruction());
 
@@ -270,6 +275,91 @@ async function main() {
   expect("full-repay-returns-all-collateral", closed.status === 3 && (await privateBalance(borrower, WSOL)) - borrowerWsol0 === collateral + 1_000_000n, { status: closed.status });
   expect("terms-never-on-solana", (await Promise.all([A, B, C].map((l) => base.getAccountInfo(termsPda(l))))).every((i) => i === null), "absent on base");
 
+  // ---- Desk.
+  const deskAdmin = owner;
+  const auditor: Party = { kp: Keypair.generate(), er: await teeConnection(Keypair.generate()), name: "auditor" };
+  auditor.er = await teeConnection(auditor.kp);
+  const deskId = randomBytes(32);
+  const desk = pda(Buffer.from("desk"), deskAdmin.kp.publicKey.toBuffer(), deskId);
+  const deskState = pda(Buffer.from("desk-state"), desk.toBuffer());
+  await sendAndConfirmTransaction(
+    base,
+    new Transaction().add(
+      await program.methods.openDesk([...deskId]).accountsPartial({ creator: deskAdmin.kp.publicKey, anchor: desk }).instruction(),
+      await program.methods.delegateDesk([...deskId]).accountsPartial({ creator: deskAdmin.kp.publicKey, anchor: desk }).instruction(),
+    ),
+    [deskAdmin.kp],
+  );
+  await waitFor("desk in ER", () => deskAdmin.er.getAccountInfo(desk), () => true);
+  const deskAccounts = { anchor: desk, state: deskState, statePermission: permissionPdaFromAccount(deskState), vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID };
+  await send(deskAdmin, await program.methods.initDesk(1).accountsPartial({ admin: deskAdmin.kp.publicKey, ...deskAccounts }).instruction());
+  const updateDeskMember = async (member: PublicKey, roles: number) => {
+    const state = (await deskAdmin.er.getAccountInfo(deskState))!.data;
+    const policies = state.readUInt32LE(1 + 8);
+    const loans = state.readUInt32LE(1 + 8 + 4);
+    const records = [
+      ...Array.from({ length: policies }, (_, i) => pda(Buffer.from("desk-policy"), desk.toBuffer(), u32(i + 1))),
+      ...Array.from({ length: loans }, (_, i) => pda(Buffer.from("desk-loan"), desk.toBuffer(), u32(i))),
+    ];
+    const remaining = records.flatMap((pubkey) => [
+      { pubkey, isSigner: false, isWritable: false },
+      { pubkey: permissionPdaFromAccount(pubkey), isSigner: false, isWritable: true },
+    ]);
+    return send(deskAdmin, await program.methods.setDeskMember(member, roles)
+      .accountsPartial({ admin: deskAdmin.kp.publicKey, ...deskAccounts }).remainingAccounts(remaining).instruction());
+  };
+  await updateDeskMember(lender2.kp.publicKey, 2);
+  const policy1 = pda(Buffer.from("desk-policy"), desk.toBuffer(), u32(1));
+  const auditors = [auditor.kp.publicKey, PublicKey.default, PublicKey.default, PublicKey.default];
+  await send(deskAdmin, await program.methods.publishPolicy({
+    minPrincipal: new BN(10_000), maxPrincipal: new BN(1_000_000), minDurationSeconds: new BN(60), maxDurationSeconds: new BN(30 * 86_400),
+    maxAnnualCeilingBps: 40_000, maxInterestBps: 500, repaymentModes: 2, maxLtvBps: 7_000, maxLiquidationLtvBps: 8_000, minGraceSeconds: new BN(86_400),
+    maxLateFeeBps: 100, auditorCount: 1, auditors,
+  }).accountsPartial({ admin: deskAdmin.kp.publicKey, anchor: desk, state: deskState, policy: policy1, policyPermission: permissionPdaFromAccount(policy1), vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID }).instruction());
+  const deskNext = async () => (await deskAdmin.er.getAccountInfo(deskState))!.data.readUInt32LE(1 + 8 + 4);
+  const attach = async (p: Party, anchor: PublicKey) => {
+    const book = pda(Buffer.from("desk-loan"), desk.toBuffer(), u32(await deskNext()));
+    return send(p, await program.methods.attachDesk().accountsPartial({
+      lender: p.kp.publicKey, anchor, terms: termsPda(anchor), desk, state: deskState, policy: policy1, bookEntry: book, bookPermission: permissionPdaFromAccount(book),
+      vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID,
+    }).instruction());
+  };
+  // The administrator is a room member only as viewer and not a desk lender: no origination.
+  const adminLoan = await createLoan(lender);
+  await propose(lender, adminLoan, termsArgs(2));
+  const notDeskLender = await rejects("NotDeskLender", () => attach(lender, adminLoan));
+  expect("non-desk-lender-cannot-originate-under-the-desk", notDeskLender.ok, notDeskLender.detail);
+  const tooPricey = await createLoan(lender2);
+  await propose(lender2, tooPricey, { ...termsArgs(3), interestBps: 600, annualCeilingBps: 60_000 });
+  const violation = await rejects("PolicyViolation", () => attach(lender2, tooPricey));
+  expect("terms-outside-the-policy-rejected", violation.ok, violation.detail);
+  const D = await createLoan(lender2);
+  await propose(lender2, D, termsArgs(4));
+  await attach(lender2, D);
+  const pinned = await lender2.er.getAccountInfo(termsPda(D));
+  const audHash = createHash("sha256").update(auditor.kp.publicKey.toBuffer()).digest();
+  expect("desk-loan-pins-policy-and-audience", !!pinned && pinned.data.includes(audHash), "auditor hash recorded");
+  const book0 = pda(Buffer.from("desk-loan"), desk.toBuffer(), u32(0));
+  const missingMetadata = await rejects("InvalidRecord", async () => send(deskAdmin,
+    await program.methods.setDeskMember(auditor.kp.publicKey, 4).accountsPartial({ admin: deskAdmin.kp.publicKey, ...deskAccounts }).instruction()));
+  expect("membership-cannot-omit-metadata-permissions", missingMetadata.ok, missingMetadata.detail);
+  await updateDeskMember(auditor.kp.publicKey, 4);
+  expect("new-member-reads-existing-policy-and-book", !!(await auditor.er.getAccountInfo(policy1)) && !!(await auditor.er.getAccountInfo(book0)), "historical metadata visible");
+  await send(lender2, await program.methods.fundLoan(2).accountsPartial(lenderMoves(lender2, D)).instruction());
+  const wrongAudience = await rejects("AuditorMismatch", async () => send(borrower, await program.methods.acceptLoan(2, NO_AUDITORS).accountsPartial({ ...borrowerMoves(D, lender2.kp.publicKey, 4), termsPermission: permissionPdaFromAccount(termsPda(D)), deskPolicy: policy1 }).instruction()));
+  expect("acceptance-must-name-the-shown-audience", wrongAudience.ok, wrongAudience.detail);
+  expect("auditor-cannot-read-before-acceptance", (await auditor.er.getAccountInfo(termsPda(D))) === null, "hidden");
+  await freshPrice(borrower);
+  await send(borrower, await program.methods.acceptLoan(2, [...audHash]).accountsPartial({ ...borrowerMoves(D, lender2.kp.publicKey, 4), termsPermission: permissionPdaFromAccount(termsPda(D)), deskPolicy: policy1 }).instruction());
+  expect("auditor-reads-after-consent", (await auditor.er.getAccountInfo(termsPda(D))) !== null, "visible");
+  expect("administrator-cannot-read-desk-loans", (await deskAdmin.er.getAccountInfo(termsPda(D))) === null, "admin has no read bypass");
+  await send(borrower, await program.methods.removeLoanReader(auditor.kp.publicKey, [auditor.kp.publicKey]).accountsPartial({
+    lender: borrower.kp.publicKey, borrower: null, anchor: D, terms: termsPda(D), termsPermission: permissionPdaFromAccount(termsPda(D)), vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID,
+  }).instruction());
+  expect("removing-a-reader-ends-access", (await auditor.er.getAccountInfo(termsPda(D))) === null, "hidden again");
+  await updateDeskMember(auditor.kp.publicKey, 0);
+  expect("removed-member-cannot-read-policy-or-book", (await auditor.er.getAccountInfo(policy1)) === null && (await auditor.er.getAccountInfo(book0)) === null, "historical metadata hidden");
+
   await cashOut(lender, [USDC, WSOL]);
   await cashOut(owner, [USDC, WSOL]);
   const status = fail.length === 0 ? "PASS" : "FAIL";
@@ -278,7 +368,8 @@ async function main() {
     date: new Date().toISOString().slice(0, 10),
     program: ID.toBase58(),
     room: room.toBase58(),
-    loans: { A: A.toBase58(), B: B.toBase58(), C: C.toBase58() },
+    loans: { A: A.toBase58(), B: B.toBase58(), C: C.toBase58(), D: D.toBase58() },
+    desk: desk.toBase58(),
     overdueFixture: { loan: B.toBase58(), lender: lender2.kp.publicKey.toBase58(), borrower: borrower.kp.publicKey.toBase58(), note: "60-second term, 24-hour grace; parties kept in .local/parties for the watch evidence" },
     failed: fail,
     checks,

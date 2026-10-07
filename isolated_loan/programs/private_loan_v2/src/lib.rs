@@ -10,6 +10,7 @@ use ephemeral_rollups_sdk::anchor::ephemeral;
 pub mod ai;
 pub mod config;
 pub mod constants;
+pub mod desk;
 pub mod discovery;
 pub mod error;
 pub mod espl;
@@ -21,6 +22,7 @@ pub mod settle;
 
 use ai::*;
 use config::*;
+use desk::*;
 use discovery::*;
 use loan::*;
 use receipt::*;
@@ -115,8 +117,8 @@ pub mod private_loan_v2 {
     }
 
     /// Ephemeral rollup. Borrower accepts `revision`: one accepted proposal per borrowing request.
-    pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32) -> Result<()> {
-        loan::accept_loan(ctx, revision)
+    pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32, auditor_hash: [u8; 32]) -> Result<()> {
+        loan::accept_loan(ctx, revision, auditor_hash)
     }
 
     /// Ephemeral rollup. Borrower pays part or all of the payoff, in any phase until settlement.
@@ -137,6 +139,46 @@ pub mod private_loan_v2 {
     /// Ephemeral rollup. Lender, from seven days after grace: all remaining wSOL, no price.
     pub fn claim_terminal(ctx: Context<LenderClaim>) -> Result<()> {
         loan::claim_terminal(ctx)
+    }
+
+    /// Base layer. Opens a lender desk namespaced by its creator.
+    pub fn open_desk(ctx: Context<OpenDesk>, desk_id: [u8; 32]) -> Result<()> {
+        desk::open_desk(ctx, desk_id)
+    }
+
+    /// Base layer. Delegates the desk anchor (same transaction as `open_desk`).
+    pub fn delegate_desk(ctx: Context<DelegateDesk>, desk_id: [u8; 32]) -> Result<()> {
+        desk::delegate_desk(ctx, desk_id)
+    }
+
+    /// Ephemeral rollup. Creates the private member list; the creator is the first administrator.
+    pub fn init_desk(ctx: Context<InitDesk>, creator_roles: u8) -> Result<()> {
+        desk::init_desk(ctx, creator_roles)
+    }
+
+    /// Ephemeral rollup. An administrator adds, re-roles (roles != 0) or removes (roles == 0) a member.
+    pub fn set_desk_member<'info>(ctx: Context<'info, DeskAdmin<'info>>, member: Pubkey, roles: u8) -> Result<()> {
+        desk::set_desk_member(ctx, member, roles)
+    }
+
+    /// Ephemeral rollup. An administrator publishes the next immutable policy version.
+    pub fn publish_policy(ctx: Context<PublishPolicy>, args: PolicyArgs) -> Result<()> {
+        desk::publish_policy(ctx, args)
+    }
+
+    /// Ephemeral rollup. A desk lender places a draft under the current policy and the desk book.
+    pub fn attach_desk(ctx: Context<AttachDesk>) -> Result<()> {
+        desk::attach_desk(ctx)
+    }
+
+    /// Ephemeral rollup. Lender and borrower together add a reader to a loan.
+    pub fn add_loan_reader(ctx: Context<LoanReaders>, reader: Pubkey, current: Vec<Pubkey>) -> Result<()> {
+        desk::add_loan_reader(ctx, reader, current)
+    }
+
+    /// Ephemeral rollup. Either party removes a reader; access ends from now on.
+    pub fn remove_loan_reader(ctx: Context<LoanReaders>, reader: Pubkey, current: Vec<Pubkey>) -> Result<()> {
+        desk::remove_loan_reader(ctx, reader, current)
     }
 
     /// Base layer. Room owner publishes an opt-in public card with chosen fields.
