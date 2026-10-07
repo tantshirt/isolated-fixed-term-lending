@@ -1,0 +1,16 @@
+.anchor
+.DS_Store
+target
+node_modules
+test-ledger
+artifacts/
+encrypted-ixs/arcis_temp_target
+encrypted-ixs/src/main.rs
+# Circuit build output: only the files the program macros read at compile time are committed
+# (tier.arcis, tier.idarc, tier.hash, tier.weight), so `anchor build` works without arcium.
+build/*
+!build/tier.arcis
+!build/tier.idarc
+!build/tier.hash
+!build/tier.weight
+tests/fixtures/localnet/

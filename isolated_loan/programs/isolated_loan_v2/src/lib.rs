@@ -517,8 +517,11 @@ pub mod isolated_loan_v2 {
         let required = credit::validate_terms(&args, now)?;
         check_new_collateral_tiered(&ctx.accounts.wsol_mint, ctx.remaining_accounts, &args, required)?;
         if required > 0 {
-            let tier = credit::credential_tier(credit_accounts(&ctx.accounts.wsol_mint.key(), ctx.remaining_accounts), &ctx.accounts.borrower.key(), now);
-            require!(tier >= required, LoanV2Error::CreditTierRequired);
+            let accounts = credit_accounts(&ctx.accounts.wsol_mint.key(), ctx.remaining_accounts);
+            let tier = credit::credential_tier(accounts, &ctx.accounts.borrower.key(), now);
+            if tier < required {
+                return Err(credit::tier_shortfall(accounts));
+            }
         }
         token::transfer(
             CpiContext::new(

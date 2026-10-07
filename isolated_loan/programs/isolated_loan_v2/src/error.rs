@@ -110,6 +110,10 @@ pub enum LoanV2Error {
     InvalidListing,
     #[msg("The listing is still valid; only the seller can cancel it")]
     ListingStillValid,
+    // ---- Story 27.1 (Arcium credit tier). Appended after Story 26.8 so existing codes do not move.
+    #[msg("The Arcium TierResult is forged, stale, another borrower's or below the required tier")]
+    ArciumTierInvalid,
+    // ---- end Story 27.1 ----
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

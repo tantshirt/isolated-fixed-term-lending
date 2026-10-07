@@ -12,6 +12,8 @@ export const PROVIDER_LOGOS = {
   // Story 26.7: credential screens only.
   sas: { file: "sas.svg", ratio: 92 / 23, name: "Solana Attestation Service", mark: false },
   reclaim: { file: "reclaim.png", ratio: 1, name: "Reclaim", mark: true },
+  // Story 27.1: the private tier option on the credit screen only.
+  arcium: { file: "arcium.svg", ratio: 1596 / 204, name: "Arcium", mark: false },
 } as const;
 
 export type ProviderLogoId = keyof typeof PROVIDER_LOGOS;

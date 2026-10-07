@@ -744,6 +744,19 @@ Acceptance:
 - Every loan review says the position may be sold.
 - Activity export as specified in research, with replayable public cursors and browser-only private rows.
 
-## Epic 27. Advanced privacy (Stage 7, research only)
+## Epic 27. Advanced privacy (Stage 7)
 
-- Confidential settlement and Arcium computations stay research-only until a paying desk shows a concrete need and asset compatibility, redemption, custody, liquidation and recovery are proven.
+- Confidential settlement stays research-only until a paying desk shows a concrete need and asset compatibility, redemption, custody, liquidation and recovery are proven. Arcium was pulled forward for the credit tier only (owner decision, 2026-10-07).
+
+### Story 27.1. Arcium credit computation
+
+Read: [research.md § Arcium credit tier](research.md#arcium-credit-tier-271), [architecture.md § Arcium credit tier](architecture.md#arcium-credit-tier-zenlo_credit_mxe-story-271).
+
+Acceptance:
+
+- `zenlo_credit_mxe` (an Arcium MXE, its own workspace in `isolated_loan/programs/zenlo_credit_mxe`) has `init_comp_def`, `request_tier` and `tier_callback`. The circuit `tier` reveals only `tier: u8`.
+- `request_tier` takes the counts only from the borrower's `HistoryAttestation` (owner `private_loan_v2`, PDA, discriminator, version, borrower, written by the rollup, at most 30 days old) and the income band only from a valid SAS credit credential. Missing, foreign, mismatched, unwritten and stale attestations are refused.
+- `tier_callback` writes `TierResult` at `["arcium-tier", borrower]` {tier, computed slot and time, attestation slot and time, income validity}; a superseded computation writes nothing.
+- `isolated_loan_v2` accepts a `TierResult` in place of the SAS credential (owner `zenlo_credit_mxe`, borrower, fresh). Layouts unchanged; `ArciumTierInvalid` appended in a Story 27.1 block.
+- Tests: the plaintext rule (unit and property), circuit equals rule, LiteSVM rejections for `request_tier`, `isolated_loan_v2` accepting a valid `TierResult` and refusing forged, foreign, stale and low ones, and an Arcium localnet run that computes a tier end to end.
+- Legacy programs unchanged byte for byte. The app shows "Private tier via Arcium" only behind `NEXT_PUBLIC_ARCIUM_ENABLED`.
