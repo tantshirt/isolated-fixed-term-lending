@@ -22,7 +22,9 @@ fn put(svm: &mut LiteSVM, key: Pubkey, data: Vec<u8>) {
 
 fn send(svm: &mut LiteSVM, signer: &Keypair, ix: Instruction) -> bool {
     let tx = Transaction::new(&[signer], Message::new(&[ix], Some(&signer.pubkey())), svm.latest_blockhash());
-    svm.send_transaction(tx).is_ok()
+    let result = svm.send_transaction(tx);
+    if let Err(ref error) = result { eprintln!("{error:?}"); }
+    result.is_ok()
 }
 
 #[test]
