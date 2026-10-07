@@ -127,17 +127,15 @@
   letter-spacing: -0.02em;
 }
 
+/* The next deadline stands out in the public accent; navy is kept for private features. */
 .totalNavy {
-  border-color: var(--color-navy);
-  background: var(--color-navy);
+  border-color: var(--color-accent);
+  background: var(--color-accent);
 }
 
-.totalNavy span {
-  color: var(--color-on-navy-muted);
-}
-
+.totalNavy span,
 .totalNavy strong {
-  color: var(--color-on-navy);
+  color: var(--color-on-accent);
 }
 
 .tabs {
@@ -164,8 +162,8 @@
 }
 
 .tab[aria-pressed="true"] {
-  background: var(--color-navy);
-  color: var(--color-on-navy);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .count {

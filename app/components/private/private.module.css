@@ -1324,6 +1324,11 @@ span.receiptLink {
   .heroArt {
     grid-template-columns: 1fr;
   }
+
+  /* On phones, access and the next action come before example artwork. */
+  .heroImage {
+    display: none;
+  }
 }
 
 /* Invitations: rooms you were added to, found by listing what you may read. */

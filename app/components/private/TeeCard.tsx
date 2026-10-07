@@ -5,7 +5,7 @@ import type { TeeStatus } from "@/lib/private/use-private";
 import styles from "./private.module.css";
 
 const COPY: Record<TeeStatus, { title: string; body: string }> = {
-  "no-wallet": { title: "Connect a wallet", body: "Private rooms are tied to your Devnet wallet. No account or email." },
+  "no-wallet": { title: "Connect a wallet", body: "Private rooms and desks are tied to your Devnet wallet. No account or email." },
   "no-sign-message": {
     title: "This wallet cannot sign messages",
     body: "Signing in to the private rollup needs a wallet that can sign a message, such as Phantom, Solflare, or Backpack.",

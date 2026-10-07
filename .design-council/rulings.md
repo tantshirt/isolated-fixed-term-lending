@@ -328,3 +328,18 @@ Applied: all 8 must-fixes; nice-to-haves 1–3 (Home/End, aria-controls on the s
 | Repay (USDC) and add collateral (wSOL) are separate fields; machine messages read as words | Wren | Avoids sending the wrong asset. |
 
 Applied: all 8 must-fixes and the 3 nice-to-haves.
+
+## Full review, desk MVP (2026-10-07)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| One set of names for the V2 stages everywhere (`lib/phase-words.ts`): Waiting for repayment, In grace, Grace has ended, Priced recovery is open, Final claim is open; the last deadline is "Final claim" | Sol / Plumb | The loan page, desk, alerts, simulator and My loans had drifted apart. |
+| Navy stays private-only on My loans; the next-deadline tile and selected tab use the public accent | Indigo / Kestrel | Navy marks private. |
+| On phones, Private home shows sign-in before artwork | Ravi / Fovea | Mobile rule; "Connect wallet" was about 1050 px down. |
+| The network badge describes the network ("Reachable"), not the wallet | Fovea / Sol | It sat next to a "Connect" button. |
+| A service that is not connected says so (alerts, cash-out, ops sign-in) and never disappears | Plumb / Hollis | Honest states. |
+| A broken desk link gets the not-found Spot and a way back | Sol / Wren | No dead ends. |
+| Accepted as is: the public wizards' navy summary card | Indigo | Earlier rebrand ruling; the one public exception. |
+| Verified: no hex or rgb() outside `globals.css`; MoneyGram "not private" beside the signature; Telegram warning above its button; private totals never zero; auditor alert blocks signing; Simulation labelled; no page errors or horizontal scroll at 390 and 1440 px | Plumb | — |
+
+Applied: all 10 must-fixes, plus the TeeCard copy nice-to-have. Deferred nice-to-haves: Discover unit and chip scroll cue, translated backend errors, in-app confirm for desk removals, site-wide MagicBlock badge review.

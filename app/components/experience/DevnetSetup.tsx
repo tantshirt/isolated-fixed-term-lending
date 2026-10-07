@@ -71,7 +71,7 @@ export function DevnetSetup() {
           {state === "loading"
             ? "Checking"
             : state === "ready"
-            ? "Connected"
+            ? "Reachable"
             : "Needs attention"}
         </span>
       </summary>

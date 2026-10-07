@@ -17,7 +17,13 @@ const BACKEND = Boolean(process.env.NEXT_PUBLIC_CONVEX_URL);
  * every message is generic. Nothing is monitored without this explicit choice.
  */
 export function AlertsPanel(props: { kind: "public-v1" | "public-v2" | "private"; loan: string; deadlines?: { maturity: number; graceEnd?: number; pricedFrom?: number; terminalFrom?: number } }) {
-  if (!BACKEND) return null;
+  if (!BACKEND)
+    return (
+      <section className={styles.panel}>
+        <h2 className={styles.title}>Alerts</h2>
+        <p className={styles.body}>Alerts are not connected on this deployment.</p>
+      </section>
+    );
   return <Inner {...props} />;
 }
 
@@ -37,7 +43,7 @@ function Inner({ kind, loan, deadlines }: Parameters<typeof AlertsPanel>[0]) {
         ["Due", deadlines.maturity],
         ["Grace ends", deadlines.graceEnd],
         ["Priced recovery from", deadlines.pricedFrom],
-        ["Collateral can be claimed from", deadlines.terminalFrom],
+        ["Final claim from", deadlines.terminalFrom],
       ]
     : [];
 
@@ -113,6 +119,7 @@ function Inner({ kind, loan, deadlines }: Parameters<typeof AlertsPanel>[0]) {
           {mine?.telegramLinked && <p className={styles.body}>Telegram is connected. Messages about private loans never include terms.</p>}
         </>
       )}
+      {!signedIn && session.status === "no-wallet" && <p className={styles.body}>Connect a wallet to set alerts.</p>}
       {error && (
         <p role="alert" className={styles.error}>
           {error}

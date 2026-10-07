@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PHASE_WORDS } from "@/lib/phase-words";
 import { PublicKey } from "@solana/web3.js";
 import { useMemo, useState } from "react";
 import { Spot } from "@/components/brand/Spot";
@@ -40,13 +41,7 @@ const TITLES: Record<OfferV2["status"], string> = {
   cancelled: "Cancelled",
 };
 
-const PHASE_TITLES: Record<NonNullable<LoanView["phase"]>, string> = {
-  Active: "Waiting for repayment",
-  Grace: "In grace",
-  Overdue: "Overdue",
-  PricedRecovery: "In priced recovery",
-  Terminal: "Final claim open",
-};
+const PHASE_TITLES: Record<NonNullable<LoanView["phase"]>, string> = PHASE_WORDS;
 
 export function LoanV2View({ lender, offerId }: { lender: string; offerId: string }) {
   const key = useMemo(() => keyFor(lender, offerId), [lender, offerId]);
@@ -174,8 +169,13 @@ function Loaded({ offerKey }: { offerKey: string }) {
         )}
 
         <p className={styles.blockNote}>
-          Lender {shortKey(offer.currentLender)}
-          {offer.borrower ? ` · Borrower ${shortKey(offer.borrower)}` : ""} · Program isolated_loan_v2
+          Lender <span className="mono">{shortKey(offer.currentLender)}</span>
+          {offer.borrower && (
+            <>
+              {" "}· Borrower <span className="mono">{shortKey(offer.borrower)}</span>
+            </>
+          )}{" "}
+          · Program <span className="mono">isolated_loan_v2</span>
         </p>
       </div>
       <aside className={styles.aside}>

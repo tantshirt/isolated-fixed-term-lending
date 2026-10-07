@@ -227,7 +227,7 @@ function offerV2Item(o: OfferV2, me: string, price: PriceSnapshot | null, now: n
     case "PricedRecovery":
       return lender
         ? { ...common, urgency: URGENCY.pastDue, dueTs: terminalClaimFrom(t), headline: "Priced recovery is open. You may take wSOL worth what is owed.", action: "View loan" }
-        : { ...common, urgency: URGENCY.pastDue, dueTs: terminalClaimFrom(t), headline: "Overdue. The lender may take wSOL worth what you owe. Repay to keep it all.", action: "Repay" };
+        : { ...common, urgency: URGENCY.pastDue, dueTs: terminalClaimFrom(t), headline: "Priced recovery is open. The lender may take wSOL worth what you owe. Repay to keep it all.", action: "Repay" };
     case "Overdue":
       return lender
         ? { ...common, urgency: URGENCY.pastDue, dueTs: pricedRecoveryFrom(t), headline: "Grace has ended. Anyone may now settle it for you in USDC.", action: "View loan" }

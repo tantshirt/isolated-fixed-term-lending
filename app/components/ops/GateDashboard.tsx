@@ -24,7 +24,15 @@ function Inner() {
       <section className={styles.panel}>
         <h1 className={styles.title}>Pilot gate</h1>
         <p className={styles.body}>For operations wallets only.</p>
-        <Button onClick={() => session.signIn()}>Sign in</Button>
+        <Button onClick={() => session.signIn()} loading={session.status === "signing"} disabled={session.status === "no-wallet" || session.status === "no-sign-message"}>
+          Sign in
+        </Button>
+        {session.status === "no-wallet" && <p className={styles.body}>Connect an operations wallet first.</p>}
+        {session.error && (
+          <p role="alert" className={styles.error}>
+            {session.error}
+          </p>
+        )}
       </section>
     );
   if (report === undefined) return <p role="status">Reading…</p>;
