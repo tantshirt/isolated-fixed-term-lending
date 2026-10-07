@@ -2,24 +2,17 @@
 // as rooms: every transaction is checked against what the user reviewed, then signed by the
 // wallet and recorded as a receipt. Desk contents stay in the TEE; this file keeps only desk ids
 // in local storage so a returning wallet can find its desks.
-import { AnchorProvider, Program, utils, type Idl } from "@coral-xyz/anchor";
-import { Connection, PublicKey, Transaction, type TransactionInstruction } from "@solana/web3.js";
-import idl from "@/idl/private_loan_v2.json";
+import { utils } from "@coral-xyz/anchor";
+import { Connection, PublicKey } from "@solana/web3.js";
 import type { LoanSigner } from "@/lib/keypair-wallet";
-import { MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID, permissionPda } from "./espl";
-import { advance, newReceipt, recordSignedReceipt, saveReceipt } from "./receipts";
-import { assertDevnet, validateTransaction } from "./tx-validator";
-import { DESK_ROLE, PRIVATE_V2_ID, decodeDeskPolicy, decodeDeskState, decodeLoanTermsV2, v2Pda, type DeskPolicyV2, type DeskStateV2 } from "./v2-codec";
+import { permissionPda } from "./espl";
+import { ER_ONLY, programV2, sendBase, sendEr, waitInEr } from "./v2-send";
+import { DESK_ROLE, decodeDeskPolicy, decodeDeskState, decodeLoanTermsV2, v2Pda, type DeskPolicyV2, type DeskStateV2 } from "./v2-codec";
 import type { BookEntry } from "./desk-view";
 import { assertMembershipTransactionFits, deskMembershipAccounts } from "./desk-membership";
 
-const EPHEMERAL_VAULT_ID = new PublicKey("MagicVau1t999999999999999999999999999999999");
-const ER_ONLY = { vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID };
 
-function programFor(base: Connection, signer: LoanSigner) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return new Program({ ...(idl as Idl), address: PRIVATE_V2_ID.toBase58() }, new AnchorProvider(base, signer, { commitment: "confirmed" })) as any;
-}
+const programFor = programV2;
 
 export type DeskRef = { creator: PublicKey; deskId: string; anchor: PublicKey };
 
@@ -51,30 +44,6 @@ export function rememberDesk(wallet: string, d: { creator: string; deskId: strin
   } catch {}
 }
 
-// --- sending -------------------------------------------------------------------------
-
-async function sendEr(er: Connection, signer: LoanSigner, ix: TransactionInstruction, intent: string): Promise<string> {
-  const wallet = signer.publicKey.toBase58();
-  const receipt = newReceipt(intent, "er");
-  const tx = new Transaction().add(ix);
-  tx.feePayer = signer.publicKey;
-  validateTransaction(tx, { feePayer: signer.publicKey });
-  tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
-  const signed = await signer.signTransaction(tx);
-  recordSignedReceipt(wallet, receipt, signed);
-  const sig = await er.sendRawTransaction(signed.serialize(), { skipPreflight: true });
-  saveReceipt(wallet, advance(receipt, { erSignature: sig }));
-  const res = await er.confirmTransaction(sig, "confirmed");
-  if (res.value.err) {
-    const t = await er.getTransaction(sig, { maxSupportedTransactionVersion: 0 });
-    const named = t?.meta?.logMessages?.find((l) => l.includes("Error Message:"))?.split("Error Message: ")[1];
-    saveReceipt(wallet, advance(receipt, { erSignature: sig, stage: "failed", error: named ?? JSON.stringify(res.value.err) }));
-    throw new Error(named ?? "The private rollup rejected this action.");
-  }
-  saveReceipt(wallet, advance(receipt, { erSignature: sig, stage: "executed" }));
-  return sig;
-}
-
 const stateAccounts = (anchor: PublicKey) => {
   const state = v2Pda.deskState(anchor);
   return { anchor, state, statePermission: permissionPda(state), ...ER_ONLY };
@@ -90,30 +59,19 @@ export async function openDesk(base: Connection, er: Connection, signer: LoanSig
   const anchor = v2Pda.desk(signer.publicKey, idBytes);
   const wallet = signer.publicKey.toBase58();
 
-  const receipt = newReceipt("Open a private desk", "base");
-  const tx = new Transaction().add(
-    await program.methods.openDesk([...idBytes]).accountsPartial({ creator: signer.publicKey, anchor }).instruction(),
-    await program.methods.delegateDesk([...idBytes]).accountsPartial({ creator: signer.publicKey, anchor }).instruction(),
+  await sendBase(
+    base,
+    signer,
+    [
+      await program.methods.openDesk([...idBytes]).accountsPartial({ creator: signer.publicKey, anchor }).instruction(),
+      await program.methods.delegateDesk([...idBytes]).accountsPartial({ creator: signer.publicKey, anchor }).instruction(),
+    ],
+    "Open a private desk",
   );
-  tx.feePayer = signer.publicKey;
-  validateTransaction(tx, { feePayer: signer.publicKey });
-  await assertDevnet(base);
-  const { blockhash, lastValidBlockHeight } = await base.getLatestBlockhash();
-  tx.recentBlockhash = blockhash;
-  const signed = await signer.signTransaction(tx);
-  recordSignedReceipt(wallet, receipt, signed);
-  const sig = await base.sendRawTransaction(signed.serialize());
-  saveReceipt(wallet, advance(receipt, { baseSignature: sig }));
-  const confirmation = await base.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
-  if (confirmation.value.err) {
-    saveReceipt(wallet, advance(receipt, { baseSignature: sig, stage: "failed" }));
-    throw new Error("Solana rejected this transaction. Its receipt is saved.");
-  }
-  saveReceipt(wallet, advance(receipt, { baseSignature: sig, stage: "settled" }));
   const ref = { creator: signer.publicKey, deskId, anchor };
   rememberDesk(wallet, { creator: wallet, deskId });
 
-  for (let i = 0; i < 30 && !(await er.getAccountInfo(anchor)); i++) await new Promise((r) => setTimeout(r, 1000));
+  await waitInEr(er, anchor);
   await finishDesk(base, er, signer, anchor, alsoLend);
   return ref;
 }

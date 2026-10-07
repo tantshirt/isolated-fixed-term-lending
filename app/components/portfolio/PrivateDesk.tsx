@@ -4,7 +4,9 @@ import Link from "next/link";
 import { InvitesPanel } from "@/components/private/InvitesPanel";
 import { Button } from "@/components/ui/Button";
 import { formatBpsAsPercent, formatDuration, formatUsdc } from "@/lib/format";
-import { privateTotals, type PrivatePosition } from "@/lib/private/portfolio";
+import { addTotals, privateTotals, privateV2Totals, type PrivatePosition, type PrivateV2Position } from "@/lib/private/portfolio";
+import { useV2Positions } from "@/lib/private/use-v2-positions";
+import { roomV2Path } from "@/lib/private/v2-loans";
 import type { BidState } from "@/lib/private/inbox";
 import { useMyRooms } from "@/lib/private/use-rooms";
 import { usePrivate } from "@/lib/private/use-private";
@@ -25,13 +27,14 @@ export function PrivateDesk() {
   const { signer, er, status, connect } = usePrivate();
   const wallet = signer?.publicKey ?? null;
   const { bids, rooms, positions } = useMyRooms(status === "ready" ? er : null, wallet, { bids: true });
+  const v2 = useV2Positions(status === "ready" ? er : null, wallet);
 
   if (!wallet) return null;
   if (status !== "ready")
     return (
       <section className={s.privateDesk} aria-labelledby="pd-h">
         <h2 id="pd-h">Private loans</h2>
-        <PrivateTotalsRow locked positions={null} />
+        <PrivateTotalsRow locked positions={null} v2={null} />
         <p>Private amounts stay locked until you sign in privately. It asks your wallet to sign a message; nothing is sent or spent.</p>
         <Button variant="secondary" onClick={connect} loading={status === "verifying" || status === "signing"}>
           Sign in privately
@@ -42,7 +45,8 @@ export function PrivateDesk() {
   return (
     <section className={s.privateDesk} aria-labelledby="pd-h">
       <h2 id="pd-h">Private loans</h2>
-      <PrivateTotalsRow locked={false} positions={positions} />
+      <PrivateTotalsRow locked={false} positions={positions} v2={v2} />
+      <PrivateV2Loans positions={v2} />
       <InvitesPanel er={er} wallet={wallet} />
       <PrivateBorrowing positions={positions} />
       {bids === null ? (
@@ -79,8 +83,9 @@ export function PrivateDesk() {
 }
 
 /** Private totals sit apart from public ones. Unknown is "Locked" or "Reading", never zero. */
-function PrivateTotalsRow({ locked, positions }: { locked: boolean; positions: PrivatePosition[] | null }) {
-  const t = positions ? privateTotals(positions) : null;
+function PrivateTotalsRow({ locked, positions, v2 }: { locked: boolean; positions: PrivatePosition[] | null; v2: PrivateV2Position[] | null }) {
+  // Both room kinds must be read before a total shows; until then it is "Reading…", never a partial sum.
+  const t = positions && v2 ? addTotals(privateTotals(positions), privateV2Totals(v2, Math.floor(Date.now() / 1000))) : null;
   const value = (v: bigint | undefined) => (locked ? "Locked" : t === null ? "Reading…" : `${formatUsdc(v!)} USDC`);
   return (
     <dl className={s.privateTotals} aria-label="Private totals">
@@ -122,6 +127,51 @@ function PrivateBorrowing({ positions }: { positions: PrivatePosition[] | null }
               </p>
             </div>
             <Link className={s.inlineLink} href={`/devnet/private/rooms/${p.room.roomId}`}>
+              Open room
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+const V2_WORDS: Record<string, string> = {
+  draft: "Offer being prepared",
+  funded: "Offer waiting for the borrower",
+  active: "Waiting for repayment",
+  repaid: "Repaid",
+  cancelled: "Cancelled",
+  overdueLiquidated: "Settled after grace",
+  pricedRecovered: "Recovered at the market price",
+  terminalClaimed: "Collateral claimed",
+  liquidated: "Liquidated",
+};
+
+function PrivateV2Loans({ positions }: { positions: PrivateV2Position[] | null }) {
+  const shown = (positions ?? []).filter((p) => p.terms.status !== "cancelled");
+  if (!shown.length) return null;
+  return (
+    <>
+      <h3 className={s.privateSub}>Rooms with repayment rules</h3>
+      <ul className={s.bids}>
+        {shown.map((p) => (
+          <li key={p.anchor.toBase58()} className={s.bid}>
+            <div>
+              <p className={s.bidLabel}>
+                {p.side === "lender" ? "You lent" : "You borrowed"} · {V2_WORDS[p.terms.status] ?? p.terms.status}
+              </p>
+              <p className={s.bidTerms}>
+                <span className="num">{formatUsdc(p.terms.terms.principal)} USDC</span> · {formatBpsAsPercent(p.terms.terms.interestBps, 2)} for{" "}
+                {formatDuration(p.terms.terms.duration)}
+                {p.terms.status === "active" && (
+                  <>
+                    {" "}· <span className="num">{formatUsdc(p.terms.ledger.outstandingPrincipal)} USDC</span> principal left
+                  </>
+                )}
+              </p>
+            </div>
+            <Link className={s.inlineLink} href={roomV2Path(p.room)}>
               Open room
             </Link>
           </li>

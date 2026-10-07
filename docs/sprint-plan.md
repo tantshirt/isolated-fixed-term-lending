@@ -109,10 +109,10 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 6 | [21.1 `isolated_loan_v2` core](stories.md) | 19.5, 20.x | Done |
 | 7 | [21.2 Grace, recovery and surplus](stories.md) and [21.3 Reference liquidator](stories.md) | 21.1 | Open (code and tests done; Devnet evidence as fixture windows open, 2026-10-08 to 2026-10-15) |
 | 8 | [22.1 Multi-loan rooms](stories.md) | 19.5 | Done (Devnet TEE proof in `docs/magicblock-evidence.json` under `v2`) |
-| 9 | [22.2 Private V2 protections](stories.md) | 20.x, 22.1 | Open (program paths and LiteSVM done in row 8; client and interface remain) |
+| 9 | [22.2 Private V2 protections](stories.md) | 20.x, 22.1 | Done (program and LiteSVM in row 8; browser client proven live in `docs/magicblock-evidence.json` under `v2Client`) |
 | 10 | [23.1 Desk accounts, roles and policies](stories.md) | 22.2 | Done (Devnet TEE proof in `docs/magicblock-evidence.json` under `v2`) |
 | 11 | [23.2 Desk workspace](stories.md) | 23.1 | Open (workspace, desk actions and view-model tests done; member screens proven live once `private_loan_v2` is deployed) |
-| 12 | [24.1 Auditor consent](stories.md) and [24.2 Private portfolios](stories.md) | 23.1 | Open (24.1 program side done with row 10; 24.2 done for V1 rooms, V2 rooms once deployed) |
+| 12 | [24.1 Auditor consent](stories.md) and [24.2 Private portfolios](stories.md) | 23.1 | Done (auditors shown and verified by hash before signing, consent bound on-chain, reader removal; V1 and V2 private totals in My loans) |
 | 13 | [24.3 Alerts and reminders](stories.md) | 19.3, 22.2 | Open (built and proven on local Convex; needs a Telegram bot token and hosted Convex) |
 | 14 | [24.4 MoneyGram cash-out](stories.md) and [24.5 Gate metrics](stories.md) | 19.3, 24.2 | Open (built and checked locally; needs MoneyGram sandbox keys, an allowlisted domain and hosted Convex) |
 

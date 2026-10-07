@@ -33,6 +33,9 @@ jobs:
       # tests/loan-math.test.ts checks the app's math and PDAs, so it needs the app's packages.
       - run: npm ci
         working-directory: app
+      # This live evidence script imports the program workspace's helpers and needs both installs.
+      - run: npx tsc --noEmit --project scripts/tsconfig.json
+        working-directory: app
       # The default build pins canonical USDC and wSOL; tests fail if it does not.
       - name: Build programs
         run: |
