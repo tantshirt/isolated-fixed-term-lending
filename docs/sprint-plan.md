@@ -111,7 +111,7 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 8 | [22.1 Multi-loan rooms](stories.md) | 19.5 | Open (program and tests done; Devnet TEE proof waits for deploy SOL) |
 | 9 | [22.2 Private V2 protections](stories.md) | 20.x, 22.1 | Open (program paths and LiteSVM done in row 8; client and interface remain) |
 | 10 | [23.1 Desk accounts, roles and policies](stories.md) | 22.2 | Open (program and unit tests done; Devnet TEE proof in `v2-rooms.ts` waits for deploy SOL) |
-| 11 | [23.2 Desk workspace](stories.md) | 23.1 | Open |
+| 11 | [23.2 Desk workspace](stories.md) | 23.1 | Open (workspace, desk actions and view-model tests done; member screens proven live once `private_loan_v2` is deployed) |
 | 12 | [24.1 Auditor consent](stories.md) and [24.2 Private portfolios](stories.md) | 23.1 | Open (24.1 program side done with row 10; 24.2 done for V1 rooms, V2 rooms once deployed) |
 | 13 | [24.3 Alerts and reminders](stories.md) | 19.3, 22.2 | Open (built and proven on local Convex; needs a Telegram bot token and hosted Convex) |
 | 14 | [24.4 MoneyGram cash-out](stories.md) and [24.5 Gate metrics](stories.md) | 19.3, 24.2 | Open (built and checked locally; needs MoneyGram sandbox keys, an allowlisted domain and hosted Convex) |

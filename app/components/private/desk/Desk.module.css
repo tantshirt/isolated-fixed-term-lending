@@ -1,0 +1,207 @@
+/* Desk workspace (Story 23.2). Navy marks private; figures use tabular Nunito, keys monospace. */
+.head {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-container);
+  background: var(--color-navy);
+  color: var(--color-on-navy);
+}
+
+.head h1 {
+  margin: 0;
+  color: var(--color-on-navy);
+  font-size: var(--text-xl);
+  font-weight: 800;
+}
+
+.access {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+  color: var(--color-on-navy-muted);
+  font-size: var(--text-sm);
+}
+
+.access strong {
+  color: var(--color-on-navy);
+}
+
+.next {
+  margin: 0;
+  color: var(--color-on-navy);
+  font-weight: 800;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  margin: 1.5rem 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab {
+  padding: 0.625rem 0.875rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-text-primary);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.section {
+  display: grid;
+  gap: 1rem;
+}
+
+.section h2 {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 800;
+}
+
+.list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-card);
+}
+
+.row[data-urgent] {
+  border-color: var(--color-text-yellow);
+}
+
+.rowMain {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.rowMeta {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.figure {
+  justify-self: end;
+  font-weight: 800;
+}
+
+.dl {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.dl div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dl dt {
+  color: var(--color-text-secondary);
+}
+
+.dl dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.form {
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+
+.form label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.form fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: var(--text-sm);
+}
+
+.form legend {
+  margin-bottom: 0.25rem;
+  font-weight: 700;
+}
+
+.check {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  font-weight: 400 !important;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.list .mono {
+  overflow-wrap: anywhere;
+}
+
+.deskIndex {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.deskLinks {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
