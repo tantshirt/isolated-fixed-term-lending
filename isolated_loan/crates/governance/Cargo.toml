@@ -1,0 +1,8 @@
+[package]
+name = "governance"
+version = "0.1.0"
+description = "Authority separation shared by the ZenLo V2 programs"
+edition = "2021"
+
+[dependencies]
+anchor-lang = "1.0.2"

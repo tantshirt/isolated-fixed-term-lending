@@ -1,0 +1,78 @@
+{
+  "network": "devnet",
+  "program": "SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf",
+  "steps": [
+    {
+      "at": "2026-10-07T07:55:43.191Z",
+      "step": "multisig created, config authority none, 2-of-3",
+      "signature": "EdwZ5mxQQxhieUE1Pm4SMPLhK3WqXVNgvnEaM5rb3ca3ysqYEAbUHeNxMp2CtLD93bUqYakVxkqFYcoiKX4BCNv"
+    },
+    {
+      "at": "2026-10-07T07:56:33.214Z",
+      "step": "proposal 1: time-locked vault transfer",
+      "signature": "2eRDqb23HsT6wBZXXE1LD2cfKTyyJ2H1hWSC9mXbtVddBsbQWN4JcGzYn38N1bDNzavuYH4w1RhjNhWY1WS5mrYb"
+    },
+    {
+      "at": "2026-10-07T07:56:35.139Z",
+      "step": "approve 1 by a",
+      "signature": "2rpRsGEdgDAfpA3zhVN51BP3keEhJsCbwpGUWupDbTBMHmKkcjNP2m3B99moEpRpaf4cVawrjF7uV7AQubdi7nrX"
+    },
+    {
+      "at": "2026-10-07T07:56:36.599Z",
+      "step": "execute 1 refused",
+      "error": "Program log: AnchorError thrown in programs/squads_multisig_program/src/instructions/vault_transaction_execute.rs:75. Error Code: InvalidProposalStatus. Error Number: 6008. Error Message: Invalid proposal status."
+    },
+    {
+      "at": "2026-10-07T07:56:38.042Z",
+      "step": "approve 1 by b",
+      "signature": "5RXh4HTemutV4X7oV1vLmU6t1XeTjSkBTi2Y5o2mHje49YrHTqT1HQ5RZcQ7SHLteyY5wg3uF9aS7Gw6cknG1kRx"
+    },
+    {
+      "at": "2026-10-07T07:56:39.494Z",
+      "step": "execute 1 refused",
+      "error": "Program log: AnchorError thrown in programs/squads_multisig_program/src/instructions/vault_transaction_execute.rs:70. Error Code: TimeLockNotReleased. Error Number: 6021. Error Message: Proposal time lock has not been released."
+    },
+    {
+      "at": "2026-10-07T07:56:42.197Z",
+      "step": "proposal 2: rotate G72n8kaTXXqdpnTsDBiGd2m56YgvoPSFRzdh3Tu1EAbC -> HAd3rsh7wXUJ4effxXTmHPRzHVpKnY3W5qLvgo2LpFJC",
+      "signature": "vsp6FX5KwrvMyrL4ACGFETfQ3d6h89P763v2jZe2xWKFkrKGQit6tU7S7RLiR1aKVZYfYbTaJn86dmG9vEh5itw"
+    },
+    {
+      "at": "2026-10-07T07:56:45.119Z",
+      "step": "approve 2 by a",
+      "signature": "3DJFMWehhQaYp3TqaERiiMkq1NZA7yqvAsreRVLK9spzYZ9dbWam3tkwJC6oLD7hKnKDTa2SUAdRkb3Gre1KY5k1"
+    },
+    {
+      "at": "2026-10-07T07:56:47.255Z",
+      "step": "approve 2 by b",
+      "signature": "rBig8PjzjnTfSwNydSwLRAQr4fy8hQmXb872iW9SeCjFDdZwxAsZYZw5AvfYUb4zmvVCFbBZRFv6ynaekVzYSUz"
+    },
+    {
+      "at": "2026-10-07T07:56:48.659Z",
+      "step": "execute 2 refused",
+      "error": "Program log: AnchorError thrown in programs/squads_multisig_program/src/instructions/config_transaction_execute.rs:82. Error Code: TimeLockNotReleased. Error Number: 6021. Error Message: Proposal time lock has not been released."
+    }
+  ],
+  "multisig": "9aAiYToZ4ZrHMcyAoNDDnMiswobn3TxtJ1dGXgKkBkU5",
+  "vault": "8MpmERed9K14R68F371YJtGVk6mQgNZoQeU3asNPs5mt",
+  "createKey": "C6FGaXKC6zgjYPuN85hZR3soHjXS9EXPV83rZGXf7JL4",
+  "threshold": 2,
+  "timeLockSeconds": 86400,
+  "members": [
+    {
+      "label": "a",
+      "key": "3dh3Bxu1hJzH3aHfwNAibRqTxyrPsUFyteiuGxycoohh",
+      "note": "developer deployer key"
+    },
+    {
+      "label": "b",
+      "key": "G72n8kaTXXqdpnTsDBiGd2m56YgvoPSFRzdh3Tu1EAbC",
+      "note": "rehearsal key on the developer machine; rotate before pilot"
+    },
+    {
+      "label": "c",
+      "key": "2BsUD47dif7i6swE3VcbSdKB6u4E35RzPYzu2JAn8gbr",
+      "note": "rehearsal key on the developer machine; rotate before pilot"
+    }
+  ]
+}
