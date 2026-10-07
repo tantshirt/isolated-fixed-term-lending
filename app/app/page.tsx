@@ -63,11 +63,11 @@ export default function Home() {
           <div className={`${h.wrap} ${h.heroGrid}`}>
             <div className={h.heroCopy}>
               <p className={h.eyebrow}>Fixed-term loans on Solana</p>
-              <h1 id="hero-h">Clear terms. Zero drama.</h1>
+              <h1 id="hero-h">Your repayment rules, upfront.</h1>
               <p className={h.lede}>
-                Lend USDC. Borrow against SOL. The cost, the collateral, and the
-                deadline are on the table before anyone signs, and the program
-                holds both sides to them.
+                Lend USDC. Borrow against SOL. The cost, the collateral, the
+                deadline, the grace period and what happens after it are on the
+                table before anyone signs, and the program holds both sides to them.
               </p>
               <div className={h.actions}>
                 <Link className={`${h.btn} ${h.solid} ${h.large}`} href="/demo">

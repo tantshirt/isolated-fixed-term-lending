@@ -23,7 +23,8 @@ export const fmt = {
 };
 
 export function formatBpsAsPercent(bps: number, decimals = 1): string {
-  return `${(bps / 100).toFixed(decimals)}%`;
+  // Thousands separators keep large annualized rates readable (525,600.0%).
+  return `${(bps / 100).toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}%`;
 }
 
 export function atomsToNumber(atoms: bigint, decimals: number): number {

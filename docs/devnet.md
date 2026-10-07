@@ -81,3 +81,33 @@ Both programs were upgraded in place with the audit fixes ([security-audit.md](s
 - Both on-chain binaries were dumped and match the local pinned build byte for byte (`isolated_loan.so` sha256 `d11e88e1…`, `private_loan.so` sha256 `fa41fb36…`).
 - `scripts/request-smoke.ts` passed afterwards: create, cancel, fund, repay and close with canonical USDC and wSOL ([evidence](devnet-request-evidence.json)).
 - A simulated `create_offer` with SPL USDC-Dev (`Gh9Zw…tKJr`, 6 decimals) fails with `MintNotAllowed` (6022); the same call with canonical USDC simulates cleanly.
+
+## Repayment-rules program (`isolated_loan_v2`)
+
+- Program `8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m`, deployed 2026-10-07 with `--max-len 520000` (about 93 KB of headroom over the 427 KB build).
+- Upgrade authority: the Squads vault `8MpmERed9K14R68F371YJtGVk6mQgNZoQeU3asNPs5mt` ([governance.md](governance.md)). Upgrades go through `scripts/governance/squads.ts propose-upgrade` with two approvals and the 24-hour time lock.
+- The app creates new offers and requests on V2 only when `NEXT_PUBLIC_V2_LIVE=1`. V1 loans keep their original pages, codec and program.
+
+### Long-duration fixtures
+
+`app/scripts/v2-fixtures.ts` opened six real 1-USDC loans: 60-second terms, 24-hour grace, 400% test ceiling. Evidence is in [v2-fixtures.json](v2-fixtures.json). The seven-day window is never shortened.
+
+| Fixture | Proven so far | Next step and when (UTC) |
+| --- | --- | --- |
+| late-repay | Repaid in grace, paying 1,010,966 atoms. The late fee was clamped to 966 by the ceiling. | Done |
+| top-up | 0.005 wSOL added, then repaid early at exactly the 25% minimum (1,002,500 atoms) | Done |
+| overdue | Live | `step overdue` after 2026-10-08 08:28 |
+| keeper | Live | The reference liquidator settles it on its own after 2026-10-08 08:28 (`scripts/keeper-once.ts --run`, or the Convex cron) |
+| priced | Live | `step priced` after 2026-10-09 08:27 |
+| terminal | Live | `step terminal` after 2026-10-15 08:26 |
+
+Run each step with `npx tsx --env-file=.env.local scripts/v2-fixtures.ts --run step <name>`. `--run status` prints each loan's phase and payoff.
+
+### Reference liquidator
+
+`lib/v2/keeper.ts` settles V2 loans that anyone may settle: risk liquidation past the spot-and-EMA line, or overdue after grace. It uses only the operator's own Devnet USDC.
+
+- **Limits**: 50 USDC per action, 200 USDC per 24 hours, and at least 1% more collateral value received than USDC paid.
+- **Before sending**: it re-reads the loan and the price, simulates the transaction, and records the signature before confirming.
+- **In Convex**: it runs every minute when `KEEPER_ENABLED=1` and `KEEPER_SECRET` are set on the deployment. Capital, settlements, failures and depletion appear in `/ops/health`.
+- **No guarantee**: it never promises to act. Any wallet can settle the same loans.

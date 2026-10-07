@@ -1,7 +1,9 @@
 import type { Connection, GetProgramAccountsFilter, MemcmpFilter, PublicKey } from "@solana/web3.js";
 import { debt } from "./loan-math";
 import { debtOf, type PriceSnapshot } from "./offer-status";
-import { legacyLoanView } from "./models/loan-view";
+import { legacyLoanView, v2LoanView } from "./models/loan-view";
+import { offerV2Href, requestV2Href, type OfferV2, type RequestV2 } from "./v2/offers";
+import { graceEnd, maturity, pricedRecoveryFrom, terminalClaimFrom, fullTermInterest } from "./loan-math-v2";
 import { readOnlyProgram, supportedOfferMints, toOffer, type Offer } from "./offers";
 import type { OfferAccount, RequestAccount } from "./program";
 import { requestHref, toRequest, type LoanRequest } from "./requests";
@@ -97,6 +99,7 @@ export type PortfolioItem = {
   collateral: bigint;
   ltvBps: number | null;
   offer?: Offer;
+  offerV2?: OfferV2;
   request?: LoanRequest;
 };
 
@@ -185,6 +188,75 @@ function offerItem(o: Offer, me: string, price: PriceSnapshot | null, now: numbe
   };
 }
 
+/** V2 loans: grace and the recovery windows change who must act and how soon. */
+function offerV2Item(o: OfferV2, me: string, price: PriceSnapshot | null, now: number): PortfolioItem | null {
+  const side: Side | null = o.currentLender === me ? "lender" : o.borrower === me ? "borrower" : null;
+  if (!side) return null;
+  const t = o.terms;
+  const base = {
+    key: o.publicKey,
+    side,
+    href: offerV2Href(o),
+    principal: o.status === "active" ? o.ledger.outstandingPrincipal : t.principal,
+    owed: t.principal + fullTermInterest(t),
+    collateral: o.status === "open" ? o.collateralRequired : o.collateralLocked,
+    offerV2: o,
+    counterparty: side === "lender" ? o.borrower : o.currentLender,
+  };
+  if (o.status === "open")
+    return { ...base, kind: "offer", urgency: URGENCY.open, headline: "Waiting for a borrower", action: "Manage offer", dueTs: null, counterparty: null, ltvBps: null };
+  if (o.status !== "active") {
+    return {
+      ...base,
+      kind: o.status === "cancelled" ? "offer" : "loan",
+      urgency: URGENCY.settled,
+      headline: side === "lender" ? "Settled. Close it to reclaim rent." : "Settled.",
+      action: side === "lender" ? "Close and reclaim rent" : "View loan",
+      dueTs: null,
+      ltvBps: null,
+    };
+  }
+  const view = v2LoanView(o, price, now);
+  const common = { ...base, kind: "loan" as const, owed: view.payoff, ltvBps: view.risk?.ltvBps ?? null };
+  const lender = side === "lender";
+  switch (view.phase) {
+    case "Terminal":
+      return lender
+        ? { ...common, urgency: URGENCY.pastDue, dueTs: terminalClaimFrom(t), headline: "The final claim is open. You may take all the wSOL.", action: "View loan" }
+        : { ...common, urgency: URGENCY.pastDue, dueTs: terminalClaimFrom(t), headline: "The lender may now take all your wSOL. Repay now to keep it.", action: "Repay" };
+    case "PricedRecovery":
+      return lender
+        ? { ...common, urgency: URGENCY.pastDue, dueTs: terminalClaimFrom(t), headline: "Priced recovery is open. You may take wSOL worth what is owed.", action: "View loan" }
+        : { ...common, urgency: URGENCY.pastDue, dueTs: terminalClaimFrom(t), headline: "Overdue. The lender may take wSOL worth what you owe. Repay to keep it all.", action: "Repay" };
+    case "Overdue":
+      return lender
+        ? { ...common, urgency: URGENCY.pastDue, dueTs: pricedRecoveryFrom(t), headline: "Grace has ended. Anyone may now settle it for you in USDC.", action: "View loan" }
+        : { ...common, urgency: URGENCY.pastDue, dueTs: pricedRecoveryFrom(t), headline: "Grace has ended. Anyone may now pay your debt and take your wSOL plus 5%. Repay now.", action: "Repay" };
+    case "Grace":
+      return lender
+        ? { ...common, urgency: URGENCY.pastDue, dueTs: graceEnd(t), headline: "Past the deadline, in grace. The late fee applies.", action: "View loan" }
+        : { ...common, urgency: URGENCY.pastDue, dueTs: graceEnd(t), headline: "Past the deadline. Repay before grace ends to keep all your wSOL.", action: "Repay" };
+    default:
+      break;
+  }
+  const due = maturity(t);
+  if (view.risk?.liquidatable)
+    return lender
+      ? { ...common, urgency: URGENCY.liquidatable, dueTs: due, headline: "Past the liquidation line. Anyone can liquidate it now.", action: "View loan" }
+      : { ...common, urgency: URGENCY.liquidatable, dueTs: due, headline: "Past the liquidation line. Repay or add wSOL now.", action: "Repay" };
+  if (due - now <= DAY)
+    return lender
+      ? { ...common, urgency: URGENCY.dueSoon, dueTs: due, headline: "Due within a day.", action: "View loan" }
+      : { ...common, urgency: URGENCY.dueSoon, dueTs: due, headline: "Due within a day. After that a late fee applies.", action: "Repay" };
+  if (view.risk && view.risk.healthBps <= NEAR_HEALTH_BPS)
+    return lender
+      ? { ...common, urgency: URGENCY.nearLine, dueTs: due, headline: "Near the liquidation line.", action: "View loan" }
+      : { ...common, urgency: URGENCY.nearLine, dueTs: due, headline: "Near the liquidation line. Adding wSOL or repaying part lowers the risk.", action: "Repay" };
+  return lender
+    ? { ...common, urgency: URGENCY.running, dueTs: due, headline: "Waiting for repayment. Payments come straight to you.", action: "View loan" }
+    : { ...common, urgency: URGENCY.running, dueTs: due, headline: "Waiting for repayment. Repay any part, any time.", action: "Repay" };
+}
+
 function requestItem(r: LoanRequest, me: string): PortfolioItem | null {
   // A funded request becomes a filled offer, which already appears as a loan.
   if (r.borrower !== me || r.status === "funded") return null;
@@ -206,23 +278,41 @@ function requestItem(r: LoanRequest, me: string): PortfolioItem | null {
   };
 }
 
+/** A V2 request keeps its management link until funded into a loan. */
+function requestV2Item(r: RequestV2, me: string): PortfolioItem | null {
+  if (r.borrower !== me || r.status === "funded") return null;
+  return {
+    key: r.publicKey, side: "borrower", kind: "request",
+    urgency: r.status === "open" ? URGENCY.open : URGENCY.settled,
+    headline: r.status === "open" ? "Waiting for a lender to fund it." : "Cancelled. Close it to get your rent back.",
+    action: r.status === "open" ? "Manage request" : "Close request",
+    href: requestV2Href(r), dueTs: null, counterparty: null,
+    principal: r.terms.principal, owed: r.terms.principal + fullTermInterest(r.terms),
+    collateral: r.status === "open" ? r.collateralAmount : 0n, ltvBps: null,
+  };
+}
+
 /** Everything one wallet is part of, most urgent first, plus totals. */
 export function buildPortfolio(input: {
   me: string;
   offers: Offer[];
   requests: LoanRequest[];
+  offersV2?: OfferV2[];
+  requestsV2?: RequestV2[];
   price: PriceSnapshot | null;
   now: number;
 }): { items: PortfolioItem[]; totals: PortfolioTotals } {
   const { me, offers, requests, price, now } = input;
   const items = [
     ...offers.map((o) => offerItem(o, me, price, now)),
+    ...(input.offersV2 ?? []).map((o) => offerV2Item(o, me, price, now)),
     ...requests.map((r) => requestItem(r, me)),
+    ...(input.requestsV2 ?? []).map((r) => requestV2Item(r, me)),
   ]
     .filter((x): x is PortfolioItem => x !== null)
     .sort((a, b) => a.urgency - b.urgency || (a.dueTs ?? Infinity) - (b.dueTs ?? Infinity) || a.key.localeCompare(b.key));
 
-  const running = items.filter((i) => i.kind === "loan" && i.offer?.status === "filled");
+  const running = items.filter((i) => i.kind === "loan" && (i.offer?.status === "filled" || i.offerV2?.status === "active"));
   const sum = (xs: PortfolioItem[], f: (i: PortfolioItem) => bigint) => xs.reduce((t, i) => t + f(i), 0n);
   const lending = running.filter((i) => i.side === "lender");
   const borrowing = running.filter((i) => i.side === "borrower");

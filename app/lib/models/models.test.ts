@@ -57,3 +57,40 @@ test("only enabled collateral resolves", () => {
   assert.equal(collateralAsset(jito.mint), null);
   assert.ok(jito.liquidationLtvBps - jito.maxLtvBps >= 500);
 });
+
+import { v2LoanView } from "./loan-view";
+import { EarlyRepayment, graceEnd, maturity, openLedger, pricedRecoveryFrom, terminalClaimFrom, type TermsV2 } from "../loan-math-v2";
+import type { OfferV2 } from "../v2/offers";
+
+const v2terms: TermsV2 = { principal: 100_000_000n, interestBps: 500, duration: 30 * 86_400, startTs: NOW, earlyRepayment: EarlyRepayment.ProRata, minInterestBps: 2500, graceSeconds: 86_400, lateFeeBps: 100, annualCeilingBps: 10_000 };
+const v2offer = (over: Partial<OfferV2> = {}): OfferV2 => ({
+  generation: "v2", publicKey: k(), version: 2, originLender: k(), currentLender: k(), borrower: k(), restrictedBorrower: null, offerId: 1n,
+  usdcMint: "u", wsolMint: "w", terms: v2terms, collateralRequired: 1_020_000_000n, collateralLocked: 1_020_000_000n, maxLtvBps: 7000,
+  liquidationLtvBps: 8000, status: "active", ledger: openLedger(v2terms), shortfall: 0n, settledTs: 0, ...over,
+});
+const withEma = (spot: number, ema: number): PriceSnapshot => ({ ...price(spot), ema: { price: BigInt(Math.round(ema * 1e8)), conf: 0n } });
+const v2can = (v: ReturnType<typeof v2LoanView>, a: string) => v.actions.find((x) => x.action === a);
+
+test("V2 repayment stays open in every phase until settlement", () => {
+  for (const at of [NOW + 10, maturity(v2terms), graceEnd(v2terms), pricedRecoveryFrom(v2terms), terminalClaimFrom(v2terms) + 86_400]) {
+    assert.equal(v2can(v2LoanView(v2offer(), price(150), at), "repay")?.available, true, String(at));
+  }
+  assert.equal(v2can(v2LoanView(v2offer({ status: "terminalClaimed" }), price(150), NOW), "repay"), undefined);
+});
+
+test("V2 windows open on their exact seconds and explain when they open", () => {
+  const before = v2LoanView(v2offer(), price(150), graceEnd(v2terms) - 1);
+  assert.equal(before.phase, "Grace");
+  assert.equal(v2can(before, "liquidate-overdue")?.available, false);
+  assert.match(v2can(before, "liquidate-overdue")!.reason!, /Opens when grace ends/);
+  assert.equal(v2can(v2LoanView(v2offer(), price(150), graceEnd(v2terms)), "liquidate-overdue")?.available, true);
+  assert.equal(v2can(v2LoanView(v2offer(), price(150), pricedRecoveryFrom(v2terms)), "claim-priced")?.available, true);
+  assert.equal(v2can(v2LoanView(v2offer(), null, terminalClaimFrom(v2terms)), "claim-terminal")?.available, true, "the final claim needs no price");
+});
+
+test("V2 risk liquidation follows the program's spot-and-EMA rule", () => {
+  assert.equal(v2LoanView(v2offer(), withEma(120, 150), NOW + 86_400).risk?.liquidatable, false);
+  assert.equal(v2LoanView(v2offer(), withEma(119, 150), NOW + 86_400).risk?.trigger, "Emergency");
+  assert.equal(v2LoanView(v2offer(), withEma(120, 120), NOW + 86_400).risk?.trigger, "Ordinary");
+  assert.equal(v2LoanView(v2offer(), withEma(150, 150), NOW + 86_400).payoff, 101_250_000n);
+});

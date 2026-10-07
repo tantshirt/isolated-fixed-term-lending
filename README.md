@@ -47,9 +47,10 @@ Each offer has its own accounts and vaults. The lender can cancel before accepta
 | --- | --- |
 | Repayment | The borrower pays principal plus fixed interest; the lender receives USDC and the borrower recovers the wSOL. |
 | Liquidation | If the loan reaches its liquidation threshold before expiry, a liquidator pays the debt and receives collateral plus a capped incentive. Remaining collateral returns to the borrower. |
-| Expiry | After the deadline, repayment stops and the lender can receive all collateral. Its value may be less than the debt. |
+| Expiry (original loans) | After the deadline, repayment stops and the lender can receive all collateral. Its value may be less than the debt. |
+| After the deadline (repayment-rules loans) | A one-time late fee applies and repayment stays open. After a 24–48 hour grace period anyone may pay the debt and take collateral plus 5%, returning the rest; a day later the lender may take collateral worth the debt and return the rest; seven days after grace the lender may take all remaining collateral. |
 
-The protocol assumes USDC is worth one dollar and uses Pyth SOL/USD prices for collateral checks. Interest is a cost for the full term, not an annual percentage rate. See [formulas, limits, and rounding](docs/research.md) for the exact rules.
+The protocol assumes USDC is worth one dollar and uses Pyth SOL/USD prices for collateral checks. Interest is a cost for the full term, not an annual percentage rate; repayment-rules loans can instead charge interest for the time used, with a 25% minimum, under an annual pricing ceiling the lender declares. See [formulas, limits, and rounding](docs/research.md) for the exact rules.
 
 
 ### Private loans

@@ -27,6 +27,8 @@ import { StepReview } from "./StepReview";
 import { StepRisk } from "./StepRisk";
 import { StepTerms } from "./StepTerms";
 import { useDraft } from "./useDraft";
+import { V2_LIVE } from "@/lib/v2/program";
+import { rulesProblem } from "@/lib/v2/rules";
 import styles from "./CreateWizard.module.css";
 
 const STEPS = [
@@ -75,9 +77,10 @@ export function CreateWizard() {
   const [created, setCreated] = useState<Created | null>(null);
   const [touched, setTouched] = useState(false);
 
+  const rulesError = V2_LIVE ? rulesProblem({ principal, interestBps: draft.interestBps, durationSeconds: draft.durationSeconds }, draft.rules) : null;
   const stepErrors: DraftErrors[] = [
     validateAmountStep(draft),
-    validateTermsStep(draft),
+    { ...validateTermsStep(draft), ...(rulesError ? { rules: rulesError } : {}) },
     validateRiskStep(draft),
     {},
   ];
@@ -145,7 +148,7 @@ export function CreateWizard() {
         throw new Error("The confirmed offer identifier is unavailable.");
       setSignature(result.signature ?? null);
       setCreated({
-        href: `/devnet/offers/${publicKey.toBase58()}/${offerId}`,
+        href: V2_LIVE ? `/devnet/loans/${publicKey.toBase58()}/${offerId}` : `/devnet/offers/${publicKey.toBase58()}/${offerId}`,
         principal: parsed.principal,
         draft,
         owed,

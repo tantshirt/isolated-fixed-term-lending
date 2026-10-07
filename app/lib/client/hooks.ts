@@ -143,6 +143,7 @@ export function usePrice(ms = 10_000) {
           exponent: j.exponent,
           publishTime: j.publishTime,
           fresh: j.fresh,
+          ema: j.emaPrice && j.emaConf ? { price: BigInt(j.emaPrice), conf: BigInt(j.emaConf) } : undefined,
           chainTime: j.chainTime,
           receivedAt: Date.now(),
         });

@@ -6,6 +6,9 @@ import { debt } from "@/lib/loan-math";
 import { parseAmount, type OfferDraft } from "@/lib/offer-validation";
 import { validStoredDraft } from "@/lib/simulation";
 import { minCollateralLamports } from "@/lib/risk";
+import { maxExposure } from "@/lib/loan-math-v2";
+import { V2_LIVE } from "@/lib/v2/program";
+import { DEFAULT_RULES, readRules, termsFrom, type RepaymentRules } from "@/lib/v2/rules";
 
 export type Cushion = 0 | 10 | 25 | 50;
 
@@ -13,6 +16,7 @@ export type Cushion = 0 | 10 | 25 | 50;
 export type Perspective = "lender" | "borrower";
 
 export type WizardDraft = OfferDraft & {
+  rules: RepaymentRules;
   /** "auto" derives collateral from max LTV, the live price and the cushion. */
   collateralMode: "auto" | "manual";
   cushion: Cushion;
@@ -27,6 +31,7 @@ export const DEFAULT_DRAFT: WizardDraft = {
   liquidationLtvBps: 8_000,
   collateralMode: "auto",
   cushion: 10,
+  rules: DEFAULT_RULES,
 };
 
 const CREATE_KEY = "lendspan-devnet-create-draft-v1";
@@ -61,7 +66,7 @@ export function useDraft(price: LivePrice | null, KEY = CREATE_KEY) {
           ["auto", "manual"].includes(value.draft.collateralMode) &&
           [0, 10, 25, 50].includes(value.draft.cushion)
         )
-          setDraft(value.draft as WizardDraft);
+          setDraft({ ...DEFAULT_DRAFT, ...(value.draft as WizardDraft), rules: readRules(value.draft.rules) });
       }
     } catch {}
     setHydrated(true);
@@ -82,20 +87,28 @@ export function useDraft(price: LivePrice | null, KEY = CREATE_KEY) {
       ? debt(principal, draft.interestBps)
       : null;
 
+  // V2 checks origination LTV against the maximum contractual exposure (interest plus late fee
+  // within the ceiling), so the suggested collateral covers that, not just principal plus interest.
+  const terms =
+    V2_LIVE && principal !== null && principal > 0n
+      ? termsFrom({ principal, interestBps: draft.interestBps, durationSeconds: draft.durationSeconds }, draft.rules)
+      : null;
+  const exposure = terms ? maxExposure(terms) : owed;
+
   const autoCollateral = useMemo(() => {
     if (
       !price ||
-      owed === null ||
-      owed === 0n ||
+      exposure === null ||
+      exposure === 0n ||
       !Number.isInteger(draft.maxLtvBps) ||
       draft.maxLtvBps <= 0
     )
       return null;
-    const min = minCollateralLamports(owed, draft.maxLtvBps, price);
+    const min = minCollateralLamports(exposure, draft.maxLtvBps, price);
     const cushioned = (min * BigInt(100 + draft.cushion) + 99n) / 100n;
     const step = 100_000n; // 0.0001 wSOL
     return ((cushioned + step - 1n) / step) * step;
-  }, [price, owed, draft.maxLtvBps, draft.cushion]);
+  }, [price, exposure, draft.maxLtvBps, draft.cushion]);
 
   const collateral =
     draft.collateralMode === "auto" && autoCollateral !== null
@@ -113,5 +126,5 @@ export function useDraft(price: LivePrice | null, KEY = CREATE_KEY) {
     } catch {}
   };
 
-  return { draft: effective, update, reset, owed, principal, hydrated };
+  return { draft: effective, update, reset, owed, principal, hydrated, terms, exposure };
 }

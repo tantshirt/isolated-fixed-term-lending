@@ -12,6 +12,10 @@ import {
 } from "./transaction-lifecycle";
 import type { OfferDraft } from "./offer-validation";
 import * as tx from "./transactions";
+import { V2_LIVE, PROGRAM_V2_ID, offerV2Pda } from "./v2/program";
+import { termsFrom, termsInput } from "./v2/rules";
+import { sendCreateOfferV2 } from "./v2/transactions";
+import { getConnection } from "./program";
 /** The real adapter delegates all authority and state checks to the unchanged program. */
 export class DevnetLoanService implements LoanService {
   constructor(
@@ -26,6 +30,7 @@ export class DevnetLoanService implements LoanService {
   async execute(c: LoanCommand) {
     const usdc = new PublicKey(this.config.usdcMint),
       wsol = new PublicKey(this.config.wsolMint);
+    if (c.action === "create" && V2_LIVE) return this.createV2(c.draft);
     if (c.action === "create") {
       const key = `lendspan:create:${NETWORK}:${PROGRAM_ID}:${this.signer.publicKey}`;
       return withSubmissionLock(key, async () => {
@@ -111,12 +116,42 @@ export class DevnetLoanService implements LoanService {
     }
     const o = this.offer;
     if (!o) throw new Error("Load an offer first");
+    return this.legacy(c, o, usdc, wsol);
+  }
+
+  /**
+   * New offers go to isolated_loan_v2. The offer id is saved before signing, so a lost
+   * confirmation is reconciled by looking the offer up instead of creating a second one.
+   */
+  private async createV2(draft: OfferDraft | undefined) {
+    const parsed = draft && parseDraft(draft);
+    const terms = parsed && draft.rules ? termsFrom({ principal: parsed.principal, interestBps: parsed.interestBps, durationSeconds: parsed.durationSeconds }, draft.rules) : null;
+    if (!parsed || !terms) throw new Error("Invalid terms");
+    const lender = this.signer.publicKey;
+    const key = `zenlo:create-v2:${NETWORK}:${PROGRAM_V2_ID}:${lender}`;
+    return withSubmissionLock(key, async () => {
+      const saved = readSubmissionStorage(key) as { version: 2; offerId: string } | undefined;
+      const offerId = saved && saved.version === 2 && /^\d{1,20}$/.test(saved.offerId) ? BigInt(saved.offerId) : randomOfferId();
+      if (saved?.offerId && (await getConnection().getAccountInfo(offerV2Pda(lender, offerId)))) {
+        writeSubmissionStorage(key);
+        return { action: "create" as const, message: "Offer created", offerId: offerId.toString() };
+      }
+      writeSubmissionStorage(key, { version: 2, offerId: offerId.toString() });
+      const result = await sendCreateOfferV2(this.signer, offerId, termsInput(terms, parsed));
+      writeSubmissionStorage(key);
+      return { action: "create" as const, message: "Offer created", signature: result.signature, offerId: offerId.toString() };
+    });
+  }
+
+  private async legacy(c: LoanCommand, o: Offer, usdc: PublicKey, wsol: PublicKey) {
     const key = new PublicKey(o.publicKey),
       lender = new PublicKey(o.lender),
       borrower = o.borrower ? new PublicKey(o.borrower) : null,
       price = new PublicKey(this.config.priceUpdateAccount);
     let signature: string;
     switch (c.action) {
+      case "create":
+        throw new Error("Create runs before an offer is loaded");
       case "accept":
         signature = await tx.sendAcceptOffer(
           this.signer,

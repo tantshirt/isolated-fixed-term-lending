@@ -7,8 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "sync-idl": "cp ../isolated_loan/target/idl/isolated_loan.json idl/isolated_loan.json && cp ../isolated_loan/target/idl/private_loan.json idl/private_loan.json",
-    "test": "node --import tsx --test lib/*.test.ts lib/private/*.test.ts lib/pilot/*.test.ts lib/auth/*.test.ts lib/jobs/*.test.ts lib/models/*.test.ts",
+    "sync-idl": "cp ../isolated_loan/target/idl/isolated_loan.json idl/isolated_loan.json && cp ../isolated_loan/target/idl/private_loan.json idl/private_loan.json && cp ../isolated_loan/target/idl/isolated_loan_v2.json idl/isolated_loan_v2.json",
+    "test": "node --import tsx --test lib/*.test.ts lib/private/*.test.ts lib/pilot/*.test.ts lib/auth/*.test.ts lib/jobs/*.test.ts lib/models/*.test.ts lib/v2/*.test.ts",
     "sync-evidence": "cp ../docs/magicblock-evidence.json lib/private/evidence.json"
   },
   "dependencies": {

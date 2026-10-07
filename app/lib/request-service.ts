@@ -10,6 +10,11 @@ import {
   withSubmissionLock,
 } from "./transaction-lifecycle";
 import * as tx from "./transactions";
+import { V2_LIVE, PROGRAM_V2_ID, requestV2Pda } from "./v2/program";
+import { termsFrom, termsInput } from "./v2/rules";
+import { sendCreateRequestV2, sendFundRequestV2 } from "./v2/transactions";
+import type { RequestV2 } from "./v2/offers";
+import { getConnection } from "./program";
 
 type Config = { usdcMint: string; wsolMint: string; priceUpdateAccount: string };
 type Saved = { version: 1; requestId: string; draft: OfferDraft };
@@ -33,6 +38,7 @@ export class RequestService {
    * submission is retried at the same address instead of locking collateral twice.
    */
   async create(draft: OfferDraft) {
+    if (V2_LIVE) return this.createV2(draft);
     const key = `lendspan:request:${NETWORK}:${PROGRAM_ID}:${this.signer.publicKey}`;
     return withSubmissionLock(key, async () => {
       const terms = parseDraft(draft);
@@ -64,6 +70,33 @@ export class RequestService {
         throw error;
       }
     });
+  }
+
+  /** V2 requests: the id is saved before signing and an existing account reconciles a lost confirmation. */
+  private async createV2(draft: OfferDraft) {
+    const parsed = parseDraft(draft);
+    const terms = parsed && draft.rules ? termsFrom({ principal: parsed.principal, interestBps: parsed.interestBps, durationSeconds: parsed.durationSeconds }, draft.rules) : null;
+    if (!parsed || !terms) throw new Error("Invalid terms");
+    const borrower = this.signer.publicKey;
+    const key = `zenlo:request-v2:${NETWORK}:${PROGRAM_V2_ID}:${borrower}`;
+    return withSubmissionLock(key, async () => {
+      const saved = readSubmissionStorage(key) as { version: 2; requestId: string } | undefined;
+      const requestId = saved && saved.version === 2 && /^\d{1,20}$/.test(saved.requestId) ? BigInt(saved.requestId) : randomOfferId();
+      if (saved?.requestId && (await getConnection().getAccountInfo(requestV2Pda(borrower, requestId)))) {
+        writeSubmissionStorage(key);
+        return { signature: "", requestId: requestId.toString() };
+      }
+      writeSubmissionStorage(key, { version: 2, requestId: requestId.toString() });
+      const result = await sendCreateRequestV2(this.signer, requestId, termsInput(terms, parsed));
+      writeSubmissionStorage(key);
+      return { signature: result.signature, requestId: requestId.toString() };
+    });
+  }
+
+  async fundV2(r: RequestV2) {
+    const offerId = randomOfferId();
+    const result = await sendFundRequestV2(this.signer, r, offerId, new PublicKey(this.config.priceUpdateAccount));
+    return { ...result, offerId };
   }
 
   /** A second funding attempt fails on chain, so a fresh offer id per attempt is safe. */

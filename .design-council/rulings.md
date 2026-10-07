@@ -262,3 +262,27 @@ The full council reviewed every route at 390, 768 and 1440 px (14 routes, no hor
 - **Fixed during review:** cancelling an unfunded private bid failed for a lender with no private balance (`InvalidWritableAccount`); drafts now pass the loan's own USDC account, which the program never reads for a draft.
 - **Accepted as is:** a lender cannot see that another offer won a room. Only the borrower can read the deal record, so funded bids explain how to cancel instead of claiming a result.
 - **Not covered:** a human wallet signing on a phone after the rebrand, and the AI copilot in a room. The code paths are unchanged.
+
+## Repayment rules V2 (2026-10-07)
+
+Reviewed at 390, 820 and 1440 px: Learn simulator, wizard step 2 with repayment rules, a V2 loan in grace, a repaid V2 loan, and the offers list. No horizontal overflow and no page errors.
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| The signing review lists the payoff rule, term and annualized pricing (365-day year), the ceiling as a USDC amount, grace, the late fee, and a four-step timeline: Deadline, Grace ends, Priced recovery, Final claim | Plumb / Fovea | Every figure comes from `reviewFigures`, the same math the program runs; nothing is restated by hand. |
+| The surplus loss is in the strong sentence before signing and in "What happens when" throughout recovery | Sol / Plumb | The final claim is an agreed default remedy that can take value beyond the debt; it is shown before signing, never discovered later. |
+| The ceiling is "a limit you set in ZenLo", never a legal rate cap | Sol / Kestrel | It is a product control under the approved brief. |
+| The lender's final claim needs a second click that names the surplus going to the lender | Fovea / Plumb | It is the only action that can take value beyond what is owed. |
+| The rules simulator stays wallet-free on `/learn`, labelled "Simulation only", on a fixed 100 USDC, 30-day, 5% example | Sol / Hollis | Practice without the chain, kept separate from Devnet. |
+| V2 rows reuse the V1 offer row. Pro-rata rows read "Less if repaid early" and the term shows "+ grace" | Indigo / Ravi | One list, one way to scan it. |
+| New end states: "Settled after grace", "Recovered at the market price", "Collateral claimed". A running loan stays "Waiting for repayment" | Sol | Each path has its own word, and the existing state vocabulary is unchanged. |
+| A one-line next action sits under the loan title | Ravi / Fovea | On phones the actions panel falls below the details; the next step must come first. |
+
+**Fixed during review:**
+- "take the wSOL plus 5%" became "take wSOL worth that plus 5%" in four places.
+- A settled loan no longer asks a signed-out visitor to connect.
+- The borrower's review gained the term rate, term cost and annualized pricing.
+- The simulator: the day counter, the units, the current SOL price, and "(passed)" announced to screen readers.
+- The late-fee readout no longer wraps at 390 px.
+- "Running" became "Waiting for repayment".
+- Percentages now have thousands separators.

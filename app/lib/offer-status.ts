@@ -14,6 +14,8 @@ export type PriceSnapshot = {
   exponent: number;
   publishTime: number;
   fresh: boolean;
+  /** EMA from the same update, when the reader supplied it. */
+  ema?: { price: bigint; conf: bigint };
 };
 
 /** Copy deck status words. */

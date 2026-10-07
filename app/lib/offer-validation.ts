@@ -1,5 +1,6 @@
 import { CAPS } from "./constants";
 import { debt } from "./loan-math";
+import type { RepaymentRules } from "./v2/rules";
 
 /** What the create wizard collects, as the user typed it. */
 export type OfferDraft = {
@@ -9,6 +10,8 @@ export type OfferDraft = {
   collateral: string; // wSOL, e.g. "1.25"
   maxLtvBps: number;
   liquidationLtvBps: number;
+  /** V2 repayment rules; absent on V1 drafts. */
+  rules?: RepaymentRules;
 };
 
 export type ParsedOffer = {

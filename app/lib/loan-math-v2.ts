@@ -4,7 +4,7 @@
  * All amounts are bigint atoms. Formulas and rounding are stated in docs/research.md.
  */
 import { collateralValueUsdc, currentLtvBps, interest, seizeUsdc, wsolToCaller } from "./loan-math";
-import { CAPS } from "./constants";
+import { CAPS } from "./caps";
 
 export const SECONDS_PER_YEAR = 31_536_000n;
 export const DEFAULT_GRACE_SECONDS = 86_400;
