@@ -242,3 +242,78 @@ The spot price must pass every V1 check, and its conservative value is `price - 
 
 - The annualized rate shown to users is `floor(interest_bps × 31_536_000 / duration)`, on a 365-day year.
 - Term cost, annualized pricing and current payoff are always shown as separate figures.
+
+## Expansion rules (Epic 26, approved 2026-10-07)
+
+The owner waived the Epic 25 customer gate on 2026-10-07 and pulled all of Epic 26 forward. These rules apply only to the V2 programs. The legacy programs keep their week-1 economics. Each rule below is written before the code that uses it; if a test disagrees with a rule, change both in the same change.
+
+### Per-asset collateral (26.2)
+
+Each collateral asset has a governance-written config: mint, decimals, Pyth feed id, max LTV, liquidation LTV, and an enabled flag. Canonical wSOL keeps the built-in constants above, so active wSOL loans need no migration. Every oracle check from "Collateral value" and "Oracle policy" still applies; only the feed id and decimals come from the config.
+
+```
+divisor_exp = decimals - 6 - exponent     # 11 for SOL or jitoSOL (9 decimals) at exponent -8
+value_usdc  = floor( amount * (price - conf) / 10^divisor_exp )
+```
+
+| Asset | Feed | Max LTV | Liquidation LTV | Emergency |
+| --- | --- | --- | --- | --- |
+| wSOL | SOL/USD `ef0d8b6f…b56d` | up to 70% | up to 85% | threshold + 300 bps |
+| jitoSOL | JITOSOL/USD `67be9f519b95cf24338801051f9a808eff0a578ccb388db73b7f6fe1de019ffb` | up to 60% (provisional) | up to 70% (provisional) | threshold + 300 bps |
+
+jitoSOL is priced by its own verified feed, never derived from SOL/USD and a stake-pool rate. On Devnet the collateral is a ZenLo test mint labelled "jitoSOL (test)", priced by the real JITOSOL/USD feed posted through the Pyth receiver in the same transaction.
+
+### Refinance and rollover (26.1)
+
+A borrower may move an Active or Grace loan into a new offer in one instruction. Overdue and later phases cannot refinance; the recovery rules apply.
+
+```
+payoff_old    = payoff of the old loan at now (pro-rata final adjustment and any late fee included)
+contribution  = payoff_old - new_principal        # borrower pays this; must be >= 0
+```
+
+- `new_principal > payoff_old` is rejected. Refinancing never pays cash out to the borrower.
+- The old lender receives exactly `payoff_old`: `new_principal` from the new lender plus `contribution` from the borrower, in the same instruction.
+- Collateral moves vault to vault. The new loan must pass origination against a fresh price with its own terms: `max_exposure` LTV within the new max LTV.
+- The old loan's terminal status is `Refinanced`, separate from `Repaid`. It never counts as a repayment in history.
+- Same-lender rollover is a renewal offer restricted to that borrower. Nothing refinances without the borrower's signature; there is no auto-refinance.
+- No new rounding: every amount is already in atoms.
+
+### Automation mandates (26.3)
+
+A borrower may pre-authorize one bounded action per loan: top-up (add collateral) or repay. A mandate is bound to the loan, action, source token account, destination vault, trigger, expiry, cumulative cap and fee cap. Only the configured keeper executes it.
+
+- **Health trigger**: fires when conservative spot LTV ≥ `trigger_ltv_bps`, which must be below the liquidation LTV. After firing it re-arms only once LTV ≤ `trigger_ltv_bps - 200`, so one wick cannot drain the cap.
+- **Time trigger**: fires once when `now ≥ maturity - lead_seconds`.
+- **Amount per execution**: the mandate's fixed amount, clamped to the remaining cumulative cap; a repay is also clamped to the payoff.
+- **Fees**: each execution's keeper fee is at most `fee_per_exec`, and total fees at most `fee_cap`. Fees come from the same delegated allowance and count toward the cumulative cap.
+- A mandate never acts after a settlement. If a liquidation and a mandate land in the same slot, whichever executes first wins; the other fails cleanly.
+- A mandate allowance is never used as liquidation capital. Revoking the mandate or the token delegate stops it at once.
+
+### Credit tiers (26.7)
+
+An invited wSOL credit pilot lets a verified borrower originate at a higher max LTV. The tier comes from a Solana Attestation Service credential that carries only the tier and an expiry.
+
+| Tier | Max LTV | Liquidation LTV | Emergency |
+| --- | --- | --- | --- |
+| 1 | 80% | 85% | 88% |
+| 2 | 85% | 90% | 93% |
+| 3 | 88% | 93% | 96% |
+
+- The liquidation LTV is always max LTV + 5 points, the existing minimum gap. Credit tiers override the 70% max LTV and 85% liquidation caps only through a valid, unexpired credential checked at origination.
+- The tier is fixed at origination and stored on the loan. A credential that expires during the loan does not change it.
+- The 5% liquidation bonus still fits: at 93% LTV the collateral is worth about 107.5% of the debt.
+- Reclaim income proofs are verified server-side and discarded; only the resulting attestation is kept. Raw proofs, income figures and viewing keys never reach Convex, telemetry, exports or notifications.
+
+### Secondary market (26.8)
+
+A lender may sell a V2 position. Every V2 position is transferable; the borrower's terms never change, only who is paid.
+
+- The buyer pays the seller's asking price and becomes `current_lender` in one instruction. The vault PDA keeps signing with `origin_lender`.
+- Everything paid after the sale, including interest that accrued before it, goes to `current_lender`. Any shortfall belongs to `current_lender`.
+- A listing is void once the loan settles or the seller is no longer `current_lender`.
+- Every loan review states that the position may be sold and that payments then go to the new holder.
+
+### Activity export (26.8)
+
+One row per on-chain action: UTC time, slot, signature, loan, role, action, asset, amount in atoms, decimal amount, fee, and resulting status. Public rows are rebuilt from chain with a `(slot, signature)` cursor, so a replay yields the same file. Private rows are exported only in the browser from rollup reads and never pass through a server. The export is an activity record, not tax advice.

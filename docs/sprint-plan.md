@@ -116,8 +116,17 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 13 | [24.3 Alerts and reminders](stories.md) | 19.3, 22.2 | Open (built and proven on local Convex; needs a Telegram bot token and hosted Convex) |
 | 14 | [24.4 MoneyGram cash-out](stories.md) and [24.5 Gate metrics](stories.md) | 19.3, 24.2 | Open (built and checked locally; needs MoneyGram sandbox keys, an allowlisted domain and hosted Convex) |
 | 15 | [19.7 Honest shipped-feature surfaces](stories.md) | 19.6 | Done (landing, use cases and six official logos; badges derived from Devnet evidence and provider flags) |
+| 16 | Provider cutover: hosted Convex, Telegram, MoneyGram sandbox, independent Squads signers (closes rows 2, 3, 4, 13, 14) | owner keys | Open (waiting on keys) |
+| 17 | [26.2 Per-asset collateral and jitoSOL](stories.md) | 19.5, 20.3 | Open |
+| 18 | [26.1 Refinance and rollover](stories.md) | 26.2 | Open |
+| 19 | [26.3 Automation mandates](stories.md) and [26.4 Private liquidation operations](stories.md) | 26.1, 26.2 | Open |
+| 20 | [26.5 MoneyGram cash-in](stories.md) | row 16 | Open |
+| 21 | [26.6 Shielded deposits and withdrawals](stories.md) | — | Open (spike first) |
+| 22 | [26.7 Credit](stories.md) | 26.2, 26.3 | Open |
+| 23 | [26.8 Secondary market and activity export](stories.md) | 26.1, 26.3 | Open |
+| 24 | [27.1 Arcium credit computation](stories.md) | 26.7 | Open (lifts the Arcium ban in AGENTS.md in the same PR) |
 
-Not queued until the gate passes: [25.1 Customer gate](stories.md), [Epic 26 expansion](stories.md), [Epic 27 research](stories.md).
+2026-10-07: the owner waived the Epic 25 customer gate and pulled Epic 26 and the Arcium part of Epic 27 forward. 25.1 still runs as a pilot in parallel; it no longer blocks rows 16–24.
 
 ## Notes
 
