@@ -112,6 +112,39 @@ pub fn validate_terms(
     Ok(())
 }
 
+// Story 26.2. Added after the week-1 functions, and `#[inline]` so it is only code-generated
+// where it is called: the legacy programs' bytes stay identical (checked by hashing the .so).
+
+/// Value `amount` atoms of a `decimals`-decimal collateral asset in USDC atoms at the
+/// conservative price (Story 26.2): `floor(amount * (price - conf) / 10^(decimals - 6 - exponent))`.
+/// For 9 decimals this is exactly `collateral_value_usdc`.
+#[inline]
+pub fn collateral_value_usdc_decimals(amount: u64, decimals: u8, price: i64, conf: u64, exponent: i32) -> CoreResult<u64> {
+    ensure!(price > 0, CoreError::InvalidPrice);
+    ensure!(conf < price as u64, CoreError::InvalidPrice);
+    ensure!(
+        exponent >= MIN_EXPONENT && exponent <= MAX_EXPONENT,
+        CoreError::InvalidExponent
+    );
+
+    let conservative = (price as u128)
+        .checked_sub(conf as u128)
+        .ok_or(CoreError::InvalidPrice)?;
+    let divisor_exp = (decimals as i32)
+        .checked_sub(6)
+        .and_then(|v| v.checked_sub(exponent))
+        .ok_or(CoreError::MathOverflow)?;
+    let divisor_exp = u32::try_from(divisor_exp).map_err(|_| CoreError::MathOverflow)?;
+    let divisor = 10_u128
+        .checked_pow(divisor_exp)
+        .ok_or(CoreError::MathOverflow)?;
+
+    let num = (amount as u128)
+        .checked_mul(conservative)
+        .ok_or(CoreError::MathOverflow)?;
+    u64::try_from(num / divisor).map_err(|_| CoreError::MathOverflow)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,6 +187,40 @@ mod tests {
         // 105 USDC debt against 1 USDC of collateral is 1_050_000 bps.
         assert_eq!(current_ltv_bps(105_000_000, 1_000_000).unwrap(), u16::MAX);
         assert_eq!(current_ltv_bps(105_000_000, 0).unwrap(), u16::MAX);
+    }
+
+    #[test]
+    fn nine_decimal_valuation_matches_the_sol_path() {
+        let cases: [(u64, i64, u64, i32); 7] = [
+            (1_000_000_000, 15_000_000_000, 15_000_000, -8),
+            (1_001_001_002, 15_000_000_000, 15_000_000, -8),
+            (875_875_876, 15_000_000_000, 15_000_000, -8),
+            (1, 15_000_000_000, 15_000_000, -8),
+            (u64::MAX, 15_000_000_000, 0, -8),
+            (123_456_789_012, 987_654_321, 12_345, -12),
+            (5_000_000_000, 150_123, 1, -3),
+        ];
+        for (amount, price, conf, exp) in cases {
+            assert_eq!(
+                collateral_value_usdc_decimals(amount, 9, price, conf, exp),
+                collateral_value_usdc(amount, price, conf, exp),
+                "amount {amount} price {price} conf {conf} exp {exp}"
+            );
+        }
+    }
+
+    #[test]
+    fn jitosol_vectors() {
+        // research.md § Per-asset collateral: divisor_exp = 9 - 6 - (-8) = 11.
+        // 1 jitoSOL at 180.00 ± 0.18: floor(1e9 * 17_982_000_000 / 1e11) = 179_820_000.
+        assert_eq!(collateral_value_usdc_decimals(1_000_000_000, 9, 18_000_000_000, 18_000_000, -8).unwrap(), 179_820_000);
+        // 60% max LTV of 106 USDC of exposure needs >= 176_666_667 of value.
+        assert_eq!(collateral_value_usdc_decimals(982_464_000, 9, 18_000_000_000, 18_000_000, -8).unwrap(), 176_666_676);
+        assert_eq!(current_ltv_bps(106_000_000, 176_666_676).unwrap(), 6_000);
+        // A 6-decimal asset at exponent -8 divides by 10^8.
+        assert_eq!(collateral_value_usdc_decimals(2_000_000, 6, 100_000_000, 0, -8).unwrap(), 2_000_000);
+        // Decimals too small for the exponent cannot underflow the divisor.
+        assert_eq!(collateral_value_usdc_decimals(1, 0, 100_000, 0, -3), Err(CoreError::MathOverflow));
     }
 
     #[test]

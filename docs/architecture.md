@@ -266,7 +266,7 @@ Account layouts, seeds and instruction rules are added to this file story by sto
 
 ## Public V2 program (`isolated_loan_v2`, Stories 21.1–21.2)
 
-Program ID `8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m`. The program has no admin keys; its only authority is the upgrade authority, which belongs to the Squads vault ([governance.md](governance.md)). Economics come only from `loan_core::accounting` ([research.md](research.md#v2-accounting-approved-2026-10-07)).
+Program ID `8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m`. Its authorities are the upgrade authority and, from Story 26.2, `Config.authorities.governance`; both belong to the Squads vault, and governance can only write per-asset collateral configs, never touch a loan ([governance.md](governance.md)). Economics come only from `loan_core::accounting` ([research.md](research.md#v2-accounting-approved-2026-10-07)).
 
 ### Accounts and seeds
 
@@ -276,6 +276,12 @@ Program ID `8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m`. The program has no ad
 | USDC vault | `["usdc-vault-v2", offer]` | Open offers only; closed at accept (rent to the origin lender) |
 | wSOL vault | `["wsol-vault-v2", offer]` | Active loans; closed at settlement (rent to the borrower) |
 | `RequestV2` | `["request-v2", borrower, request_id_le]` | A borrower's ask, with collateral locked in `["request-wsol-v2", request]` |
+| `Config` | `["config"]` | Story 26.2. `governance::Authorities`, the same layout as `private_loan_v2`'s `Config`. Written once by the upgrade authority (`init_config`); only `authorities.governance` (the Squads vault on Devnet) rotates it or writes a `CollateralConfig`. |
+| `CollateralConfig` | `["collateral", mint]` | Story 26.2. `version = 1`, `mint`, `decimals` (copied from the mint at the first write and fixed), `feed_id: [u8; 32]`, `max_ltv_bps`, `liquidation_ltv_bps`, `enabled`, `bump`, 32 reserved bytes. Never exists for canonical wSOL or USDC. |
+
+The vault and field names keep `wsol`; for a configured asset, `OfferV2.wsol_mint` and `RequestV2.wsol_mint` hold that asset's mint and the "wSOL vault" holds it. Neither layout changed.
+
+**Collateral resolution (Story 26.2).** Canonical wSOL always uses the built-in constants (SOL/USD, 9 decimals, 70% / 85% caps), and any extra account passed with it is ignored, so active wSOL loans need no migration. Any other collateral mint must pass its `CollateralConfig` as the **first remaining account** of `create_offer`, `create_request`, `accept_offer`, `fund_request`, `liquidate`, `liquidate_overdue` and `claim_priced_recovery`. The program checks that the account is owned by the program, is a `CollateralConfig`, names this mint and sits at `["collateral", mint]`. Origination (create, accept, fund) also requires `enabled`, the mint's decimals to match, and the terms' max and liquidation LTV to be within the config's caps (checked again at accept and fund, so a tightened or disabled asset stops pending offers and requests). Servicing (liquidation, overdue liquidation, priced recovery) reads the config's feed and decimals even when the asset is disabled, so disabling never freezes recovery. Repay, add collateral and the terminal claim read no price and need no config. Valuation is `floor(amount × (price − conf) / 10^(decimals − 6 − exponent))` with every oracle check from `loan_core::oracle::read_price`. A `local-mints` build (never deployed) with no config passed keeps pricing a self-made mint as SOL so Surfpool walkthroughs still run.
 
 Statuses: `Open`, `Active`, `Repaid`, `Liquidated`, `OverdueLiquidated`, `PricedRecovered`, `TerminalClaimed`, `Cancelled`. Every instruction that settles a loan requires `Active`, so a loan reaches exactly one terminal status.
 
@@ -294,10 +300,13 @@ Statuses: `Open`, `Active`, `Repaid`, `Liquidated`, `OverdueLiquidated`, `Priced
 | `claim_terminal` | current lender | from grace end + 7 d | All remaining wSOL, with no price account read |
 | `close_offer` / `close_request` | current lender / borrower | settled | Rent back |
 | `create_request`, `cancel_request`, `fund_request(offer_id)` | borrower / borrower / lender | — | As in V1. Funding creates an `Active` `OfferV2` and checks max exposure. |
+| `init_config(authorities)` | program upgrade authority | once | Creates `Config`; every key set and no two roles sharing one |
+| `rotate_authorities(next)` | `authorities.governance` | — | Replaces the keys; the result must still validate |
+| `set_collateral_config(feed_id, max_ltv_bps, liquidation_ltv_bps, enabled)` | `authorities.governance` | — | Creates or updates `["collateral", mint]`. Rejects wSOL and USDC, decimals outside 3–18, a zero feed id, max LTV of 0 or above 70%, liquidation LTV above 85% or less than 5 points above max. Mint and decimals cannot change after the first write. |
 
-Fails closed: wrong status; a signer other than the named party; a restricted borrower mismatch; any Pyth owner, feed, age, band or exponent failure on a priced path; an early call (`TooEarly`); a zero amount; any mint other than canonical USDC and wSOL. The borrower cannot liquidate their own loan; the duplicate-account guard or `BorrowerCannotLiquidate` stops it.
+Fails closed: wrong status; a signer other than the named party; a restricted borrower mismatch; any Pyth owner, feed, age, band or exponent failure on a priced path, where the feed is the collateral's own; an early call (`TooEarly`); a zero amount; any USDC mint other than canonical USDC; any collateral mint other than canonical wSOL without its `CollateralConfig` (`CollateralNotConfigured`), or with a disabled one at origination (`CollateralDisabled`); terms above the asset's caps (`InvalidTerms`); a config write by anyone but governance (`WrongAuthority`). The borrower cannot liquidate their own loan; the duplicate-account guard or `BorrowerCannotLiquidate` stops it.
 
-`programs/isolated_loan_v2/tests/litesvm_v2.rs` (16 tests) covers each boundary to the second.
+`programs/isolated_loan_v2/tests/litesvm_v2.rs` (25 tests) covers each boundary to the second, including jitoSOL accept and repay, liquidation, priced recovery and request funding on the JITOSOL/USD feed, an unconfigured or substituted config, a disabled config, non-governance writes, and the unchanged wSOL path.
 
 ## Private V2 program (`private_loan_v2`, Stories 22.1–22.2)
 

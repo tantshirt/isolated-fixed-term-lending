@@ -3,7 +3,7 @@ use crate::state::{OfferV2, RequestStatusV2, RequestV2, StatusV2};
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use loan_core::constants::mints_allowed;
+use loan_core::constants::usdc_allowed;
 
 pub const OFFER_SEED: &[u8] = b"offer-v2";
 pub const USDC_VAULT_SEED: &[u8] = b"usdc-vault-v2";
@@ -26,10 +26,11 @@ pub struct CreateOffer<'info> {
     pub offer: Box<Account<'info, OfferV2>>,
     #[account(constraint = usdc_mint.decimals == 6 @ LoanV2Error::InvalidUsdcMint)]
     pub usdc_mint: Box<Account<'info, Mint>>,
+    /// Collateral mint (the field keeps its V2 name). Canonical wSOL, or a mint whose enabled
+    /// `CollateralConfig` is the first remaining account; checked in the handler.
     #[account(
-        constraint = wsol_mint.decimals == 9 @ LoanV2Error::InvalidWsolMint,
         constraint = wsol_mint.key() != usdc_mint.key() @ LoanV2Error::SameMint,
-        constraint = mints_allowed(&usdc_mint.key(), &wsol_mint.key()) @ LoanV2Error::MintNotAllowed,
+        constraint = usdc_allowed(&usdc_mint.key()) @ LoanV2Error::MintNotAllowed,
     )]
     pub wsol_mint: Box<Account<'info, Mint>>,
     #[account(
@@ -210,10 +211,11 @@ pub struct CreateRequest<'info> {
     pub request: Box<Account<'info, RequestV2>>,
     #[account(constraint = usdc_mint.decimals == 6 @ LoanV2Error::InvalidUsdcMint)]
     pub usdc_mint: Box<Account<'info, Mint>>,
+    /// Collateral mint (the field keeps its V2 name). Canonical wSOL, or a mint whose enabled
+    /// `CollateralConfig` is the first remaining account; checked in the handler.
     #[account(
-        constraint = wsol_mint.decimals == 9 @ LoanV2Error::InvalidWsolMint,
         constraint = wsol_mint.key() != usdc_mint.key() @ LoanV2Error::SameMint,
-        constraint = mints_allowed(&usdc_mint.key(), &wsol_mint.key()) @ LoanV2Error::MintNotAllowed,
+        constraint = usdc_allowed(&usdc_mint.key()) @ LoanV2Error::MintNotAllowed,
     )]
     pub wsol_mint: Box<Account<'info, Mint>>,
     #[account(

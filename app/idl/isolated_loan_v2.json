@@ -768,7 +768,11 @@
           "name": "usdc_mint"
         },
         {
-          "name": "wsol_mint"
+          "name": "wsol_mint",
+          "docs": [
+            "Collateral mint (the field keeps its V2 name). Canonical wSOL, or a mint whose enabled",
+            "`CollateralConfig` is the first remaining account; checked in the handler."
+          ]
         },
         {
           "name": "usdc_vault",
@@ -975,7 +979,11 @@
           "name": "usdc_mint"
         },
         {
-          "name": "wsol_mint"
+          "name": "wsol_mint",
+          "docs": [
+            "Collateral mint (the field keeps its V2 name). Canonical wSOL, or a mint whose enabled",
+            "`CollateralConfig` is the first remaining account; checked in the handler."
+          ]
         },
         {
           "name": "request_vault",
@@ -1453,6 +1461,69 @@
       ]
     },
     {
+      "name": "init_config",
+      "docs": [
+        "Once, by the upgrade authority (Story 26.2, same shape as `private_loan_v2`)."
+      ],
+      "discriminator": [
+        23,
+        235,
+        115,
+        232,
+        168,
+        96,
+        1,
+        231
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program",
+          "address": "8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m"
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "authorities",
+          "type": {
+            "defined": {
+              "name": "Authorities"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "liquidate",
       "docs": [
         "Risk liquidation in the active term and grace: spot and EMA past the line, or spot alone",
@@ -1722,9 +1793,177 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "rotate_authorities",
+      "docs": [
+        "Governance only."
+      ],
+      "discriminator": [
+        163,
+        56,
+        249,
+        242,
+        156,
+        15,
+        235,
+        120
+      ],
+      "accounts": [
+        {
+          "name": "governance",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "next",
+          "type": {
+            "defined": {
+              "name": "Authorities"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_collateral_config",
+      "docs": [
+        "Governance only: create or update one asset's `CollateralConfig`."
+      ],
+      "discriminator": [
+        59,
+        39,
+        3,
+        171,
+        10,
+        224,
+        203,
+        32
+      ],
+      "accounts": [
+        {
+          "name": "governance",
+          "docs": [
+            "Must be `config.authorities.governance`; pays rent on the first write."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "collateral_config",
+          "docs": [
+            "Created on the first write; mint and decimals are checked before every later write."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  108,
+                  108,
+                  97,
+                  116,
+                  101,
+                  114,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CollateralConfigArgs"
+            }
+          }
+        }
+      ]
     }
   ],
   "accounts": [
+    {
+      "name": "CollateralConfig",
+      "discriminator": [
+        150,
+        147,
+        210,
+        201,
+        79,
+        202,
+        93,
+        49
+      ]
+    },
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
     {
       "name": "OfferV2",
       "discriminator": [
@@ -1777,6 +2016,19 @@
         80,
         187,
         62
+      ]
+    },
+    {
+      "name": "CollateralConfigSet",
+      "discriminator": [
+        4,
+        3,
+        19,
+        193,
+        170,
+        233,
+        180,
+        148
       ]
     },
     {
@@ -1878,7 +2130,7 @@
     {
       "code": 6011,
       "name": "InvalidFeedId",
-      "msg": "Price feed id does not match SOL/USD"
+      "msg": "Price feed id does not match the collateral's feed"
     },
     {
       "code": 6012,
@@ -1939,6 +2191,36 @@
       "code": 6023,
       "name": "PaymentAboveLimit",
       "msg": "Payment exceeds the slippage bound the borrower signed"
+    },
+    {
+      "code": 6024,
+      "name": "CollateralNotConfigured",
+      "msg": "This collateral mint has no governance CollateralConfig"
+    },
+    {
+      "code": 6025,
+      "name": "CollateralDisabled",
+      "msg": "This collateral is disabled for new loans"
+    },
+    {
+      "code": 6026,
+      "name": "InvalidCollateralConfig",
+      "msg": "Collateral config is invalid"
+    },
+    {
+      "code": 6027,
+      "name": "WrongAuthority",
+      "msg": "Signer does not hold the required authority"
+    },
+    {
+      "code": 6028,
+      "name": "InvalidAuthorities",
+      "msg": "Authorities are unset or share a key"
+    },
+    {
+      "code": 6029,
+      "name": "NotUpgradeAuthority",
+      "msg": "Only the program upgrade authority can initialize the config"
     }
   ],
   "types": [
@@ -1971,6 +2253,56 @@
       }
     },
     {
+      "name": "Authorities",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "governance",
+            "docs": [
+              "Squads vault PDA. Rotates every other key and holds the upgrade authority."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "ai_admin",
+            "docs": [
+              "Registers and replaces the AI worker. Not a financial role."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "ai_worker",
+            "docs": [
+              "Answers AI requests. Operational."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "liquidation_pool_admin",
+            "docs": [
+              "Administers the liquidation-ticket pool's parameters."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "credential_issuer",
+            "docs": [
+              "Issues credentials (later epics)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "keeper",
+            "docs": [
+              "Triggers scheduled settlement checks. Operational and permissionless in effect."
+            ],
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
       "name": "CollateralAddedV2",
       "type": {
         "kind": "struct",
@@ -1986,6 +2318,165 @@
           {
             "name": "collateral_locked",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollateralConfig",
+      "docs": [
+        "One collateral asset other than canonical wSOL. Seeds `[\"collateral\", mint]`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "decimals",
+            "docs": [
+              "Copied from the mint at the first write; a mint's decimals never change."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "feed_id",
+            "docs": [
+              "Pyth feed that prices this asset in USD. Every V1 oracle check still applies."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "max_ltv_bps",
+            "docs": [
+              "Highest max LTV an offer or request in this asset may use."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "liquidation_ltv_bps",
+            "docs": [
+              "Highest liquidation LTV an offer or request in this asset may use."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "enabled",
+            "docs": [
+              "Gates new originations only. Servicing, liquidation and recovery of existing loans keep",
+              "reading the feed when an asset is disabled."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollateralConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feed_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "max_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "liquidation_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollateralConfigSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "feed_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "max_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "liquidation_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "authorities",
+            "type": {
+              "defined": {
+                "name": "Authorities"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }

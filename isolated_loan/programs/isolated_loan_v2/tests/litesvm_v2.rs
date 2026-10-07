@@ -1,16 +1,18 @@
-//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2). Run `anchor build` first.
+//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2, 26.2). Run `anchor build` first.
 //! Every boundary is driven by setting the clock to the exact second. The Pyth account is owned by
 //! the real receiver program, so the owner check is exercised, never bypassed.
 
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::instruction::Instruction;
+use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
 use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas};
 use isolated_loan_v2::error::LoanV2Error;
 use isolated_loan_v2::state::{OfferV2, RequestStatusV2, RequestV2, StatusV2, TermsArgs};
 use isolated_loan_v2::{OFFER_SEED, REQUEST_SEED, REQUEST_WSOL_VAULT_SEED, USDC_VAULT_SEED, WSOL_VAULT_SEED};
 use litesvm::LiteSVM;
 use loan_core::accounting as acc;
-use loan_core::constants::{PYTH_RECEIVER_PROGRAM_ID, SOL_USD_FEED_ID, USDC_MINT, WSOL_MINT};
+use governance::Authorities;
+use isolated_loan_v2::config::{CollateralConfig, CollateralConfigArgs, Config, COLLATERAL_SEED, CONFIG_SEED};
+use loan_core::constants::{JITOSOL_USD_FEED_ID, PYTH_RECEIVER_PROGRAM_ID, SOL_USD_FEED_ID, USDC_MINT, WSOL_MINT};
 use pyth_solana_receiver_sdk::price_update::{PriceFeedMessage, PriceUpdateV2, VerificationLevel};
 use solana_account::Account;
 use solana_clock::Clock;
@@ -49,6 +51,19 @@ fn args(policy: u8) -> TermsArgs {
     }
 }
 
+/// jitoSOL (test) caps from research.md § Per-asset collateral: 60% / 70%.
+const JITO_MAX_LTV: u16 = 6_000;
+const JITO_LIQ_LTV: u16 = 7_000;
+const JITO_COLLATERAL: u64 = 1_100_000_000;
+
+fn jito_args(enabled: bool) -> CollateralConfigArgs {
+    CollateralConfigArgs { feed_id: JITOSOL_USD_FEED_ID, max_ltv_bps: JITO_MAX_LTV, liquidation_ltv_bps: JITO_LIQ_LTV, enabled }
+}
+
+fn jito_terms() -> TermsArgs {
+    TermsArgs { collateral_amount: JITO_COLLATERAL, max_ltv_bps: JITO_MAX_LTV, liquidation_ltv_bps: JITO_LIQ_LTV, ..args(1) }
+}
+
 fn code(e: LoanV2Error) -> String {
     format!("Custom({})", u32::from(e))
 }
@@ -82,6 +97,11 @@ struct Env {
     borrower: Keypair,
     stranger: Keypair,
     price: Pubkey,
+    /// Squads vault stand-in: `Config.authorities.governance`.
+    governance: Keypair,
+    /// "jitoSOL (test)": a 9-decimal mint with its own JITOSOL/USD price account.
+    jito: Pubkey,
+    jito_price: Pubkey,
     now: i64,
 }
 
@@ -90,20 +110,78 @@ impl Env {
         let mut svm = LiteSVM::new();
         let so = concat!(env!("CARGO_MANIFEST_DIR"), "/../../target/deploy/isolated_loan_v2.so");
         svm.add_program_from_file(ID, so).expect("run `anchor build` before the LiteSVM tests");
-        let (lender, borrower, stranger) = (Keypair::new(), Keypair::new(), Keypair::new());
-        for k in [&lender, &borrower, &stranger] {
+        let (lender, borrower, stranger, governance) = (Keypair::new(), Keypair::new(), Keypair::new(), Keypair::new());
+        for k in [&lender, &borrower, &stranger, &governance] {
             svm.airdrop(&k.pubkey(), 10_000_000_000).unwrap();
         }
-        let mut env = Env { svm, lender, borrower, stranger, price: Pubkey::new_unique(), now: START };
+        let (jito, jito_price) = (Pubkey::new_unique(), Pubkey::new_unique());
+        let mut env = Env { svm, lender, borrower, stranger, price: Pubkey::new_unique(), governance, jito, jito_price, now: START };
         env.at(START);
         env.put_mint(USDC_MINT, 6);
         env.put_mint(WSOL_MINT, 9);
+        env.put_mint(jito, 9);
         for k in [env.lender.pubkey(), env.borrower.pubkey(), env.stranger.pubkey()] {
             env.put_ata(USDC_MINT, k, 1_000_000_000);
             env.put_ata(WSOL_MINT, k, 10_000_000_000);
+            env.put_ata(jito, k, 10_000_000_000);
         }
         env.price_usd(150, 150);
+        env.put_config();
         env
+    }
+
+    /// The governance `Config` as `init_config` would leave it (the upgrade-authority path needs
+    /// a ProgramData account LiteSVM does not model, as in private_loan_v2's governance tests).
+    fn put_config(&mut self) {
+        let (config, bump) = Pubkey::find_program_address(&[CONFIG_SEED], &ID);
+        let authorities = Authorities {
+            governance: self.governance.pubkey(),
+            ai_admin: Pubkey::new_unique(),
+            ai_worker: Pubkey::new_unique(),
+            liquidation_pool_admin: Pubkey::new_unique(),
+            credential_issuer: Pubkey::new_unique(),
+            keeper: Pubkey::new_unique(),
+        };
+        let mut data = Vec::new();
+        Config { version: 1, authorities, bump }.try_serialize(&mut data).unwrap();
+        self.put(config, ID, data);
+    }
+
+    fn collateral_pda(mint: Pubkey) -> Pubkey {
+        pda(&[COLLATERAL_SEED, mint.as_ref()])
+    }
+
+    fn set_collateral(&mut self, signer: &Keypair, mint: Pubkey, args: CollateralConfigArgs) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::SetCollateralConfig {
+                governance: signer.pubkey(),
+                config: pda(&[CONFIG_SEED]),
+                mint,
+                collateral_config: Self::collateral_pda(mint),
+                system_program: SYSTEM_PROGRAM,
+            }
+            .to_account_metas(None),
+            data: isolated_loan_v2::instruction::SetCollateralConfig { args }.data(),
+        };
+        self.send(ix, signer)
+    }
+
+    /// jitoSOL (test) at 60% / 70%, priced by JITOSOL/USD.
+    fn configure_jito(&mut self, enabled: bool) {
+        let g = self.governance.insecure_clone();
+        let jito = self.jito;
+        self.set_collateral(&g, jito, jito_args(enabled)).unwrap();
+    }
+
+    /// The remaining account a non-wSOL loan passes: its `CollateralConfig`.
+    fn jito_extra(&self) -> Vec<AccountMeta> {
+        vec![AccountMeta::new_readonly(Self::collateral_pda(self.jito), false)]
+    }
+
+    fn jito_usd(&mut self, spot: i64, ema: i64) {
+        let key = self.jito_price;
+        self.post_to(key, JITOSOL_USD_FEED_ID, spot * USD, (spot * USD / 1000) as u64, ema * USD, (ema * USD / 1000) as u64, self.now);
     }
 
     fn at(&mut self, ts: i64) {
@@ -148,11 +226,17 @@ impl Env {
     }
 
     fn post(&mut self, price: i64, conf: u64, ema_price: i64, ema_conf: u64, publish_time: i64) {
+        let key = self.price;
+        self.post_to(key, SOL_USD_FEED_ID, price, conf, ema_price, ema_conf, publish_time);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn post_to(&mut self, key: Pubkey, feed_id: [u8; 32], price: i64, conf: u64, ema_price: i64, ema_conf: u64, publish_time: i64) {
         let update = PriceUpdateV2 {
             write_authority: Pubkey::new_unique(),
             verification_level: VerificationLevel::Full,
             price_message: PriceFeedMessage {
-                feed_id: SOL_USD_FEED_ID,
+                feed_id,
                 price,
                 conf,
                 exponent: -8,
@@ -165,7 +249,7 @@ impl Env {
         };
         let mut data = Vec::with_capacity(PriceUpdateV2::LEN);
         update.try_serialize(&mut data).unwrap();
-        self.put(self.price, PYTH_RECEIVER_PROGRAM_ID, data);
+        self.put(key, PYTH_RECEIVER_PROGRAM_ID, data);
     }
 
     fn balance(&self, token_account: Pubkey) -> u64 {
@@ -198,47 +282,56 @@ impl Env {
     }
 
     fn create(&mut self, id: u64, a: TermsArgs, restricted: Pubkey) -> Result<Pubkey, String> {
+        self.create_with(id, a, restricted, WSOL_MINT, vec![])
+    }
+
+    fn create_with(&mut self, id: u64, a: TermsArgs, restricted: Pubkey, mint: Pubkey, extra: Vec<AccountMeta>) -> Result<Pubkey, String> {
         let lender = self.lender.insecure_clone();
         let offer = offer_pda(lender.pubkey(), id);
-        let ix = Instruction {
-            program_id: ID,
-            accounts: isolated_loan_v2::accounts::CreateOffer {
+        let mut accounts = isolated_loan_v2::accounts::CreateOffer {
                 lender: lender.pubkey(),
                 offer,
                 usdc_mint: USDC_MINT,
-                wsol_mint: WSOL_MINT,
+                wsol_mint: mint,
                 usdc_vault: pda(&[USDC_VAULT_SEED, offer.as_ref()]),
                 lender_usdc: ata(lender.pubkey(), USDC_MINT),
                 token_program: TOKEN_PROGRAM,
                 associated_token_program: ATA_PROGRAM,
                 system_program: SYSTEM_PROGRAM,
             }
-            .to_account_metas(None),
+            .to_account_metas(None);
+        accounts.extend(extra);
+        let ix = Instruction {
+            program_id: ID,
+            accounts,
             data: isolated_loan_v2::instruction::CreateOffer { offer_id: id, args: a, restricted_borrower: restricted }.data(),
         };
         self.send(ix, &lender).map(|_| offer)
     }
 
     fn accept_as(&mut self, offer: Pubkey, b: &Keypair) -> Result<(), String> {
-        let ix = Instruction {
-            program_id: ID,
-            accounts: isolated_loan_v2::accounts::AcceptOffer {
-                borrower: b.pubkey(),
-                offer,
-                lender: self.lender.pubkey(),
-                price_update: self.price,
-                usdc_vault: pda(&[USDC_VAULT_SEED, offer.as_ref()]),
-                wsol_mint: WSOL_MINT,
-                wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
-                borrower_usdc: ata(b.pubkey(), USDC_MINT),
-                borrower_wsol: ata(b.pubkey(), WSOL_MINT),
-                token_program: TOKEN_PROGRAM,
-                associated_token_program: ATA_PROGRAM,
-                system_program: SYSTEM_PROGRAM,
-            }
-            .to_account_metas(None),
-            data: isolated_loan_v2::instruction::AcceptOffer {}.data(),
-        };
+        let price = self.price;
+        self.accept_with(offer, b, WSOL_MINT, price, vec![])
+    }
+
+    fn accept_with(&mut self, offer: Pubkey, b: &Keypair, mint: Pubkey, price: Pubkey, extra: Vec<AccountMeta>) -> Result<(), String> {
+        let mut accounts = isolated_loan_v2::accounts::AcceptOffer {
+            borrower: b.pubkey(),
+            offer,
+            lender: self.lender.pubkey(),
+            price_update: price,
+            usdc_vault: pda(&[USDC_VAULT_SEED, offer.as_ref()]),
+            wsol_mint: mint,
+            wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
+            borrower_usdc: ata(b.pubkey(), USDC_MINT),
+            borrower_wsol: ata(b.pubkey(), mint),
+            token_program: TOKEN_PROGRAM,
+            associated_token_program: ATA_PROGRAM,
+            system_program: SYSTEM_PROGRAM,
+        }
+        .to_account_metas(None);
+        accounts.extend(extra);
+        let ix = Instruction { program_id: ID, accounts, data: isolated_loan_v2::instruction::AcceptOffer {}.data() };
         self.send(ix, b)
     }
 
@@ -250,6 +343,10 @@ impl Env {
     }
 
     fn repay(&mut self, offer: Pubkey, amount: u64) -> Result<(), String> {
+        self.repay_with(offer, amount, WSOL_MINT)
+    }
+
+    fn repay_with(&mut self, offer: Pubkey, amount: u64, mint: Pubkey) -> Result<(), String> {
         let b = self.borrower.insecure_clone();
         let ix = Instruction {
             program_id: ID,
@@ -260,7 +357,7 @@ impl Env {
                 borrower_usdc: ata(b.pubkey(), USDC_MINT),
                 lender: self.lender.pubkey(),
                 lender_usdc: ata(self.lender.pubkey(), USDC_MINT),
-                borrower_wsol: ata(b.pubkey(), WSOL_MINT),
+                borrower_wsol: ata(b.pubkey(), mint),
                 token_program: TOKEN_PROGRAM,
             }
             .to_account_metas(None),
@@ -285,21 +382,27 @@ impl Env {
         self.send(ix, signer)
     }
 
-    fn liquidation_accounts(&self, offer: Pubkey, caller: &Keypair) -> Vec<anchor_lang::solana_program::instruction::AccountMeta> {
-        isolated_loan_v2::accounts::Liquidate {
+    fn liquidation_accounts(&self, offer: Pubkey, caller: &Keypair) -> Vec<AccountMeta> {
+        self.liquidation_accounts_with(offer, caller, WSOL_MINT, self.price, vec![])
+    }
+
+    fn liquidation_accounts_with(&self, offer: Pubkey, caller: &Keypair, mint: Pubkey, price: Pubkey, extra: Vec<AccountMeta>) -> Vec<AccountMeta> {
+        let mut accounts = isolated_loan_v2::accounts::Liquidate {
             caller: caller.pubkey(),
             offer,
-            price_update: self.price,
+            price_update: price,
             wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
             caller_usdc: ata(caller.pubkey(), USDC_MINT),
-            caller_wsol: ata(caller.pubkey(), WSOL_MINT),
+            caller_wsol: ata(caller.pubkey(), mint),
             lender: self.lender.pubkey(),
             lender_usdc: ata(self.lender.pubkey(), USDC_MINT),
             borrower: self.borrower.pubkey(),
-            borrower_wsol: ata(self.borrower.pubkey(), WSOL_MINT),
+            borrower_wsol: ata(self.borrower.pubkey(), mint),
             token_program: TOKEN_PROGRAM,
         }
-        .to_account_metas(None)
+        .to_account_metas(None);
+        accounts.extend(extra);
+        accounts
     }
 
     fn liquidate(&mut self, offer: Pubkey, caller: &Keypair) -> Result<(), String> {
@@ -313,17 +416,22 @@ impl Env {
     }
 
     fn lender_claim(&mut self, offer: Pubkey, signer: &Keypair, terminal: bool, price: Pubkey) -> Result<(), String> {
-        let accounts = isolated_loan_v2::accounts::LenderClaim {
+        self.lender_claim_with(offer, signer, terminal, price, WSOL_MINT, vec![])
+    }
+
+    fn lender_claim_with(&mut self, offer: Pubkey, signer: &Keypair, terminal: bool, price: Pubkey, mint: Pubkey, extra: Vec<AccountMeta>) -> Result<(), String> {
+        let mut accounts = isolated_loan_v2::accounts::LenderClaim {
             lender: signer.pubkey(),
             offer,
             price_update: price,
             wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
-            lender_wsol: ata(signer.pubkey(), WSOL_MINT),
+            lender_wsol: ata(signer.pubkey(), mint),
             borrower: self.borrower.pubkey(),
-            borrower_wsol: ata(self.borrower.pubkey(), WSOL_MINT),
+            borrower_wsol: ata(self.borrower.pubkey(), mint),
             token_program: TOKEN_PROGRAM,
         }
         .to_account_metas(None);
+        accounts.extend(extra);
         let data = if terminal { isolated_loan_v2::instruction::ClaimTerminal {}.data() } else { isolated_loan_v2::instruction::ClaimPricedRecovery {}.data() };
         self.send(Instruction { program_id: ID, accounts, data }, signer)
     }
@@ -690,4 +798,264 @@ fn request_funding_creates_an_active_v2_loan() {
     let p = env.payoff(offer);
     env.repay(offer, p).unwrap();
     assert_eq!(env.offer(offer).status, StatusV2::Repaid);
+}
+
+// ---- Story 26.2: per-asset collateral -------------------------------------------------------
+
+fn jito_value(amount: u64, dollars: i64) -> u64 {
+    loan_core::math::collateral_value_usdc_decimals(amount, 9, dollars * USD, (dollars * USD / 1000) as u64, -8).unwrap()
+}
+
+fn open_jito_loan(env: &mut Env, id: u64) -> Pubkey {
+    let (jito, jp, extra) = (env.jito, env.jito_price, env.jito_extra());
+    let o = env.create_with(id, jito_terms(), Pubkey::default(), jito, extra.clone()).unwrap();
+    let b = env.borrower.insecure_clone();
+    env.accept_with(o, &b, jito, jp, extra).unwrap();
+    o
+}
+
+#[test]
+fn jitosol_accept_and_repay() {
+    let mut env = Env::new();
+    env.configure_jito(true);
+    env.jito_usd(180, 180);
+    let (jito, jp, extra) = (env.jito, env.jito_price, env.jito_extra());
+    let b = env.borrower.insecure_clone();
+    let o = env.create_with(1, jito_terms(), Pubkey::default(), jito, extra.clone()).unwrap();
+    // The accept needs the asset's config and its own feed: no config, or SOL/USD, fails closed.
+    assert_err(env.accept_with(o, &b, jito, jp, vec![]), LoanV2Error::CollateralNotConfigured);
+    let sol_price = env.price;
+    assert_err(env.accept_with(o, &b, jito, sol_price, extra.clone()), LoanV2Error::InvalidFeedId);
+    let b_jito0 = env.balance(ata(b.pubkey(), jito));
+    env.accept_with(o, &b, jito, jp, extra).unwrap();
+    let s = env.offer(o);
+    assert_eq!((s.status, s.wsol_mint, s.collateral_locked), (StatusV2::Active, jito, JITO_COLLATERAL));
+    assert_eq!(b_jito0 - env.balance(ata(b.pubkey(), jito)), JITO_COLLATERAL);
+    assert_eq!(env.balance(pda(&[WSOL_VAULT_SEED, o.as_ref()])), JITO_COLLATERAL);
+    env.at(START + 5 * DAY);
+    let payoff = env.payoff(o);
+    env.repay_with(o, payoff, jito).unwrap();
+    assert_eq!(env.offer(o).status, StatusV2::Repaid);
+    assert_eq!(env.balance(ata(b.pubkey(), jito)), b_jito0, "every jitoSOL atom came back");
+}
+
+#[test]
+fn jitosol_origination_uses_the_asset_caps_and_price() {
+    let mut env = Env::new();
+    env.configure_jito(true);
+    let (jito, jp, extra) = (env.jito, env.jito_price, env.jito_extra());
+    let b = env.borrower.insecure_clone();
+    // wSOL's 70% / 80% terms are above jitoSOL's 60% / 70% caps.
+    let mut a = jito_terms();
+    a.max_ltv_bps = MAX_LTV;
+    a.liquidation_ltv_bps = LIQ_LTV;
+    assert_err(env.create_with(1, a, Pubkey::default(), jito, extra.clone()).map(|_| ()), LoanV2Error::InvalidTerms);
+    // At 100 a jitoSOL, 1.1 jitoSOL (~109.89 USDC) cannot carry 106 USDC of exposure at 60%.
+    env.jito_usd(100, 100);
+    let o = env.create_with(2, jito_terms(), Pubkey::default(), jito, extra.clone()).unwrap();
+    assert_err(env.accept_with(o, &b, jito, jp, extra.clone()), LoanV2Error::InsufficientCollateral);
+    env.jito_usd(180, 180);
+    env.accept_with(o, &b, jito, jp, extra).unwrap();
+}
+
+#[test]
+fn jitosol_liquidation_reads_its_own_feed() {
+    let mut env = Env::new();
+    env.configure_jito(true);
+    env.jito_usd(180, 180);
+    let o = open_jito_loan(&mut env, 1);
+    let (jito, jp, extra) = (env.jito, env.jito_price, env.jito_extra());
+    let s = env.stranger.insecure_clone();
+    env.at(START + DAY);
+    let liquidate = |env: &mut Env, price: Pubkey, extra: Vec<AccountMeta>| {
+        let ix = Instruction { program_id: ID, accounts: env.liquidation_accounts_with(o, &s, jito, price, extra), data: isolated_loan_v2::instruction::Liquidate {}.data() };
+        env.send(ix, &s)
+    };
+    // 150 a jitoSOL is ~61% LTV: healthy against the 70% line.
+    env.jito_usd(150, 150);
+    assert_err(liquidate(&mut env, jp, extra.clone()), LoanV2Error::LoanHealthy);
+    // SOL/USD collapsing says nothing about jitoSOL, and the config cannot be skipped.
+    env.price_usd(10, 10);
+    let sol_price = env.price;
+    assert_err(liquidate(&mut env, sol_price, extra.clone()), LoanV2Error::InvalidFeedId);
+    env.jito_usd(120, 120);
+    assert_err(liquidate(&mut env, jp, vec![]), LoanV2Error::CollateralNotConfigured);
+    // Disabling the asset stops new loans, never the liquidation of existing ones.
+    let g = env.governance.insecure_clone();
+    env.set_collateral(&g, jito, jito_args(false)).unwrap();
+    let payoff = env.payoff(o);
+    let (caller0, borrower0) = (env.balance(ata(s.pubkey(), jito)), env.balance(ata(env.borrower.pubkey(), jito)));
+    liquidate(&mut env, jp, extra).unwrap();
+    let split = acc::liquidation_split(payoff, JITO_COLLATERAL, jito_value(JITO_COLLATERAL, 120)).unwrap();
+    assert_eq!(env.balance(ata(s.pubkey(), jito)) - caller0, split.to_recipient);
+    assert_eq!(env.balance(ata(env.borrower.pubkey(), jito)) - borrower0, split.to_borrower);
+    assert!(split.to_borrower > 0);
+    assert_eq!(env.offer(o).status, StatusV2::Liquidated);
+}
+
+#[test]
+fn jitosol_priced_recovery_reads_its_own_feed() {
+    let mut env = Env::new();
+    env.configure_jito(true);
+    env.jito_usd(180, 180);
+    let o = open_jito_loan(&mut env, 1);
+    let (jito, jp, extra) = (env.jito, env.jito_price, env.jito_extra());
+    let l = env.lender.insecure_clone();
+    let t = env.terms(o);
+    env.at(t.priced_recovery_from());
+    env.jito_usd(180, 180);
+    env.price_usd(150, 150);
+    let sol_price = env.price;
+    assert_err(env.lender_claim_with(o, &l, false, sol_price, jito, extra.clone()), LoanV2Error::InvalidFeedId);
+    let payoff = env.payoff(o);
+    let l0 = env.balance(ata(l.pubkey(), jito));
+    env.lender_claim_with(o, &l, false, jp, jito, extra).unwrap();
+    let split = acc::priced_recovery_split(payoff, JITO_COLLATERAL, jito_value(JITO_COLLATERAL, 180)).unwrap();
+    assert_eq!(env.balance(ata(l.pubkey(), jito)) - l0, split.to_recipient);
+    assert_eq!(env.offer(o).status, StatusV2::PricedRecovered);
+}
+
+#[test]
+fn jitosol_request_funding_uses_the_config() {
+    let mut env = Env::new();
+    env.configure_jito(true);
+    env.jito_usd(180, 180);
+    let (jito, jp, extra) = (env.jito, env.jito_price, env.jito_extra());
+    let b = env.borrower.insecure_clone();
+    let l = env.lender.insecure_clone();
+    let request = pda(&[REQUEST_SEED, b.pubkey().as_ref(), &3u64.to_le_bytes()]);
+    let vault = pda(&[REQUEST_WSOL_VAULT_SEED, request.as_ref()]);
+    let create = |env: &mut Env, extra: Vec<AccountMeta>| {
+        let mut accounts = isolated_loan_v2::accounts::CreateRequest {
+            borrower: b.pubkey(),
+            request,
+            usdc_mint: USDC_MINT,
+            wsol_mint: jito,
+            request_vault: vault,
+            borrower_wsol: ata(b.pubkey(), jito),
+            borrower_usdc: ata(b.pubkey(), USDC_MINT),
+            token_program: TOKEN_PROGRAM,
+            associated_token_program: ATA_PROGRAM,
+            system_program: SYSTEM_PROGRAM,
+        }
+        .to_account_metas(None);
+        accounts.extend(extra);
+        env.send(Instruction { program_id: ID, accounts, data: isolated_loan_v2::instruction::CreateRequest { request_id: 3, args: jito_terms() }.data() }, &b)
+    };
+    assert_err(create(&mut env, vec![]), LoanV2Error::CollateralNotConfigured);
+    create(&mut env, extra.clone()).unwrap();
+    let offer = offer_pda(l.pubkey(), 4);
+    let fund = |env: &mut Env, extra: Vec<AccountMeta>| {
+        let mut accounts = isolated_loan_v2::accounts::FundRequest {
+            lender: l.pubkey(),
+            request,
+            borrower: b.pubkey(),
+            price_update: jp,
+            offer,
+            wsol_mint: jito,
+            request_vault: vault,
+            wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
+            lender_usdc: ata(l.pubkey(), USDC_MINT),
+            borrower_usdc: ata(b.pubkey(), USDC_MINT),
+            token_program: TOKEN_PROGRAM,
+            system_program: SYSTEM_PROGRAM,
+        }
+        .to_account_metas(None);
+        accounts.extend(extra);
+        env.send(Instruction { program_id: ID, accounts, data: isolated_loan_v2::instruction::FundRequest { offer_id: 4 }.data() }, &l)
+    };
+    let g = env.governance.insecure_clone();
+    env.set_collateral(&g, jito, jito_args(false)).unwrap();
+    assert_err(fund(&mut env, extra.clone()), LoanV2Error::CollateralDisabled);
+    env.set_collateral(&g, jito, jito_args(true)).unwrap();
+    fund(&mut env, extra).unwrap();
+    let s = env.offer(offer);
+    assert_eq!((s.status, s.wsol_mint, s.collateral_locked), (StatusV2::Active, jito, JITO_COLLATERAL));
+}
+
+#[test]
+fn unconfigured_mint_is_rejected() {
+    let mut env = Env::new();
+    let jito = env.jito;
+    // No config at all.
+    assert_err(env.create_with(1, jito_terms(), Pubkey::default(), jito, vec![]).map(|_| ()), LoanV2Error::CollateralNotConfigured);
+    // Another asset's config cannot stand in for this mint.
+    let other = Pubkey::new_unique();
+    env.put_mint(other, 9);
+    let g = env.governance.insecure_clone();
+    env.set_collateral(&g, other, jito_args(true)).unwrap();
+    let wrong = vec![AccountMeta::new_readonly(Env::collateral_pda(other), false)];
+    assert_err(env.create_with(2, jito_terms(), Pubkey::default(), jito, wrong).map(|_| ()), LoanV2Error::CollateralNotConfigured);
+    // Nor can an account this program does not own.
+    let fake = Pubkey::new_unique();
+    env.put(fake, SYSTEM_PROGRAM, vec![0; 120]);
+    let fake = vec![AccountMeta::new_readonly(fake, false)];
+    assert_err(env.create_with(3, jito_terms(), Pubkey::default(), jito, fake).map(|_| ()), LoanV2Error::CollateralNotConfigured);
+}
+
+#[test]
+fn disabled_config_is_rejected_for_new_loans() {
+    let mut env = Env::new();
+    env.jito_usd(180, 180);
+    let (jito, jp, extra) = (env.jito, env.jito_price, env.jito_extra());
+    env.configure_jito(false);
+    assert_err(env.create_with(1, jito_terms(), Pubkey::default(), jito, extra.clone()).map(|_| ()), LoanV2Error::CollateralDisabled);
+    // An offer created while enabled cannot be accepted after governance disables the asset.
+    env.configure_jito(true);
+    let o = env.create_with(2, jito_terms(), Pubkey::default(), jito, extra.clone()).unwrap();
+    env.configure_jito(false);
+    let b = env.borrower.insecure_clone();
+    assert_err(env.accept_with(o, &b, jito, jp, extra), LoanV2Error::CollateralDisabled);
+}
+
+#[test]
+fn only_governance_writes_collateral_config() {
+    let mut env = Env::new();
+    let (jito, g, s) = (env.jito, env.governance.insecure_clone(), env.stranger.insecure_clone());
+    assert_err(env.set_collateral(&s, jito, jito_args(true)), LoanV2Error::WrongAuthority);
+    assert!(!env.exists(Env::collateral_pda(jito)));
+    // Canonical wSOL keeps its constants and never gets a config; USDC is not collateral.
+    assert_err(env.set_collateral(&g, WSOL_MINT, jito_args(true)), LoanV2Error::InvalidCollateralConfig);
+    assert_err(env.set_collateral(&g, USDC_MINT, jito_args(true)), LoanV2Error::InvalidCollateralConfig);
+    // Caps stay inside the global caps with the 5-point gap, and a feed is required.
+    let mut bad = jito_args(true);
+    bad.liquidation_ltv_bps = JITO_MAX_LTV + 499;
+    assert_err(env.set_collateral(&g, jito, bad), LoanV2Error::InvalidCollateralConfig);
+    let mut bad = jito_args(true);
+    bad.max_ltv_bps = 7_001;
+    assert_err(env.set_collateral(&g, jito, bad), LoanV2Error::InvalidCollateralConfig);
+    let mut bad = jito_args(true);
+    bad.feed_id = [0; 32];
+    assert_err(env.set_collateral(&g, jito, bad), LoanV2Error::InvalidCollateralConfig);
+    env.set_collateral(&g, jito, jito_args(true)).unwrap();
+    let read = |env: &Env| CollateralConfig::try_deserialize(&mut &env.svm.get_account(&Env::collateral_pda(jito)).unwrap().data[..]).unwrap();
+    let c = read(&env);
+    assert_eq!((c.version, c.mint, c.decimals, c.feed_id, c.max_ltv_bps, c.liquidation_ltv_bps, c.enabled), (1, jito, 9, JITOSOL_USD_FEED_ID, JITO_MAX_LTV, JITO_LIQ_LTV, true));
+    // Updates also need governance.
+    assert_err(env.set_collateral(&s, jito, jito_args(false)), LoanV2Error::WrongAuthority);
+    env.set_collateral(&g, jito, jito_args(false)).unwrap();
+    assert!(!read(&env).enabled);
+}
+
+#[test]
+fn wsol_path_is_unchanged_by_collateral_configs() {
+    let mut env = Env::new();
+    env.configure_jito(true);
+    env.jito_usd(10, 10);
+    // wSOL ignores any config passed with it: SOL/USD prices it, and wSOL's own 70% / 80% caps
+    // (not jitoSOL's 60% / 70%) apply.
+    let extra = env.jito_extra();
+    let o = env.create_with(1, args(1), Pubkey::default(), WSOL_MINT, extra.clone()).unwrap();
+    let b = env.borrower.insecure_clone();
+    let jp = env.jito_price;
+    assert_err(env.accept_with(o, &b, WSOL_MINT, jp, extra.clone()), LoanV2Error::InvalidFeedId);
+    let sol_price = env.price;
+    env.accept_with(o, &b, WSOL_MINT, sol_price, extra).unwrap();
+    let s = env.offer(o);
+    assert_eq!((s.status, s.max_ltv_bps, s.liquidation_ltv_bps), (StatusV2::Active, MAX_LTV, LIQ_LTV));
+    // The SOL valuation is the 9-decimal valuation, so wSOL liquidation splits are unchanged.
+    assert_eq!(
+        loan_core::math::collateral_value_usdc_decimals(COLLATERAL, 9, 150 * USD, (150 * USD / 1000) as u64, -8).unwrap(),
+        loan_core::math::collateral_value_usdc(COLLATERAL, 150 * USD, (150 * USD / 1000) as u64, -8).unwrap()
+    );
 }
