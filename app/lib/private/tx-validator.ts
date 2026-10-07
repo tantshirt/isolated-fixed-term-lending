@@ -4,6 +4,7 @@
 import { ComputeBudgetProgram, Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { ESPL_PROGRAM_ID, PERMISSION_PROGRAM_ID } from "./espl";
 import { PRIVATE_PROGRAM_ID } from "./room-codec";
+import { PRIVATE_V2_ID } from "./v2-codec";
 
 export const DEVNET_GENESIS = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
 const TOKEN_PROGRAM = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
@@ -17,6 +18,7 @@ export const ALLOWED_PROGRAMS = [
   ESPL_PROGRAM_ID,
   PERMISSION_PROGRAM_ID,
   PRIVATE_PROGRAM_ID,
+  PRIVATE_V2_ID,
 ];
 
 export type ReviewedTransfer = {

@@ -299,3 +299,18 @@ Reviewed at 390, 820 and 1440 px: Learn simulator, wizard step 2 with repayment 
 | The pilot gate says "Met" / "Not met" in words; threshold comes from `GATE` | Fovea | The ops screen still has to work with a screen reader. |
 
 Applied must-fixes: sandbox status words and reference label; dialog focus, Escape and focus return; visible refusal and unloaded-balance message; Telegram disclosure and capability gate; reachable "Reading…" state; private deadlines listed; gate text and row layout; widget height `min(560px, 80dvh)`. Applied nice-to-haves: extra spacing above cash-out, `aria-live` history. Deferred: borrower-specific payoff warning on cash-out.
+
+## Desk workspace (2026-10-07)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Private gains a "Desks" tab; a desk has Overview, Loans, Policy and People as real tabs (roles, roving tabindex, arrow, Home and End keys) | Plumb / Fovea | Story 23.2 navigation, usable by keyboard. |
+| The navy header shows identity, access (Locked / Reading… / roles) and the next action before anything else | Ravi / Fovea | Mobile rule: access and next action before artwork. |
+| Overview leads with Needs attention, then Waiting for a signature, then the loan-book total | Sol / Ravi | Urgent work first. |
+| Totals read "Loan-book total, loans you can read"; the desk "holds no money" | Sol / Kestrel | No pooled-treasury reading. |
+| Loans not shared with the viewer are counted and labelled, never shown as zero | Plumb / Fovea | Same rule as private totals. |
+| Administrators are told in the header that they cannot spend or read loans | Sol | They land on Overview, so the limit is stated there. |
+| Every row names the funding wallet, and the current holder if the position moved; "Due soon" is said in words | Plumb / Fovea | Funding provenance and no colour-only state. |
+| "Create a desk", with a note that the wallet signs | Wren | "Open" read as opening an existing desk. |
+
+Applied: all 8 must-fixes; nice-to-haves 1–3 (Home/End, aria-controls on the selected tab only, plainer copy, own list styles, styled pilot error).

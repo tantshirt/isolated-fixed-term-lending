@@ -12,6 +12,7 @@ import { InvitesPanel } from "./InvitesPanel";
 import { ReceiptList } from "./ReceiptList";
 import { RoomList } from "./RoomList";
 import { TeeCard } from "./TeeCard";
+import { DeskList } from "./desk/DeskList";
 import styles from "./private.module.css";
 import { PrivateVenueScene } from "@/components/experience/vignettes/Scenes";
 import { PoweredByMagicBlock } from "@/components/brand/PoweredByMagicBlock";
@@ -248,9 +249,11 @@ export function PrivateHome() {
           </details>
         </div>
 
-        <aside className={wiz.aside} aria-label="Your private desk">
+        <aside className={wiz.aside} aria-label="Your desks">
           <section className={styles.desk}>
-            <h2 className={styles.deskTitle}>Your private desk</h2>
+            <h2 className={styles.deskTitle}>Your desks</h2>
+            <DeskList signer={signer} base={base} er={er} ready={ready} />
+            <h3 className={styles.deskSub}>Status</h3>
             <dl className={styles.deskList}>
               <div>
                 <dt>Private sign-in</dt>
