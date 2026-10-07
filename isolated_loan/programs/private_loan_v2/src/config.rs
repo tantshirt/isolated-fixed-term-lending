@@ -19,6 +19,9 @@ pub struct Config {
 /// Once, by the program's upgrade authority, in the deploy transaction sequence. After the
 /// upgrade authority moves to the Squads vault, only `rotate_authorities` changes anything.
 pub fn init_config(ctx: Context<InitConfig>, authorities: Authorities) -> Result<()> {
+    require!(governance::loader::is_upgrade_authority(
+        &ctx.accounts.program.to_account_info(), &ctx.accounts.program_data.to_account_info(), &crate::ID, &ctx.accounts.payer.key(),
+    ), PrivateLoanError::NotUpgradeAuthority);
     authorities.validate().map_err(governance_error)?;
     let c = &mut ctx.accounts.config;
     c.version = 1;
@@ -49,12 +52,10 @@ pub struct InitConfig<'info> {
     pub payer: Signer<'info>,
     #[account(init, payer = payer, space = 8 + Config::INIT_SPACE, seeds = [CONFIG_SEED], bump)]
     pub config: Account<'info, Config>,
-    #[account(
-        constraint = program.programdata_address()? == Some(program_data.key()) @ PrivateLoanError::NotUpgradeAuthority,
-    )]
     pub program: Program<'info, crate::program::PrivateLoanV2>,
-    #[account(constraint = program_data.upgrade_authority_address == Some(payer.key()) @ PrivateLoanError::NotUpgradeAuthority)]
-    pub program_data: Account<'info, ProgramData>,
+    /// CHECK: Loader ownership, linked ProgramData address, variant and upgrade authority
+    /// are checked together in the handler before any configuration is accepted.
+    pub program_data: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 }
 
