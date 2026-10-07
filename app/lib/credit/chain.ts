@@ -8,6 +8,7 @@
  */
 import { PublicKey, type AccountMeta, type Connection } from "@solana/web3.js";
 import { PROGRAM_V2_ID, v2Coder } from "../v2/program";
+import { ARCIUM_ENABLED, fetchArciumTier, tierResultPda } from "./arcium";
 import { attestationPda, readCreditStatus, CREDIT_CREDENTIAL, CREDIT_ISSUER, CREDIT_SCHEMA, type CreditStatus } from "./sas";
 
 export const CONFIG_V2_SEED = Buffer.from("config");
@@ -35,7 +36,16 @@ export async function fetchMyCredit(connection: Connection, wallet: PublicKey, n
 }
 
 /** The trailing accounts a credit origination passes, in program order. */
-export function creditRemainingAccounts(borrower: PublicKey): AccountMeta[] {
-  const att = attestationPda(new PublicKey(CREDIT_CREDENTIAL), new PublicKey(CREDIT_SCHEMA), borrower);
+export function creditRemainingAccounts(borrower: PublicKey, att = attestationPda(new PublicKey(CREDIT_CREDENTIAL), new PublicKey(CREDIT_SCHEMA), borrower)): AccountMeta[] {
   return [configV2Pda(), creditConfigPda(), att].map((pubkey) => ({ pubkey, isSigner: false, isWritable: false }));
+}
+
+/** Prefer a fresh enabled Arcium result that covers these terms; otherwise use SAS.
+ * The on-chain program still validates issuer/config ownership and the credential at execution. */
+export async function selectCreditAccounts(connection: Connection, borrower: PublicKey, requiredTier: number, now = Math.floor(Date.now() / 1000)): Promise<AccountMeta[]> {
+  if (ARCIUM_ENABLED) {
+    const result = await fetchArciumTier(connection, borrower, now);
+    if (result.state === "valid" && result.tier >= requiredTier) return creditRemainingAccounts(borrower, tierResultPda(borrower));
+  }
+  return creditRemainingAccounts(borrower);
 }

@@ -7,11 +7,11 @@ import { submitTransaction } from "../transaction-lifecycle";
 import type { EarlyRepayment, TermsV2 } from "../loan-math-v2";
 import { collateralConfigV2Pda, getProgramV2, offerV2Pda, requestV2Pda, requestVaultV2Pda, usdcVaultV2Pda, wsolVaultV2Pda } from "./program";
 import type { OfferV2, RequestV2 } from "./offers";
+import { requiredTier } from "../credit/bands";
+import { creditRemainingAccounts, selectCreditAccounts } from "../credit/chain";
+import { CREDIT_CREDENTIAL, CREDIT_SCHEMA } from "../credit/sas";
 import { collateralAsset } from "../models/collateral";
 import { collateralPriceAccount, collateralRemainingAccounts, submitCollateralTx } from "./collateral-accounts";
-import { requiredTier } from "../credit/bands";
-import { creditRemainingAccounts } from "../credit/chain";
-import { CREDIT_CREDENTIAL, CREDIT_SCHEMA } from "../credit/sas";
 
 type AnySigner = Keypair | LoanSigner;
 
@@ -61,7 +61,8 @@ export async function sendCreateOfferV2(
       lender, offer, usdcMint: usdc, wsolMint: wsol, usdcVault: usdcVaultV2Pda(offer), lenderUsdc: ata(usdc, lender),
       tokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     })
-    .remainingAccounts([...collateralRemainingAccounts(wsol), ...creditAccountsFor(wsol.toBase58(), terms.maxLtvBps, terms.liquidationLtvBps, lender).slice(0, 2)])
+    // Credit-tier caps on create_offer pass `[config, credit_config]` (no attestation).
+    .remainingAccounts([...collateralRemainingAccounts(wsol), ...creditOfferAccounts(wsol.toBase58(), terms.maxLtvBps, terms.liquidationLtvBps, lender)])
     .transaction();
   return { offer, signature: await submitTransaction(connection, signer, tx) };
 }
@@ -90,7 +91,7 @@ export async function sendAcceptOfferV2(signerLike: AnySigner, o: OfferV2, price
       wsolVault: wsolVaultV2Pda(offer), borrowerUsdc: ata(o.usdcMint, borrower), borrowerWsol: ata(o.wsolMint, borrower),
       tokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     })
-    .remainingAccounts(creditAccountsFor(o.wsolMint, o.maxLtvBps, o.liquidationLtvBps, borrower))
+    .remainingAccounts(await creditAccountsFor(o.wsolMint, o.maxLtvBps, o.liquidationLtvBps, borrower, connection))
     .preInstructions([ensureAta(borrower, borrower, o.usdcMint), ensureAta(borrower, borrower, o.wsolMint)])
     .remainingAccounts(collateralRemainingAccounts(o.wsolMint))
     .transaction();
@@ -101,9 +102,15 @@ export async function sendAcceptOfferV2(signerLike: AnySigner, o: OfferV2, price
  * Story 26.7. Credit-tier terms (above the standard caps) on wSOL pass
  * `[config, credit_config, sas_attestation]`; everything else passes nothing extra.
  */
-function creditAccountsFor(wsolMint: string, maxLtvBps: number, liquidationLtvBps: number, borrower: PublicKey) {
+function creditOfferAccounts(wsolMint: string, maxLtvBps: number, liquidationLtvBps: number, borrower: PublicKey) {
   if (wsolMint !== NATIVE_WSOL_MINT.toBase58() || !requiredTier(maxLtvBps, liquidationLtvBps) || !CREDIT_CREDENTIAL || !CREDIT_SCHEMA) return [];
-  return creditRemainingAccounts(borrower);
+  return creditRemainingAccounts(borrower).slice(0, 2);
+}
+
+async function creditAccountsFor(wsolMint: string, maxLtvBps: number, liquidationLtvBps: number, borrower: PublicKey, connection: Connection) {
+  const required = requiredTier(maxLtvBps, liquidationLtvBps);
+  if (wsolMint !== NATIVE_WSOL_MINT.toBase58() || !required || !CREDIT_CREDENTIAL || !CREDIT_SCHEMA) return [];
+  return selectCreditAccounts(connection, borrower, required);
 }
 
 /** `amount` is the most the borrower signs for; at or above the payoff it closes the loan. */
@@ -222,7 +229,7 @@ export async function sendCreateRequestV2(signerLike: AnySigner, requestId: bigi
       borrower, request, usdcMint: usdc, wsolMint: wsol, requestVault: requestVaultV2Pda(request), borrowerWsol: ata(wsol, borrower), borrowerUsdc: ata(usdc, borrower),
       tokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
     })
-    .remainingAccounts(creditAccountsFor(wsol.toBase58(), terms.maxLtvBps, terms.liquidationLtvBps, borrower))
+    .remainingAccounts(await creditAccountsFor(wsol.toBase58(), terms.maxLtvBps, terms.liquidationLtvBps, borrower, connection))
     .preInstructions([ensureAta(borrower, borrower, usdc), ensureAta(borrower, borrower, wsol)])
     .remainingAccounts(collateralRemainingAccounts(wsol))
     .transaction();
@@ -253,7 +260,7 @@ export async function sendFundRequestV2(signerLike: AnySigner, r: RequestV2, off
       wsolVault: wsolVaultV2Pda(offer), lenderUsdc: ata(r.usdcMint, lender), borrowerUsdc: ata(r.usdcMint, r.borrower), tokenProgram: TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
     })
-    .remainingAccounts(creditAccountsFor(r.wsolMint, r.maxLtvBps, r.liquidationLtvBps, new PublicKey(r.borrower)))
+    .remainingAccounts(await creditAccountsFor(r.wsolMint, r.maxLtvBps, r.liquidationLtvBps, new PublicKey(r.borrower), connection))
     .preInstructions([ensureAta(lender, r.borrower, r.usdcMint)])
     .remainingAccounts(collateralRemainingAccounts(r.wsolMint))
     .transaction();
