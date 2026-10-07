@@ -8,6 +8,32 @@ import { runKeeperOnce, reconcileKeeperTransactions, DEFAULT_KEEPER_LIMITS } fro
 import { decodePriceUpdateV2 } from "../lib/server/price-update-codec";
 import { PYTH_PRICE_UPDATE_ACCOUNT, MAX_PRICE_AGE_SECONDS } from "../lib/constants";
 import { refreshPyth } from "../scripts/pyth-refresh";
+import { fetchMandates, mandateJobsDue } from "../lib/v2/mandates";
+import { fetchOffersV2 } from "../lib/v2/offers";
+import { mandatesEnabled } from "./lib/handlers";
+
+/**
+ * Story 26.3: finds public mandates needing execution or health rearming and queues one `mandate-execute` job for
+ * each. A no-op unless MANDATES_ENABLED=1 and KEEPER_SECRET is set. Private mandates never appear
+ * here: they live in the rollup and run in its crank.
+ */
+export const mandateScan = internalAction({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx): Promise<null> => {
+    if (!mandatesEnabled()) return null;
+    const connection = new Connection(process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com", "confirmed");
+    const mandates = await fetchMandates(connection);
+    if (mandates.length === 0) return null;
+    const offers = new Map((await fetchOffersV2(connection)).map((o) => [o.publicKey, o]));
+    const info = await connection.getAccountInfo(PYTH_PRICE_UPDATE_ACCOUNT);
+    const now = Math.floor(Date.now() / 1000);
+    const d = info ? decodePriceUpdateV2(info.data as Buffer) : null;
+    const price = d ? { price: d.price, conf: d.conf, exponent: d.exponent, publishTime: Number(d.publishTime), fresh: now - Number(d.publishTime) <= MAX_PRICE_AGE_SECONDS - 10 } : null;
+    for (const job of mandateJobsDue(mandates, offers, price, now)) await ctx.runMutation(internal.jobs.enqueue, { kind: "mandate-execute", ...job });
+    return null;
+  },
+});
 
 /**
  * Reference liquidator pass. Runs only when KEEPER_ENABLED=1 and KEEPER_SECRET holds the

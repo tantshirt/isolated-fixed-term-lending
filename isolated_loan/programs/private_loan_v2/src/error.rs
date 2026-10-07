@@ -111,6 +111,13 @@ pub enum PrivateLoanError {
     RefinanceMismatch,
     #[msg("Payment exceeds the bound the borrower signed")]
     PaymentAboveLimit,
+    // Stories 26.3 and 26.4. Appended so existing error codes do not move.
+    #[msg("Mandate bounds are missing, inconsistent or outside the loan's limits")]
+    MandateInvalid,
+    #[msg("The watch already follows the current lender")]
+    NothingToRebind,
+    #[msg("Quote parameters are outside their allowed range")]
+    InvalidQuoteParams,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

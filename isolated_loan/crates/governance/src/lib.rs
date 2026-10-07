@@ -6,6 +6,8 @@
 
 use anchor_lang::prelude::*;
 
+pub mod loader;
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, InitSpace)]
 pub struct Authorities {
     /// Squads vault PDA. Rotates every other key and holds the upgrade authority.

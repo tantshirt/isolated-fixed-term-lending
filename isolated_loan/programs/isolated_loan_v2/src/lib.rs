@@ -1,4 +1,4 @@
-//! ZenLo V2 public loan (Stories 21.1, 21.2, 26.1 and 26.2).
+//! ZenLo V2 public loan (Stories 21.1, 21.2, 26.1, 26.2 and 26.3).
 //!
 //! The upgrade authority and the governance key in `Config` are the Squads vault
 //! (docs/governance.md). Governance writes only per-asset `CollateralConfig`s; it can never touch
@@ -7,10 +7,14 @@
 //! Collateral is canonical wSOL (built-in SOL/USD constants) or a mint with a `CollateralConfig`
 //! passed as the first remaining account of create, accept, fund, refinance, liquidation and priced
 //! recovery. `refinance_into` (Story 26.1) moves a loan into a new offer with the borrower's signature.
+//!
+//! Automation mandates (Story 26.3, `mandate.rs`): a borrower-signed, bounded top-up or repay that
+//! only `Config.authorities.keeper` executes. Nothing refinances automatically.
 
 pub mod config;
 pub mod contexts;
 pub mod error;
+pub mod mandate;
 pub mod state;
 
 use anchor_lang::prelude::*;
@@ -20,6 +24,7 @@ use loan_core::accounting::{self as acc, Phase};
 use config::*;
 pub use contexts::*;
 pub use error::*;
+use mandate::*;
 pub use state::*;
 
 declare_id!("8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m");
@@ -638,6 +643,28 @@ pub mod isolated_loan_v2 {
     /// Governance only: create or update one asset's `CollateralConfig`.
     pub fn set_collateral_config(ctx: Context<SetCollateralConfig>, args: CollateralConfigArgs) -> Result<()> {
         config::set_collateral_config(ctx, args)
+    }
+
+    /// Story 26.3. Borrower: one bounded top-up or repay mandate per loan and action. Approves the
+    /// mandate PDA as delegate of `source` for exactly `cumulative_cap`, fees included.
+    pub fn create_mandate(ctx: Context<CreateMandate>, args: MandateArgs) -> Result<()> {
+        mandate::create_mandate(ctx, args)
+    }
+
+    /// Story 26.3. `Config.authorities.keeper` only; every bound is checked on-chain. For a
+    /// non-wSOL loan with a health trigger, the `CollateralConfig` is the first remaining account.
+    pub fn execute_mandate(ctx: Context<ExecuteMandate>, fee: u64) -> Result<()> {
+        mandate::execute_mandate(ctx, fee)
+    }
+
+    /// Story 26.3. Keeper or borrower: re-arms a fired health trigger once LTV <= trigger - 200 bps.
+    pub fn rearm_mandate(ctx: Context<RearmMandate>) -> Result<()> {
+        mandate::rearm_mandate(ctx)
+    }
+
+    /// Story 26.3. Borrower: closes the mandate and revokes its token delegate.
+    pub fn revoke_mandate(ctx: Context<RevokeMandate>) -> Result<()> {
+        mandate::revoke_mandate(ctx)
     }
 }
 

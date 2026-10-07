@@ -70,6 +70,21 @@ pub enum LoanV2Error {
     RefinanceClosed,
     #[msg("The new offer must lend the same asset against the same collateral")]
     RefinanceMismatch,
+    // Story 26.3. Appended so existing error codes do not move.
+    #[msg("Mandate bounds are missing, inconsistent or outside the loan's limits")]
+    MandateInvalid,
+    #[msg("Mandate has expired")]
+    MandateExpired,
+    #[msg("Mandate trigger is not met, or it fired and has not re-armed")]
+    MandateNotTriggered,
+    #[msg("Mandate cumulative cap is used up")]
+    MandateCapReached,
+    #[msg("Keeper fee is above the per-execution fee or the fee cap")]
+    MandateFeeAboveCap,
+    #[msg("The source token account no longer delegates enough to this mandate")]
+    MandateDelegateRevoked,
+    #[msg("Account does not match the mandate's loan, borrower or asset")]
+    MandateWrongSource,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

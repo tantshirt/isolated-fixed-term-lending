@@ -1,4 +1,5 @@
-//! LiteSVM tests for V2 private settlement (Story 22.2).
+//! LiteSVM tests for V2 private settlement (Story 22.2), its operations (Story 26.4) and private
+//! automation mandates evaluated by the rollup crank (Story 26.3).
 //!
 //! `watch_loan`, `fund_quote`, `settle_ticket` and `refund_ticket` run without the ER runtime
 //! once their records exist, so the ER-only `LoanTerms` and the quote record are placed
@@ -6,8 +7,8 @@
 //! `loan-core` checks as on Devnet. Run `anchor build` first.
 
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::instruction::Instruction;
-use anchor_lang::{AccountSerialize, AnchorDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
+use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
+use anchor_lang::{AccountDeserialize, AccountSerialize, AnchorDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
 use anchor_spl::associated_token::get_associated_token_address as ata;
 use litesvm::LiteSVM;
 use loan_core::accounting as acc;
@@ -35,6 +36,8 @@ struct Env {
     svm: LiteSVM,
     lender: Pubkey,
     borrower: Pubkey,
+    borrower_kp: Keypair,
+    governance: Keypair,
     liq: [Keypair; 2],
     usdc: Pubkey,
     wsol: Pubkey,
@@ -69,7 +72,8 @@ impl Env {
         let so = concat!(env!("CARGO_MANIFEST_DIR"), "/../../target/deploy/private_loan_v2.so");
         svm.add_program_from_file(ID, so).expect("run `anchor build` first");
         let liq = [Keypair::new(), Keypair::new()];
-        for k in &liq {
+        let (borrower_kp, governance) = (Keypair::new(), Keypair::new());
+        for k in [&liq[0], &liq[1], &borrower_kp, &governance] {
             svm.airdrop(&k.pubkey(), 10_000_000_000).unwrap();
         }
         let creator = Pubkey::new_unique();
@@ -79,7 +83,9 @@ impl Env {
         let mut env = Env {
             svm,
             lender: creator,
-            borrower: Pubkey::new_unique(),
+            borrower: borrower_kp.pubkey(),
+            borrower_kp,
+            governance,
             liq,
             usdc: Pubkey::new_unique(),
             wsol: Pubkey::new_unique(),
@@ -109,6 +115,8 @@ impl Env {
         env.put_ata(env.wsol, anchor, COLLATERAL);
         env.put_ata(env.usdc, l, 0);
         env.put_ata(env.wsol, b, 0);
+        env.put_ata(env.usdc, b, 500_000_000);
+        env.put_ata(env.usdc, anchor, 0);
         env.put_ata(env.usdc, pool, 0);
         env.put_ata(env.wsol, pool, 0);
         for k in [env.liq[0].pubkey(), env.liq[1].pubkey()] {
@@ -204,24 +212,28 @@ impl Env {
     }
 
     fn watch(&mut self) -> Result<(), String> {
-        let ix = Instruction {
-            program_id: ID,
-            accounts: private_loan_v2::accounts::WatchLoan {
-                anchor: self.anchor,
-                terms: self.terms,
-                quote: self.quote,
-                loan_wsol: ata(&self.anchor, &self.wsol),
-                lender_usdc: ata(&self.lender, &self.usdc),
-                borrower_wsol: ata(&self.borrower, &self.wsol),
-                pool: self.pool,
-                pool_usdc: ata(&self.pool, &self.usdc),
-                pool_wsol: ata(&self.pool, &self.wsol),
-                price_update: self.price,
-                token_program: TOKEN,
-            }
-            .to_account_metas(None),
-            data: private_loan_v2::instruction::WatchLoan {}.data(),
-        };
+        let lender = self.lender;
+        self.watch_for(lender, vec![])
+    }
+
+    /// A crank whose fixed accounts name `lender`'s USDC account, plus any trailing accounts.
+    fn watch_for(&mut self, lender: Pubkey, extra: Vec<AccountMeta>) -> Result<(), String> {
+        let mut accounts = private_loan_v2::accounts::WatchLoan {
+            anchor: self.anchor,
+            terms: self.terms,
+            quote: self.quote,
+            loan_wsol: ata(&self.anchor, &self.wsol),
+            lender_usdc: ata(&lender, &self.usdc),
+            borrower_wsol: ata(&self.borrower, &self.wsol),
+            pool: self.pool,
+            pool_usdc: ata(&self.pool, &self.usdc),
+            pool_wsol: ata(&self.pool, &self.wsol),
+            price_update: self.price,
+            token_program: TOKEN,
+        }
+        .to_account_metas(None);
+        accounts.extend(extra);
+        let ix = Instruction { program_id: ID, accounts, data: private_loan_v2::instruction::WatchLoan {}.data() };
         let payer = Keypair::new();
         self.svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
         self.send(ix, &payer)
@@ -390,4 +402,431 @@ fn a_recovered_price_withdraws_the_open_quote() {
     env.price_usd(150, 150);
     env.watch().unwrap();
     assert_eq!(env.quote()[q::STATE], private_loan_v2::settle::QUOTE_WITHDRAWN);
+}
+
+// ---- Story 26.4: a quote racing repayment, rebinding, and governed quote parameters ---------
+
+use private_loan_v2::config::Config;
+use private_loan_v2::error::PrivateLoanError;
+use private_loan_v2::loan::STATUS_REPAID;
+use private_loan_v2::mandate::PrivateMandate;
+use private_loan_v2::settle::{QuoteParams, QUOTE_TTL_SECONDS, QUOTE_WITHDRAWN};
+
+fn code(e: PrivateLoanError) -> String {
+    format!("Custom({})", u32::from(e))
+}
+
+fn assert_err(r: Result<(), String>, e: PrivateLoanError) {
+    let msg = r.expect_err("expected the instruction to fail");
+    assert!(msg.contains(&code(e)), "expected {e:?} ({}), got {msg}", code(e));
+}
+
+impl Env {
+    /// The borrower's own `repay`, signed, as in the rollup.
+    fn repay(&mut self, amount: u64) -> Result<(), String> {
+        let b = self.borrower_kp.insecure_clone();
+        let t = self.terms();
+        let ix = Instruction {
+            program_id: ID,
+            accounts: private_loan_v2::accounts::BorrowerMoves {
+                borrower: b.pubkey(),
+                anchor: self.anchor,
+                terms: self.terms,
+                borrower_usdc: ata(&b.pubkey(), &self.usdc),
+                borrower_wsol: ata(&b.pubkey(), &self.wsol),
+                loan_usdc: ata(&self.anchor, &self.usdc),
+                loan_wsol: ata(&self.anchor, &self.wsol),
+                lender_usdc: ata(&t.current_lender, &self.usdc),
+                price_update: self.price,
+                token_program: TOKEN,
+                deal: None,
+                deal_permission: None,
+                vault: None,
+                magic_program: None,
+                permission_program: None,
+                terms_permission: None,
+                desk_policy: None,
+            }
+            .to_account_metas(None),
+            data: private_loan_v2::instruction::Repay { amount }.data(),
+        };
+        self.send(ix, &b)
+    }
+
+    fn params_pda() -> Pubkey {
+        pda(&[b"quote-params"]).0
+    }
+
+    fn put_config(&mut self) -> Keypair {
+        let pool_admin = Keypair::new();
+        self.svm.airdrop(&pool_admin.pubkey(), 1_000_000_000).unwrap();
+        let (config, bump) = pda(&[b"config"]);
+        let authorities = governance::Authorities {
+            governance: self.governance.pubkey(),
+            ai_admin: Pubkey::new_unique(),
+            ai_worker: Pubkey::new_unique(),
+            liquidation_pool_admin: pool_admin.pubkey(),
+            credential_issuer: Pubkey::new_unique(),
+            keeper: Pubkey::new_unique(),
+        };
+        let mut data = Vec::new();
+        Config { version: 1, authorities, bump }.try_serialize(&mut data).unwrap();
+        self.put(config, ID, data);
+        pool_admin
+    }
+
+    fn set_quote_params(&mut self, signer: &Keypair, ttl: i64) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: ID,
+            accounts: private_loan_v2::accounts::SetQuoteParams {
+                governance: signer.pubkey(),
+                config: pda(&[b"config"]).0,
+                params: Self::params_pda(),
+                system_program: anchor_lang::system_program::ID,
+            }
+            .to_account_metas(None),
+            data: private_loan_v2::instruction::SetQuoteParams { quote_ttl_seconds: ttl }.data(),
+        };
+        self.send(ix, signer)
+    }
+
+    fn quote_expires(&self) -> i64 {
+        i64::from_le_bytes(self.quote()[q::EXPIRES..q::EXPIRES + 8].try_into().unwrap())
+    }
+}
+
+#[test]
+fn a_repayment_racing_an_open_quote_wins_and_the_ticket_refunds_at_once() {
+    let mut env = Env::new();
+    env.price_usd(120, 120);
+    env.watch().unwrap();
+    let rev = env.quote_revision();
+    let paid_in = u64::from_le_bytes(env.quote()[q::DEBT..q::DEBT + 8].try_into().unwrap());
+    env.fund(0, rev).unwrap();
+    let liq = env.liq[0].pubkey();
+    let funded = env.balance(liq, env.usdc);
+    // The borrower repays in full before the next watch run.
+    let (payoff, l0) = (env.payoff(), env.balance(env.lender, env.usdc));
+    env.repay(u64::MAX).unwrap();
+    assert_eq!(env.terms().status, STATUS_REPAID);
+    assert_eq!(env.balance(env.lender, env.usdc) - l0, payoff, "the lender is paid once, by the borrower");
+    assert_eq!(env.balance(env.borrower, env.wsol), COLLATERAL);
+    // The next run withdraws the quote instead of executing it.
+    env.watch().unwrap();
+    assert_eq!(env.quote()[q::STATE], QUOTE_WITHDRAWN);
+    assert_eq!(env.balance(env.lender, env.usdc) - l0, payoff);
+    // The quote has not expired, but the ticket is refundable now.
+    env.settle(0).unwrap();
+    assert_eq!(env.ticket_state(0), TICKET_REFUNDED);
+    assert_eq!(env.balance(liq, env.usdc) - funded, paid_in);
+}
+
+#[test]
+fn a_quote_executing_first_makes_the_late_repayment_fail() {
+    let mut env = Env::new();
+    env.price_usd(120, 120);
+    env.watch().unwrap();
+    let rev = env.quote_revision();
+    env.fund(0, rev).unwrap();
+    env.watch().unwrap();
+    assert_eq!(env.terms().status, STATUS_LIQUIDATED);
+    let l0 = env.balance(env.lender, env.usdc);
+    assert_err(env.repay(u64::MAX), PrivateLoanError::WrongStatus);
+    assert_eq!(env.balance(env.lender, env.usdc), l0, "the lender is never paid twice");
+}
+
+#[test]
+fn after_a_transfer_only_the_rebound_watch_decides_and_pays_the_new_lender() {
+    let mut env = Env::new();
+    let (old, new) = (env.lender, Pubkey::new_unique());
+    env.put_ata(env.usdc, new, 0);
+    // The position changes hands (a later sale): only `current_lender` moves.
+    let mut t = env.terms();
+    t.current_lender = new;
+    env.write_terms(&t);
+    env.price_usd(120, 120);
+    // The original crank names the old lender's account: no decision, no quote.
+    env.watch_for(old, vec![]).unwrap();
+    assert!(env.quote().iter().all(|b| *b == 0));
+    // The rebound crank quotes and executes, paying the new lender.
+    env.watch_for(new, vec![]).unwrap();
+    let rev = env.quote_revision();
+    env.fund(0, rev).unwrap();
+    let payoff = env.payoff();
+    env.watch_for(old, vec![]).unwrap();
+    assert_eq!(env.terms().status, STATUS_ACTIVE, "the stale crank still does nothing");
+    env.watch_for(new, vec![]).unwrap();
+    assert_eq!(env.terms().status, STATUS_LIQUIDATED);
+    assert_eq!(env.balance(new, env.usdc), payoff);
+    assert_eq!(env.balance(old, env.usdc), 0);
+}
+
+#[test]
+fn only_governance_sets_the_quote_ttl_and_the_watch_uses_it() {
+    let mut env = Env::new();
+    let pool_admin = env.put_config();
+    let g = env.governance.insecure_clone();
+    assert_err(env.set_quote_params(&pool_admin, 300), PrivateLoanError::WrongAuthority);
+    assert_err(env.set_quote_params(&g, 29), PrivateLoanError::InvalidQuoteParams);
+    assert_err(env.set_quote_params(&g, 601), PrivateLoanError::InvalidQuoteParams);
+    let params = Env::params_pda();
+    // Not written yet: the default applies.
+    env.price_usd(120, 120);
+    env.watch_for(env.lender, vec![AccountMeta::new_readonly(params, false)]).unwrap();
+    assert_eq!(env.quote_expires(), env.now + QUOTE_TTL_SECONDS);
+    env.set_quote_params(&g, 300).unwrap();
+    let p = QuoteParams::try_deserialize(&mut &env.svm.get_account(&params).unwrap().data[..]).unwrap();
+    assert_eq!(p.quote_ttl_seconds, 300);
+    // A new revision uses the rotated TTL; a crank without the account keeps the default.
+    let mut t = env.terms();
+    t.ledger_revision += 1;
+    env.write_terms(&t);
+    env.watch_for(env.lender, vec![AccountMeta::new_readonly(params, false)]).unwrap();
+    assert_eq!(env.quote_expires(), env.now + 300);
+    // Any other trailing account is refused.
+    let lender = env.lender;
+    let r = env.watch_for(lender, vec![AccountMeta::new_readonly(Pubkey::new_unique(), false)]);
+    assert_err(r, PrivateLoanError::InvalidRecord);
+}
+
+// ---- Story 26.3: private mandates, evaluated by the rollup crank -----------------------------
+
+const SOL: u64 = 1_000_000_000;
+
+fn private_mandate(borrower: Pubkey, source: Pubkey, destination: Pubkey, action: u8, trigger: u8, bump: u8) -> PrivateMandate {
+    PrivateMandate {
+        version: 1,
+        borrower,
+        action,
+        source,
+        destination,
+        trigger,
+        trigger_ltv_bps: if trigger == 0 { 7_500 } else { 0 },
+        lead_seconds: if trigger == 1 { DAY } else { 0 },
+        amount_per_exec: if action == 0 { SOL / 10 } else { 500_000_000 },
+        cumulative_cap: if action == 0 { SOL / 4 } else { 500_000_000 },
+        used: 0,
+        expiry: START + 60 * DAY,
+        armed: true,
+        revoked: false,
+        executions: 0,
+        last_exec_ts: 0,
+        bump,
+    }
+}
+
+impl Env {
+    fn mandate_pda(&self, action: u8) -> (Pubkey, u8) {
+        pda(&[b"mandate", self.anchor.as_ref(), &[action]])
+    }
+
+    fn put_mandate(&mut self, md: &PrivateMandate) {
+        let mut data = Vec::new();
+        md.serialize(&mut data).unwrap();
+        let key = self.mandate_pda(md.action).0;
+        self.put(key, ID, data);
+    }
+
+    fn read_mandate(&self, action: u8) -> PrivateMandate {
+        PrivateMandate::deserialize(&mut &self.svm.get_account(&self.mandate_pda(action).0).unwrap().data[..]).unwrap()
+    }
+
+    /// The borrower's ATA with `amount`, delegating `allowance` to `delegate`.
+    fn put_delegated(&mut self, mint: Pubkey, amount: u64, delegate: Pubkey, allowance: u64) {
+        let owner = self.borrower;
+        self.put_ata(mint, owner, amount);
+        let key = ata(&owner, &mint);
+        let mut acc = self.svm.get_account(&key).unwrap();
+        acc.data[72..76].copy_from_slice(&1u32.to_le_bytes());
+        acc.data[76..108].copy_from_slice(delegate.as_ref());
+        acc.data[121..129].copy_from_slice(&allowance.to_le_bytes());
+        self.svm.set_account(key, acc).unwrap();
+    }
+
+    /// A health top-up: 0.1 wSOL per execution, 0.25 in all, at 75%.
+    fn arm_top_up(&mut self) -> Pubkey {
+        let (key, bump) = self.mandate_pda(0);
+        let (src, dst) = (ata(&self.borrower, &self.wsol), ata(&self.anchor, &self.wsol));
+        let md = private_mandate(self.borrower, src, dst, 0, 0, bump);
+        self.put_mandate(&md);
+        self.put_delegated(self.wsol, 2 * SOL, key, SOL / 4);
+        key
+    }
+
+    /// A time repay of up to 500 USDC, a day before maturity.
+    fn arm_repay(&mut self) -> Pubkey {
+        let (key, bump) = self.mandate_pda(1);
+        let (src, dst) = (ata(&self.borrower, &self.usdc), ata(&self.lender, &self.usdc));
+        let md = private_mandate(self.borrower, src, dst, 1, 1, bump);
+        self.put_mandate(&md);
+        self.put_delegated(self.usdc, 500_000_000, key, 500_000_000);
+        key
+    }
+
+    fn run_mandate(&mut self, action: u8) -> Result<(), String> {
+        let md = self.read_mandate(action);
+        let repay = action == 1;
+        let ix = Instruction {
+            program_id: ID,
+            accounts: private_loan_v2::accounts::RunMandate {
+                anchor: self.anchor,
+                terms: self.terms,
+                mandate: self.mandate_pda(action).0,
+                source: md.source,
+                destination: md.destination,
+                loan_wsol: repay.then(|| ata(&self.anchor, &self.wsol)),
+                borrower_wsol: repay.then(|| ata(&self.borrower, &self.wsol)),
+                price_update: self.price,
+                token_program: TOKEN,
+            }
+            .to_account_metas(None),
+            data: private_loan_v2::instruction::RunMandate {}.data(),
+        };
+        let payer = Keypair::new();
+        self.svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
+        self.send(ix, &payer)
+    }
+
+    fn revoke_private(&mut self, action: u8) -> Result<(), String> {
+        let b = self.borrower_kp.insecure_clone();
+        let md = self.read_mandate(action);
+        let ix = Instruction {
+            program_id: ID,
+            accounts: private_loan_v2::accounts::RevokePrivateMandate { borrower: b.pubkey(), anchor: self.anchor, mandate: self.mandate_pda(action).0, source: md.source, token_program: TOKEN }
+                .to_account_metas(None),
+            data: private_loan_v2::instruction::RevokePrivateMandate {}.data(),
+        };
+        self.send(ix, &b)
+    }
+}
+
+#[test]
+fn the_rollup_crank_tops_up_on_health_and_rearms_itself_after_the_gap() {
+    let mut env = Env::new();
+    env.arm_top_up();
+    let vault = ata(&env.anchor, &env.wsol);
+    // ~66% at 150: nothing.
+    env.run_mandate(0).unwrap();
+    assert_eq!(env.terms().collateral_locked, COLLATERAL);
+    // ~79.6% at 125: one top-up, and an open quote revision would go stale.
+    env.price_usd(125, 125);
+    let rev0 = env.terms().ledger_revision;
+    env.run_mandate(0).unwrap();
+    assert_eq!(env.balance(env.anchor, env.wsol), COLLATERAL + SOL / 10);
+    assert_eq!(env.svm.get_account(&vault).is_some(), true);
+    let t = env.terms();
+    assert_eq!((t.collateral_locked, t.ledger_revision), (COLLATERAL + SOL / 10, rev0 + 1));
+    let md = env.read_mandate(0);
+    assert_eq!((md.armed, md.used, md.executions), (false, SOL / 10, 1));
+    // Still past the trigger: no second top-up until re-armed.
+    env.price_usd(115, 115);
+    env.run_mandate(0).unwrap();
+    assert_eq!(env.terms().collateral_locked, COLLATERAL + SOL / 10);
+    // Back below 73%: the crank re-arms (and moves nothing that run).
+    env.price_usd(150, 150);
+    env.run_mandate(0).unwrap();
+    assert!(env.read_mandate(0).armed);
+    assert_eq!(env.terms().collateral_locked, COLLATERAL + SOL / 10);
+    env.price_usd(115, 115);
+    env.run_mandate(0).unwrap();
+    // The 0.25 cap leaves 0.05 for the third: it clamps.
+    env.price_usd(150, 150);
+    env.run_mandate(0).unwrap();
+    env.price_usd(100, 100);
+    env.run_mandate(0).unwrap();
+    let md = env.read_mandate(0);
+    assert_eq!((md.used, md.executions), (SOL / 4, 3));
+    assert_eq!(env.terms().collateral_locked, COLLATERAL + SOL / 4);
+}
+
+#[test]
+fn the_rollup_crank_repays_clamped_to_the_payoff_and_closes_the_loan() {
+    let mut env = Env::new();
+    env.arm_repay();
+    let t = env.terms().core_terms().unwrap();
+    env.at(t.maturity() - DAY - 1);
+    env.price_usd(150, 150);
+    env.run_mandate(1).unwrap();
+    assert_eq!(env.terms().status, STATUS_ACTIVE, "not due yet");
+    env.at(t.maturity() - DAY);
+    let (payoff, l0) = (env.payoff(), env.balance(env.lender, env.usdc));
+    env.run_mandate(1).unwrap();
+    assert_eq!(env.balance(env.lender, env.usdc) - l0, payoff, "exactly the payoff");
+    assert_eq!(env.terms().status, STATUS_REPAID);
+    assert_eq!(env.balance(env.borrower, env.wsol), COLLATERAL, "all collateral returns");
+    assert_eq!(env.read_mandate(1).used, payoff);
+    // After settlement nothing moves.
+    env.run_mandate(1).unwrap();
+    assert_eq!(env.balance(env.lender, env.usdc) - l0, payoff);
+}
+
+#[test]
+fn private_mandates_do_nothing_when_revoked_expired_settled_undelegated_or_resold() {
+    // Revoked by the borrower: the record stops and the delegate is cleared.
+    let mut env = Env::new();
+    env.arm_top_up();
+    env.revoke_private(0).unwrap();
+    assert!(env.read_mandate(0).revoked);
+    assert_eq!(env.svm.get_account(&ata(&env.borrower, &env.wsol)).unwrap().data[72], 0, "delegate revoked");
+    env.price_usd(100, 100);
+    env.run_mandate(0).unwrap();
+    assert_eq!(env.terms().collateral_locked, COLLATERAL);
+
+    // Delegate revoked outside ZenLo.
+    let mut env = Env::new();
+    let key = env.arm_top_up();
+    env.put_delegated(env.wsol, 2 * SOL, key, 0);
+    env.price_usd(100, 100);
+    env.run_mandate(0).unwrap();
+    assert_eq!(env.terms().collateral_locked, COLLATERAL);
+
+    // Expired.
+    let mut env = Env::new();
+    env.arm_top_up();
+    env.at(START + 60 * DAY);
+    env.price_usd(100, 100);
+    env.run_mandate(0).unwrap();
+    assert_eq!(env.terms().collateral_locked, COLLATERAL);
+
+    // Settled by a liquidation first.
+    let mut env = Env::new();
+    env.arm_top_up();
+    env.price_usd(100, 100);
+    env.watch().unwrap();
+    let rev = env.quote_revision();
+    env.fund(0, rev).unwrap();
+    env.watch().unwrap();
+    assert_eq!(env.terms().status, STATUS_LIQUIDATED);
+    let before = env.balance(env.borrower, env.wsol);
+    env.run_mandate(0).unwrap();
+    assert_eq!(env.balance(env.borrower, env.wsol), before);
+
+    // A repay mandate bound to the lender at creation does nothing after a sale.
+    let mut env = Env::new();
+    env.arm_repay();
+    let mut t = env.terms();
+    t.current_lender = Pubkey::new_unique();
+    env.write_terms(&t);
+    env.at(t.core_terms().unwrap().maturity() - DAY);
+    env.price_usd(150, 150);
+    let b0 = env.balance(env.borrower, env.usdc);
+    env.run_mandate(1).unwrap();
+    assert_eq!(env.balance(env.borrower, env.usdc), b0);
+    assert_eq!(env.terms().status, STATUS_ACTIVE);
+}
+
+#[test]
+fn only_the_borrower_revokes_a_private_mandate() {
+    let mut env = Env::new();
+    env.arm_top_up();
+    let s = env.liq[0].insecure_clone();
+    let md = env.read_mandate(0);
+    let ix = Instruction {
+        program_id: ID,
+        accounts: private_loan_v2::accounts::RevokePrivateMandate { borrower: s.pubkey(), anchor: env.anchor, mandate: env.mandate_pda(0).0, source: md.source, token_program: TOKEN }
+            .to_account_metas(None),
+        data: private_loan_v2::instruction::RevokePrivateMandate {}.data(),
+    };
+    assert_err(env.send(ix, &s), PrivateLoanError::NotBorrower);
+    assert!(!env.read_mandate(0).revoked);
 }
