@@ -122,7 +122,7 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 19 | [26.3 Automation mandates](stories.md) and [26.4 Private liquidation operations](stories.md) | 26.1, 26.2 | Open (code and tests done; Devnet evidence waits on the Squads upgrade and time lock; pool drain is a follow-up) |
 | 20 | [26.5 MoneyGram cash-in](stories.md) | row 16 | Open |
 | 21 | [26.6 Shielded deposits and withdrawals](stories.md) | — | Open (spike first) |
-| 22 | [26.7 Credit](stories.md) | 26.2, 26.3 | Open |
+| 22 | [26.7 Credit](stories.md) | 26.2, 26.3 | Open (code and tests done; needs an SAS issuer key, a Reclaim app id and the Squads upgrade) |
 | 23 | [26.8 Secondary market and activity export](stories.md) | 26.1, 26.3 | Open |
 | 24 | [27.1 Arcium credit computation](stories.md) | 26.7 | Open (lifts the Arcium ban in AGENTS.md in the same PR) |
 

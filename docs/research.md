@@ -321,6 +321,14 @@ An invited wSOL credit pilot lets a verified borrower originate at a higher max 
 - The 5% liquidation bonus still fits: at 93% LTV the collateral is worth about 107.5% of the debt.
 - Reclaim income proofs are verified server-side and discarded; only the resulting attestation is kept. Raw proofs, income figures and viewing keys never reach Convex, telemetry, exports or notifications.
 
+Decisions made while building 26.7 (2026-10-07):
+
+- **Which tier terms need.** The smallest tier whose max and liquidation caps both cover the terms. Terms within 70% / 85% need no credential and record tier 0 even if one is passed. Above tier 3 is refused.
+- **Credential lifetime.** Valid only when the SAS account expiry is 0 or in the future **and** the schema's own `expiry` is in the future. The pilot issuer sets both to 180 days from verification.
+- **Invitation.** A restricted (single-borrower) wSOL offer, or a request (which names its borrower) funded by a lender who chooses it. Open offers cannot carry credit caps.
+- **Income bands (pilot).** Verified monthly income below $2,000 is ineligible; $2,000–4,999 is tier 1; $5,000–9,999 is tier 2; $10,000 and above is tier 3 (`app/lib/credit/bands.ts`). Only the band and tier leave the route.
+- **History.** On time = repaid at or before maturity; late = repaid after maturity; defaulted = overdue liquidation, priced recovery or terminal claim; a risk liquidation and a refinance are counted separately and are never repayments.
+
 ### Secondary market (26.8)
 
 A lender may sell a V2 position. Every V2 position is transferable; the borrower's terms never change, only who is paid.

@@ -27,7 +27,12 @@ export type OfferV2 = {
   ledger: Ledger;
   shortfall: bigint;
   settledTs: number;
+  /** Story 26.7: credit tier fixed at origination (1..3), or 0/absent for the standard caps. */
+  creditTier?: number;
 };
+
+/** `OfferV2.reserved[63]` holds the credit tier (absolute account byte 416). */
+export const CREDIT_TIER_RESERVED_INDEX = 63;
 
 export type RequestV2 = {
   generation: "v2";
@@ -109,7 +114,14 @@ export function decodeOfferV2(publicKey: PublicKey, data: Buffer): OfferV2 {
     },
     shortfall: big(a.shortfall),
     settledTs: num(a.settledTs),
+    creditTier: creditTierOf(a.reserved),
   };
+}
+
+/** A tier outside 1..3 reads as none, so a stray byte can never show a credit tier. */
+export function creditTierOf(reserved: unknown): number {
+  const t = Array.isArray(reserved) || reserved instanceof Uint8Array ? Number((reserved as ArrayLike<number>)[CREDIT_TIER_RESERVED_INDEX] ?? 0) : 0;
+  return t >= 1 && t <= 3 ? t : 0;
 }
 
 export function decodeRequestV2(publicKey: PublicKey, data: Buffer): RequestV2 {

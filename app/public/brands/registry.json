@@ -193,6 +193,32 @@
         "moneygram.svg"
       ],
       "placement": "Cash-service handoffs and the cash-out use case, next to the not-private disclosure"
+    },
+    {
+      "id": "sas",
+      "provider": "Solana Attestation Service",
+      "file": "sas.svg",
+      "source": "https://attest.solana.com/logo.svg",
+      "sourcePage": "https://attest.solana.com",
+      "retrieved": "2026-10-07",
+      "sha256": "c7a38611f2ac94379214df5b2aea63365d34fdd299add09bf3ae11dbe49c8f70",
+      "variants": [
+        "sas.svg"
+      ],
+      "placement": "Credential screens only: the credit credential and its tier, always with a text label"
+    },
+    {
+      "id": "reclaim",
+      "provider": "Reclaim",
+      "file": "reclaim.png",
+      "source": "https://www.reclaimprotocol.org/reclaim-logo.png",
+      "sourcePage": "https://www.reclaimprotocol.org",
+      "retrieved": "2026-10-07",
+      "sha256": "7822f07fc3b58b138eb6b981f846cc51d10ccdba662324718f661a3ca8d97680",
+      "variants": [
+        "reclaim.png"
+      ],
+      "placement": "Credential screens only: the income-proof step of getting verified, always with a text label"
     }
   ],
   "textLabels": [
@@ -210,16 +236,6 @@
       "provider": "Umbra",
       "placement": "Shielding quotes and receipts (Epic 26)",
       "sourcePage": "https://umbraprivacy.com"
-    },
-    {
-      "provider": "Reclaim",
-      "placement": "Proof acquisition (Epic 26)",
-      "sourcePage": "https://www.reclaimprotocol.org/reclaim-logo.png"
-    },
-    {
-      "provider": "Solana Attestation Service",
-      "placement": "Credential details (Epic 26)",
-      "sourcePage": "https://attest.solana.com/logo.svg"
     },
     {
       "provider": "Arcium",

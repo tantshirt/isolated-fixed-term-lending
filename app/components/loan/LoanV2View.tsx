@@ -16,6 +16,7 @@ import { useOfferV2 } from "@/lib/v2/hooks";
 import { offerV2Pda } from "@/lib/v2/program";
 import type { OfferV2 } from "@/lib/v2/offers";
 import { priceUsd } from "@/lib/risk";
+import { requiredTier, tierLabel } from "@/lib/credit/bands";
 import { LoanV2Actions } from "./LoanV2Actions";
 import { AlertsPanel } from "./AlertsPanel";
 import styles from "@/components/offer/OfferView.module.css";
@@ -135,6 +136,7 @@ function Loaded({ offerKey }: { offerKey: string }) {
             <Row label="Annualized pricing" value={`${formatBpsAsPercent(annualizedBps(t), 1)} on a 365-day year`} />
             <Row label="Early repayment" value={proRata ? `Interest for time used, at least ${formatUsdc(minInterest(t))} USDC` : "Full-term interest whenever repaid"} />
             <Row label="Annual pricing ceiling" value={`${formatBpsAsPercent(t.annualCeilingBps, 0)}: charges never exceed ${formatUsdc(chargeCeiling(t))} USDC`} />
+            {creditRow(offer) && <Row label="Credit tier" value={creditRow(offer)!} />}
             <Row label="Grace" value={formatDuration(t.graceSeconds)} />
             <Row label="Late fee" value={`${formatBpsAsPercent(t.lateFeeBps, 2)} of principal unpaid at the deadline, once`} />
             {offer.status === "active" && (
@@ -185,6 +187,17 @@ function Loaded({ offerKey }: { offerKey: string }) {
       </aside>
     </div>
   );
+}
+
+/**
+ * Story 26.7. A started loan shows the tier fixed at origination; an open invited offer above the
+ * standard caps says which credential accepting it needs. Standard loans show nothing.
+ */
+function creditRow(offer: OfferV2): string | null {
+  if (offer.creditTier) return `${tierLabel(offer.creditTier)}, fixed when the loan started; a later expiry does not change it`;
+  if (offer.status !== "open") return null;
+  const need = requiredTier(offer.maxLtvBps, offer.liquidationLtvBps);
+  return need ? `Accepting needs a ${tierLabel(need)} credential or higher (invited borrower only)` : null;
 }
 
 function Figure({ label, value }: { label: string; value: string }) {

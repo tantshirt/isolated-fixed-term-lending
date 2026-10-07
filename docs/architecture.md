@@ -335,6 +335,42 @@ Fails closed: wrong status; a signer other than the named party; a refinance aft
 
 Events: `SettledV2` (status `Refinanced`, `paid = payoff_old`), `AcceptedV2` for the new loan, and `RefinancedV2` with `payoff_old`, `new_principal`, `contribution` and the collateral moved, returned and added.
 
+### Credit tiers (Story 26.7)
+
+An invited wSOL credit pilot ([research.md § Credit tiers](research.md#credit-tiers-267)). The issuer is the existing `Config.authorities.credential_issuer` slot, so it rotates with every other key and needs no new field. `Config` has no room for the other pilot settings, so governance writes one more PDA:
+
+| Account | Seeds | Notes |
+| --- | --- | --- |
+| `CreditConfig` | `["credit"]` | `version = 1`, `enabled`, `sas_program`, `credential` (SAS credential account), `schema` (SAS schema account), `bump`, 32 reserved bytes. Written only by `authorities.governance` through `set_credit_config`; every id must be non-default. |
+
+**Where the tier lives.** `OfferV2.reserved[63]`, the last reserved byte (account byte **416** of 417: 8-byte discriminator + 345 bytes of fields + 63). 0 = standard caps, 1–3 = the tier. `OfferV2` and `RequestV2` layouts are unchanged; existing loans read tier 0. Clients read `OfferV2::credit_tier()` or that byte.
+
+**SAS attestation (verified against the SAS program source, `program/src/state/attestation.rs`).** Program `22zoJMtdu4tQc2PzL74ZUT7FrwgB1Udec8DdW4yw4BdG`. Account bytes: discriminator `2`, `nonce` (32, the subject wallet), `credential` (32), `schema` (32), `data` (u32 LE length + bytes), `signer` (32), `expiry` (i64 LE, 0 = never), `token_account` (32). SAS derives it at `["attestation", credential, schema, nonce]` and revokes by closing it. ZenLo's schema data is exactly 9 bytes: `tier: u8` and `expiry: i64 LE`. Nothing else is in the credential.
+
+**Validity.** `credit::credential_tier` returns the tier only when: `Config` and `CreditConfig` are this program's PDAs; the pilot is enabled; the attestation is owned by `CreditConfig.sas_program` with lamports (a revoked one is closed and fails here); it parses; `signer = credential_issuer`, `credential` and `schema` match the config, `nonce` = the borrower; the SAS `expiry` is 0 or in the future; the data expiry is in the future; and the tier is 1–3. Any failure gives tier 0. The PDA address itself is not re-derived: the owner check means SAS wrote it, and SAS only writes attestations at that PDA, so `nonce` is the subject.
+
+**Remaining accounts (wSOL only, so no `CollateralConfig` precedes them).**
+
+| Instruction | Remaining accounts |
+| --- | --- |
+| `create_offer` with credit-tier caps | `[config, credit_config]` |
+| `create_request` with credit-tier caps | `[config, credit_config, sas_attestation]` |
+| `accept_offer`, `fund_request` | `[config, credit_config, sas_attestation]` (only read when the terms need a tier) |
+
+For a non-wSOL mint the credit accounts would start at index 1, after its `CollateralConfig`; the pilot rejects non-wSOL credit terms (`CreditNotInvited`), so they are never read there.
+
+**Rules.**
+- Terms within 70% / 85% need no credential and ignore one; the loan records tier 0. Terms above them need the smallest tier whose caps cover both LTVs (max ≤ 80/85/88%, liquidation ≤ 85/90/93%, gap ≥ 5 points); above tier 3 is `InvalidTerms`. Interest, duration and every V2 rule are checked as before.
+- **Invite-only.** A credit-tier offer must be wSOL and restricted to one borrower (`CreditNotInvited` otherwise), and needs the pilot enabled at creation (`CreditDisabled`). A request already names one borrower, and the lender who funds it chooses that borrower, so funding is the invitation; the borrower's credential is checked at `create_request` and again at `fund_request`. Desk policies live in `private_loan_v2`, so linking credit to a desk policy is a follow-up; the public pilot is `restricted_borrower` only.
+- At `accept_offer` / `fund_request` the credential must prove a tier ≥ the required tier now, or the instruction fails with `CreditTierRequired`; an expired, revoked, wrong-issuer, wrong-schema, wrong-credential, wrong-subject or wrong-owner credential is the same as none. Disabling the pilot stops pending credit offers and requests.
+- The tier is written at origination and never read again: liquidation uses the loan's stored `liquidation_ltv_bps` (tier max + 5) and the usual emergency margin (+300 bps), so a credential that expires or is revoked mid-loan changes nothing. `refinance_into` checks the new offer against the asset's standard caps, so a credit-tier offer cannot be a refinance target in the pilot.
+- Event `CreditOriginatedV2 { offer, borrower, tier, max_ltv_bps, liquidation_ltv_bps }`. No income data exists on chain.
+- Errors appended in one block after the Story 26.3 errors: `CreditTierRequired`, `CreditNotInvited`, `CreditDisabled`, `InvalidCreditConfig`.
+
+**Income proofs (server).** `app/app/api/credit/verify` (Node runtime) verifies a Reclaim proof with `verifyProof` from `@reclaimprotocol/js-sdk` against `RECLAIM_PROVIDER_ID`, requires the proof's context address to be the wallet, maps the income to a band and tier, and drops the proof and the figure in the same request. It never writes to Convex, logs, telemetry or exports. If eligible it returns the attestation PDA, the 9-byte data and an Ed25519 issuance request signed with `CREDIT_ISSUER_SECRET` (server-only); the issuer then writes the SAS attestation. `app/app/api/credit/session` creates the Reclaim session with `RECLAIM_APP_SECRET` so the secret never reaches the browser.
+
+`programs/isolated_loan_v2/tests/credit/mod.rs` (6 LiteSVM tests, included from `litesvm_v2.rs`): tier 3 at 88% accepted with the tier at byte 416; expired (data and SAS expiry), revoked, wrong issuer, schema, credential, subject and owner, and an out-of-range tier all refused at credit caps and accepted at standard caps with tier 0; a lower tier refused; the tier fixed after the credential expires mid-loan (healthy at ~86% LTV, liquidated past the 96% emergency line); open offers cannot carry credit caps and ignore a credential; the pilot flag and governance-only config; a credit request checked at create and at fund.
+
 ## Private V2 program (`private_loan_v2`, Stories 22.1–22.2)
 
 Program ID `JAzy8NP6V8AGrAko8vfgrD44BDghN6eLwqB7vjuYhHNq`. V1 rooms and loans stay on `private_loan`.
@@ -397,3 +433,25 @@ Tests: `programs/private_loan_v2` has 20 unit tests, 15 LiteSVM settlement tests
 - **Admins.** An admin never appears in a loan's permission unless they are its lender, borrower or a named auditor, so administration grants neither spending nor reading.
 - **Changing readers.** `add_loan_reader` needs both the lender and the borrower to sign, so a new reader always means new consent. `remove_loan_reader` needs either one and stops future reads; it cannot unread what was already seen. Both pass the current list, which must hash to the recorded `auditor_hash`.
 - **No pooled money.** Funding always comes from the proposing lender's own private balance. A desk has no treasury.
+
+### Repayment history and its attestation (Story 26.7)
+
+| Record | Seeds | Where | Notes |
+| --- | --- | --- | --- |
+| `CreditHistory` | `["credit-history", borrower]` | ER-only, readable by the borrower alone | Borsh, no discriminator, 1,088 bytes: `version`, `borrower`, `on_time`, `late`, `liquidated`, `defaulted`, `refinanced` (u32 each), `last_settled_at`, `count` (u16), `counted: [Pubkey; 32]` (loan anchors), `bump` |
+| `HistoryAttestation` | `["credit-attestation", borrower]` | Base layer, owned by `private_loan_v2` | Anchor account: `version`, `borrower`, `repaid`, `on_time`, `late`, `liquidated`, `defaulted` (u32), `loans_counted` (u16), `rollup_slot`, `attested_at`, `bump` |
+
+**Counting.** Built from the same settled `LoanTerms` that `publish_receipt` hashes into receipts. Repaid at or before maturity = on time; repaid after maturity = late; `Liquidated` = liquidated; `OverdueLiquidated`, `PricedRecovered`, `TerminalClaimed` = defaulted; `Refinanced` counts as none of these. Open and cancelled loans never count.
+
+| Instruction | Where | Who | Effect |
+| --- | --- | --- | --- |
+| `record_history` | ER | anyone | Adds one settled loan to its borrower's history, once (`HistoryAlreadyCounted`, `HistoryFull` past 32). The first call creates the record, sponsored by that loan's anchor, with a permission naming only the borrower. |
+| `open_history_attestation` | base | borrower | Creates the empty attestation (rent from the borrower) |
+| `attest_history` | ER | borrower of the given loan | Commits that loan anchor with a post-commit Magic Action carrying the current counts, the rollup slot and time |
+| `record_history_attestation` | base, Magic Action only | delegation program escrow | Writes the counts if the rollup slot is newer |
+
+**Trust model.** `record_history_attestation` requires the escrow signer `ephemeral_balance_pda_from_payer(anchor, 255)` and that `anchor` is the `["loan", creator, nonce]` PDA of `private_loan_v2` named in the arguments. Only the delegation program can sign for the escrow, and it does so only for an action scheduled with that escrow authority; only `private_loan_v2` can sign for its own anchor PDA, and its only code that schedules this action is `attest_history`, which reads the counts from the ER-only history. So an account owned by `private_loan_v2` at `["credit-attestation", borrower]` holds counts that `private_loan_v2` computed inside the rollup at `rollup_slot`. An on-chain consumer (Arcium in Phase 9) checks owner, PDA, `version` and freshness of `rollup_slot` / `attested_at`. The trust is in the program, the TEE rollup and the delegation program, as for receipts.
+
+**Completeness.** The borrower cannot delete an entry, but a loan only counts once someone records it. Lenders, the watcher or ZenLo's keeper can record every settlement, including defaults the borrower would rather leave out. Until a per-borrower settlement index exists (a follow-up), a consumer should treat the counts as a record of what was recorded, not proof that nothing else exists.
+
+**Privacy.** The history is ER-only and borrower-readable. The app reads and exports it in the browser only. Attesting publishes the counts and the wallet on Solana by the borrower's choice; no amounts, lenders, terms or loan ids. Errors `HistoryAlreadyCounted` and `HistoryFull` are appended in one block after the Story 26.4 errors. `tests/history.rs` (5 LiteSVM tests) covers the outcome classes, once-only recording by anyone, open, cancelled and foreign loans, a full history, and a refused direct attestation call.

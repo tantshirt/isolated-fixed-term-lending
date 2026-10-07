@@ -24,3 +24,8 @@ Added on 2026-10-07 for the landing page and use cases (Story 19.7). Each appear
 - MoneyGram: the horizontal color logo from the header of [corporate.moneygram.com](https://corporate.moneygram.com). The full brand center is [partner-gated](https://zeroheight.com/833c7683f/p/464181-brand-center); confirm usage with MoneyGram before mainnet.
 
 Helius has no logo because nothing in the app uses Helius yet.
+
+Added on 2026-10-07 for the credit pilot (Story 26.7). Both appear only on credential screens:
+
+- Solana Attestation Service: the header logo from [attest.solana.com](https://attest.solana.com/logo.svg), always shown with the words "Solana Attestation Service".
+- Reclaim: the official logo from [reclaimprotocol.org](https://www.reclaimprotocol.org/reclaim-logo.png), shown only on the income-proof step.

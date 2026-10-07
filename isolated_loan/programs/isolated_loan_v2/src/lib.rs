@@ -10,9 +10,13 @@
 //!
 //! Automation mandates (Story 26.3, `mandate.rs`): a borrower-signed, bounded top-up or repay that
 //! only `Config.authorities.keeper` executes. Nothing refinances automatically.
+//!
+//! Credit tiers (Story 26.7, `credit.rs`): an invited wSOL borrower with a valid SAS credential
+//! originates at the tier's max LTV; the tier is fixed on the loan at origination.
 
 pub mod config;
 pub mod contexts;
+pub mod credit;
 pub mod error;
 pub mod mandate;
 pub mod state;
@@ -23,6 +27,7 @@ use loan_core::accounting::{self as acc, Phase};
 
 use config::*;
 pub use contexts::*;
+use credit::*;
 pub use error::*;
 use mandate::*;
 pub use state::*;
@@ -52,14 +57,30 @@ fn check_new_collateral(mint: &Account<anchor_spl::token::Mint>, remaining: &[Ac
     c.check_caps(args.max_ltv_bps, args.liquidation_ltv_bps)
 }
 
+/// Story 26.7. Collateral checks for new terms that may use credit-tier caps (`required > 0`):
+/// those are wSOL only, and the asset's own caps are replaced by the tier's.
+fn check_new_collateral_tiered(mint: &Account<anchor_spl::token::Mint>, remaining: &[AccountInfo], args: &TermsArgs, required: u8) -> Result<()> {
+    if required == 0 {
+        return check_new_collateral(mint, remaining, args);
+    }
+    require_keys_eq!(mint.key(), loan_core::constants::WSOL_MINT, LoanV2Error::CreditNotInvited);
+    require!(mint.decimals == 9, LoanV2Error::InvalidWsolMint);
+    Ok(())
+}
+
 #[program]
 pub mod isolated_loan_v2 {
     use super::*;
 
     pub fn create_offer(ctx: Context<CreateOffer>, offer_id: u64, args: TermsArgs, restricted_borrower: Pubkey) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
-        args.validate(now)?;
-        check_new_collateral(&ctx.accounts.wsol_mint, ctx.remaining_accounts, &args)?;
+        // Story 26.7: credit-tier caps only on an invited (restricted) wSOL offer while the pilot is on.
+        let required = credit::validate_terms(&args, now)?;
+        check_new_collateral_tiered(&ctx.accounts.wsol_mint, ctx.remaining_accounts, &args, required)?;
+        if required > 0 {
+            require!(restricted_borrower != Pubkey::default(), LoanV2Error::CreditNotInvited);
+            require!(credit::pilot_enabled(credit_accounts(&ctx.accounts.wsol_mint.key(), ctx.remaining_accounts)), LoanV2Error::CreditDisabled);
+        }
         token::transfer(
             CpiContext::new(
                 ctx.accounts.token_program.key(),
@@ -146,7 +167,13 @@ pub mod isolated_loan_v2 {
         let exposure = core(core_terms.max_exposure())?;
         // Governance may have tightened or disabled the asset since the offer was created.
         let c = config::resolve(&o.wsol_mint, ctx.remaining_accounts, true)?;
-        c.check_caps(o.max_ltv_bps, o.liquidation_ltv_bps)?;
+        // Story 26.7: credit-tier caps need the borrower's valid credential now; standard caps
+        // ignore any credential. An unrestricted offer never reads one.
+        let invited = o.restricted_borrower != Pubkey::default();
+        let tier = credit::origination_tier(o.max_ltv_bps, o.liquidation_ltv_bps, &o.wsol_mint, ctx.remaining_accounts, &borrower, invited, clock.unix_timestamp)?;
+        if tier == 0 {
+            c.check_caps(o.max_ltv_bps, o.liquidation_ltv_bps)?;
+        }
         let value = spot_value(&ctx.accounts.price_update.to_account_info(), &c, o.collateral_required, &clock)?;
         let ltv = core(loan_core::math::current_ltv_bps(exposure, value))?;
         require!(ltv <= o.max_ltv_bps, LoanV2Error::InsufficientCollateral);
@@ -195,6 +222,10 @@ pub mod isolated_loan_v2 {
         o.collateral_locked = collateral;
         o.ledger = ledger.into();
         o.status = StatusV2::Active;
+        o.reserved[CREDIT_TIER_INDEX] = tier;
+        if tier > 0 {
+            emit!(CreditOriginatedV2 { offer: o.key(), borrower, tier, max_ltv_bps: o.max_ltv_bps, liquidation_ltv_bps: o.liquidation_ltv_bps });
+        }
         emit!(AcceptedV2 { offer: o.key(), borrower, start_ts: terms.start_ts, maturity_ts: core_terms.maturity(), grace_end_ts: core_terms.grace_end() });
         Ok(())
     }
@@ -476,8 +507,14 @@ pub mod isolated_loan_v2 {
 
     pub fn create_request(ctx: Context<CreateRequest>, request_id: u64, args: TermsArgs) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
-        args.validate(now)?;
-        check_new_collateral(&ctx.accounts.wsol_mint, ctx.remaining_accounts, &args)?;
+        // Story 26.7: a request names one borrower, so credit-tier caps need that borrower's
+        // valid credential now (and again when funded).
+        let required = credit::validate_terms(&args, now)?;
+        check_new_collateral_tiered(&ctx.accounts.wsol_mint, ctx.remaining_accounts, &args, required)?;
+        if required > 0 {
+            let tier = credit::credential_tier(credit_accounts(&ctx.accounts.wsol_mint.key(), ctx.remaining_accounts), &ctx.accounts.borrower.key(), now);
+            require!(tier >= required, LoanV2Error::CreditTierRequired);
+        }
         token::transfer(
             CpiContext::new(
                 ctx.accounts.token_program.key(),
@@ -554,7 +591,11 @@ pub mod isolated_loan_v2 {
         let exposure = core(core_terms.max_exposure())?;
         let collateral = ctx.accounts.request_vault.amount;
         let c = config::resolve(&r.wsol_mint, ctx.remaining_accounts, true)?;
-        c.check_caps(r.max_ltv_bps, r.liquidation_ltv_bps)?;
+        // Story 26.7: the lender funding one named borrower's request is the invitation.
+        let tier = credit::origination_tier(r.max_ltv_bps, r.liquidation_ltv_bps, &r.wsol_mint, ctx.remaining_accounts, &r.borrower, true, clock.unix_timestamp)?;
+        if tier == 0 {
+            c.check_caps(r.max_ltv_bps, r.liquidation_ltv_bps)?;
+        }
         let value = spot_value(&ctx.accounts.price_update.to_account_info(), &c, collateral, &clock)?;
         let ltv = core(loan_core::math::current_ltv_bps(exposure, value))?;
         require!(ltv <= r.max_ltv_bps, LoanV2Error::InsufficientCollateral);
@@ -617,7 +658,11 @@ pub mod isolated_loan_v2 {
         o.settled_ts = 0;
         o.bump = ctx.bumps.offer;
         o.reserved = [0; 64];
+        o.reserved[CREDIT_TIER_INDEX] = tier;
         let offer_key = o.key();
+        if tier > 0 {
+            emit!(CreditOriginatedV2 { offer: offer_key, borrower, tier, max_ltv_bps: max_ltv, liquidation_ltv_bps: liq_ltv });
+        }
         let r = &mut ctx.accounts.request;
         r.status = RequestStatusV2::Funded;
         r.lender = lender;
@@ -665,6 +710,12 @@ pub mod isolated_loan_v2 {
     /// Story 26.3. Borrower: closes the mandate and revokes its token delegate.
     pub fn revoke_mandate(ctx: Context<RevokeMandate>) -> Result<()> {
         mandate::revoke_mandate(ctx)
+    }
+
+    /// Story 26.7. Governance only: the credit pilot's SAS program, credential, schema and
+    /// enabled flag. The issuer is `Config.authorities.credential_issuer`.
+    pub fn set_credit_config(ctx: Context<SetCreditConfig>, args: CreditConfigArgs) -> Result<()> {
+        credit::set_credit_config(ctx, args)
     }
 }
 
