@@ -87,7 +87,7 @@ export class RequestService {
         return { signature: "", requestId: requestId.toString() };
       }
       writeSubmissionStorage(key, { version: 2, requestId: requestId.toString() });
-      const result = await sendCreateRequestV2(this.signer, requestId, termsInput(terms, parsed));
+      const result = await sendCreateRequestV2(this.signer, requestId, termsInput(terms, parsed), getConnection(), draft.collateralMint ? new PublicKey(draft.collateralMint) : undefined);
       writeSubmissionStorage(key);
       return { signature: result.signature, requestId: requestId.toString() };
     });

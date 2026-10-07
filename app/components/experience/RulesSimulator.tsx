@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Chips } from "@/components/ui/Chips";
 import { formatUsdc, formatWsol } from "@/lib/format";
 import { EarlyRepayment, type TermsV2 } from "@/lib/loan-math-v2";
+import { selectableCollateral } from "@/lib/models/collateral";
 import { advance, pay, setPrice, settle, settlementNow, simDeadlines, simPayoff, simPhase, startSim, topUp, type SimV2 } from "@/lib/v2/simulator";
 import styles from "./RulesSimulator.module.css";
 
@@ -23,7 +24,10 @@ const base = (policy: EarlyRepayment): TermsV2 => ({
   annualCeilingBps: 10_000,
 });
 const COLLATERAL = 1_020_000_000n;
-const SETTLE_WORDS = { "overdue-liquidation": "A liquidator settles after grace", "priced-recovery": "The lender takes wSOL worth the debt", "terminal-claim": "The lender takes all the wSOL" } as const;
+const settleWords = (unit: string) =>
+  ({ "overdue-liquidation": "A liquidator settles after grace", "priced-recovery": `The lender takes ${unit} worth the debt`, "terminal-claim": `The lender takes all the ${unit}` }) as const;
+/** jitoSOL (test) practises at a jitoSOL-like price; wSOL keeps SOL at $150. */
+const HIGH = { wSOL: 15_000_000_000n, jitoSOL: 18_000_000_000n } as const;
 
 /**
  * Wallet-free practice for the V2 repayment rules: 100 USDC for 30 days at 5%, 24 hours of grace,
@@ -31,8 +35,16 @@ const SETTLE_WORDS = { "overdue-liquidation": "A liquidator settles after grace"
  */
 export function RulesSimulator() {
   const [policy, setPolicy] = useState<EarlyRepayment>(EarlyRepayment.ProRata);
-  const [sim, setSim] = useState<SimV2>(() => startSim(base(EarlyRepayment.ProRata), COLLATERAL));
-  const reset = (p = policy) => setSim(startSim(base(p), COLLATERAL));
+  // Story 26.2: with jitoSOL (test) enabled, practise with either asset and its own caps.
+  const assets = selectableCollateral();
+  const [assetIndex, setAssetIndex] = useState(0);
+  const asset = assets[assetIndex] ?? assets[0];
+  const high = HIGH[asset.symbol];
+  const low = (high * 3n) / 5n;
+  const priceName = asset.symbol === "wSOL" ? "SOL" : asset.symbol;
+  const [sim, setSim] = useState<SimV2>(() => startSim(base(EarlyRepayment.ProRata), COLLATERAL, HIGH.wSOL, "wSOL"));
+  const reset = (p = policy, a = asset) => setSim(startSim(base(p), COLLATERAL, HIGH[a.symbol], a.label));
+  const SETTLE_WORDS = settleWords(asset.label);
   const d = useMemo(() => simDeadlines(sim), [sim]);
   const day = (t: number) => `day ${((t - START) / DAY).toFixed((t - START) % DAY === 0 ? 0 : 1)}`;
   const phase = simPhase(sim);
@@ -58,6 +70,17 @@ export function RulesSimulator() {
           reset(v);
         }}
       />
+      {assets.length > 1 && (
+        <Chips
+          label="Collateral"
+          options={assets.map((a, i) => ({ value: i, label: a.label }))}
+          value={assetIndex}
+          onChange={(i) => {
+            setAssetIndex(i);
+            reset(policy, assets[i]);
+          }}
+        />
+      )}
       <dl className={styles.figures}>
         <div>
           <dt>Today</dt>
@@ -76,27 +99,33 @@ export function RulesSimulator() {
           <dd className="num">{formatUsdc(active ? sim.ledger.outstandingPrincipal : 0n)} USDC</dd>
         </div>
         <div>
-          <dt>wSOL locked</dt>
-          <dd className="num">{formatWsol(sim.collateral)} wSOL</dd>
+          <dt>{asset.label} locked</dt>
+          <dd className="num">{formatWsol(sim.collateral)} {asset.label}</dd>
         </div>
         <div>
-          <dt>SOL price</dt>
+          <dt>{priceName} price</dt>
           <dd className="num">${(Number(sim.price) / 1e8).toFixed(2)}</dd>
+        </div>
+        <div>
+          <dt>Max / liquidation LTV</dt>
+          <dd className="num">
+            {asset.maxLtvBps / 100}% / {asset.liquidationLtvBps / 100}%
+          </dd>
         </div>
       </dl>
       <ol className={styles.timeline}>
         <li data-passed={sim.now >= d.maturity}>Deadline, {day(d.maturity)}: the 1% late fee applies once.{passed(d.maturity)}</li>
-        <li data-passed={sim.now >= d.graceEnd}>Grace ends, {day(d.graceEnd)}: anyone may pay the debt and take wSOL worth that plus 5%; the rest returns.{passed(d.graceEnd)}</li>
-        <li data-passed={sim.now >= d.pricedFrom}>Priced recovery, {day(d.pricedFrom)}: the lender may take wSOL worth the debt; the rest returns.{passed(d.pricedFrom)}</li>
-        <li data-passed={sim.now >= d.terminalFrom}>Final claim, {day(d.terminalFrom)}: the lender may take all the wSOL, even if it is worth more.{passed(d.terminalFrom)}</li>
+        <li data-passed={sim.now >= d.graceEnd}>Grace ends, {day(d.graceEnd)}: anyone may pay the debt and take {asset.label} worth that plus 5%; the rest returns.{passed(d.graceEnd)}</li>
+        <li data-passed={sim.now >= d.pricedFrom}>Priced recovery, {day(d.pricedFrom)}: the lender may take {asset.label} worth the debt; the rest returns.{passed(d.pricedFrom)}</li>
+        <li data-passed={sim.now >= d.terminalFrom}>Final claim, {day(d.terminalFrom)}: the lender may take all the {asset.label}, even if it is worth more.{passed(d.terminalFrom)}</li>
       </ol>
       <div className={styles.controls}>
         <Button variant="secondary" onClick={() => setSim(advance(sim, DAY))}>+1 day</Button>
         <Button variant="secondary" onClick={() => setSim(advance(sim, 7 * DAY))}>+1 week</Button>
         <Button variant="secondary" disabled={!active} onClick={() => setSim(pay(sim, 10_000_000n))}>Pay 10 USDC</Button>
-        <Button variant="secondary" disabled={!active} onClick={() => setSim(topUp(sim, 500_000_000n))}>Add 0.5 wSOL</Button>
-        <Button variant="secondary" onClick={() => setSim(setPrice(sim, sim.price === 15_000_000_000n ? 9_000_000_000n : 15_000_000_000n))}>
-          {sim.price === 15_000_000_000n ? "Drop SOL to $90" : "Return SOL to $150"}
+        <Button variant="secondary" disabled={!active} onClick={() => setSim(topUp(sim, 500_000_000n))}>Add 0.5 {asset.label}</Button>
+        <Button variant="secondary" onClick={() => setSim(setPrice(sim, sim.price === high ? low : high))}>
+          {sim.price === high ? `Drop ${priceName} to $${Number(low / 100_000_000n)}` : `Return ${priceName} to $${Number(high / 100_000_000n)}`}
         </Button>
         <Button disabled={!active} onClick={() => setSim(pay(sim, simPayoff(sim)))}>Repay everything</Button>
         {available && (

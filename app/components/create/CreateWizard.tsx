@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { Button } from "@/components/ui/Button";
 import { messageFromAnchorError } from "@/lib/anchor-errors";
-import { useBalances, useDevConfig, usePrice } from "@/lib/client/hooks";
+import { useBalances, useDevConfig } from "@/lib/client/hooks";
 import { useSigner } from "@/lib/client/signer-context";
 import { useToast } from "@/lib/client/toast";
 import { formatUsdc } from "@/lib/format";
@@ -65,12 +65,11 @@ export function CreateWizard() {
       : 1;
   const heading = useRef<HTMLHeadingElement>(null);
   const [direction, setDirection] = useState(1);
-  const { price } = usePrice();
   const { config } = useDevConfig();
   const { signer, publicKey, setConnectOpen, bumpRefresh } = useSigner();
   const balances = useBalances(publicKey, config);
   const toast = useToast();
-  const { draft, update, reset, owed, principal, hydrated } = useDraft(price);
+  const { draft, update, reset, owed, principal, hydrated, asset, price } = useDraft();
   const [signature, setSignature] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -269,7 +268,7 @@ export function CreateWizard() {
               }}
             >
               <h1 ref={heading} tabIndex={-1} className={styles.question}>
-                {current.question}
+                {step === 3 ? `How much ${asset.label} secures the loan?` : current.question}
               </h1>
               {step === 1 && (
                 <StepAmount
@@ -296,10 +295,12 @@ export function CreateWizard() {
                   errors={errors}
                   price={price}
                   owed={owed}
+                  asset={asset}
                 />
               )}
               {step === 4 && (
                 <StepReview
+                  asset={asset}
                   draft={draft}
                   owed={owed}
                   price={price}
@@ -357,6 +358,7 @@ export function CreateWizard() {
         aria-label="Borrower's view of this offer"
       >
         <OfferPreview
+          asset={asset}
           draft={created?.draft ?? draft}
           owed={created ? created.owed : owed}
           price={price}
