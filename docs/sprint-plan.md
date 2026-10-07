@@ -121,7 +121,7 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 18 | [26.1 Refinance and rollover](stories.md) | 26.2 | Open |
 | 19 | [26.3 Automation mandates](stories.md) and [26.4 Private liquidation operations](stories.md) | 26.1, 26.2 | Open |
 | 20 | [26.5 MoneyGram cash-in](stories.md) | row 16 | Open |
-| 21 | [26.6 Shielded deposits and withdrawals](stories.md) | — | Open (spike first) |
+| 21 | [26.6 Shielded deposits and withdrawals](stories.md) | — | Open (Umbra wSOL shielding built behind NEXT_PUBLIC_UMBRA_ENABLED; USDC unsupported by Umbra Devnet; Privacy Cash blocked: no Devnet relayer; recovery test needs a real wallet) |
 | 22 | [26.7 Credit](stories.md) | 26.2, 26.3 | Open |
 | 23 | [26.8 Secondary market and activity export](stories.md) | 26.1, 26.3 | Open |
 | 24 | [27.1 Arcium credit computation](stories.md) | 26.7 | Open (lifts the Arcium ban in AGENTS.md in the same PR) |
@@ -163,3 +163,4 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 - 2026-10-07: Private V2 codec (`app/lib/private/v2-codec.ts`) proven byte-for-byte against a Rust fixture. My loans names public and private totals separately; private totals read "Locked" until private sign-in, and private borrowing is listed.
 - 2026-10-07: Story 24.3 built: band engine with hysteresis and rebasing, deadline and window reminders, consented subscriptions, one-use Telegram links, secret-checked webhook, deduplicated sends. Private loans share deadlines only and get generic text.
 - 2026-10-07: Story 24.4 built from the official Ramps docs (server sessions, hosted widget, reviewed transferChecked, Ed25519 webhook with (id, status) dedup, `status?sync=true` reconciliation, fallback poll, stuck-session monitor). Story 24.5: opt-in pilot events and an ops-only gate report.
+- 2026-10-07: Story 26.6 spike and build. Umbra Devnet supports wSOL only; Privacy Cash has no Devnet relayer. A Shield / Unshield / Recover wSOL panel in My loans uses `@umbra-privacy/sdk` 4.0.0, loaded on first use. Keys stay in memory, and a test checks Convex, notifications, telemetry and exports for key fields. The manual recovery test is in [devnet.md](devnet.md); the [shield-evidence.json](shield-evidence.json) entry waits for a real-wallet run.

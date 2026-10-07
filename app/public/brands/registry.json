@@ -193,6 +193,19 @@
         "moneygram.svg"
       ],
       "placement": "Cash-service handoffs and the cash-out use case, next to the not-private disclosure"
+    },
+    {
+      "id": "umbra",
+      "provider": "Umbra",
+      "file": "umbra.svg",
+      "source": "https://umbraprivacy.com/assets/umbra-logo-mark.svg",
+      "sourcePage": "https://umbraprivacy.com",
+      "retrieved": "2026-10-07",
+      "sha256": "ddbab23c74eac46597435324a1b7da25a210b70a201bf983370c294b523155f9",
+      "variants": [
+        "umbra.svg"
+      ],
+      "placement": "Shield wSOL panel in My loans (Story 26.6), always with a text label"
     }
   ],
   "textLabels": [
@@ -205,11 +218,6 @@
       "provider": "Jito",
       "placement": "jitoSOL asset selection (Epic 26)",
       "sourcePage": "https://drive.google.com/drive/u/0/folders/1KuEn60FLsmQZDSDDZ15dCPyxFgQAaAtL"
-    },
-    {
-      "provider": "Umbra",
-      "placement": "Shielding quotes and receipts (Epic 26)",
-      "sourcePage": "https://umbraprivacy.com"
     },
     {
       "provider": "Reclaim",

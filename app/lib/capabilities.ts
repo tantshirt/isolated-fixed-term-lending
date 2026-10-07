@@ -3,7 +3,7 @@
  * capability but never enable one that was not proven. Unsupported actions carry a reason.
  */
 export type Network = "devnet" | "localnet" | "mainnet";
-export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra";
+export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra" | "privacy-cash";
 export type Operation = "originate" | "service" | "cash-out" | "cash-in" | "notify" | "shield";
 
 export type Capability = {
@@ -57,11 +57,31 @@ export const CAPABILITIES: Capability[] = [
   {
     provider: "umbra",
     network: "devnet",
+    mint: WSOL,
+    operation: "shield",
+    // Spike 2026-10-07: Umbra's Devnet program and relayer list wSOL. On per deployment once the
+    // manual recovery test (shield, clear storage, recover, unshield) is recorded.
+    available: process.env.NEXT_PUBLIC_UMBRA_ENABLED === "1",
+    reason: "Umbra shielding is not switched on for this deployment yet.",
+  },
+  {
+    provider: "umbra",
+    network: "devnet",
     mint: DEVNET_USDC,
     operation: "shield",
     available: false,
-    reason: "Umbra's Devnet relayer does not list ZenLo's Devnet USDC.",
+    reason: "Umbra's Devnet supports wSOL only.",
   },
+  ...[WSOL, DEVNET_USDC].map(
+    (mint): Capability => ({
+      provider: "privacy-cash",
+      network: "devnet",
+      mint,
+      operation: "shield",
+      available: false,
+      reason: "Privacy Cash has no public Devnet relayer, and its official SDK is mainnet-only.",
+    }),
+  ),
 ];
 
 export type Availability = { available: true } | { available: false; reason: string; simulationOnly: boolean };

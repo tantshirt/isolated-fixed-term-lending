@@ -11,6 +11,7 @@ import { formatBpsAsPercent, formatCountdown, formatDeadline, formatUsdc, format
 import { URGENCY, deadlineIcs, type PortfolioItem, type Side } from "@/lib/portfolio";
 import { PrivateDesk } from "./PrivateDesk";
 import { CashOutPanel } from "@/components/cash/CashOutPanel";
+import { ShieldPanel } from "@/components/shield/ShieldPanel";
 import { useBalances, useDevConfig } from "@/lib/client/hooks";
 import { usePortfolio } from "./usePortfolio";
 import s from "./MyLoans.module.css";
@@ -260,6 +261,8 @@ export function MyLoans() {
       )}
 
       <PrivateDesk />
+
+      <ShieldPanel wsolBalance={cashBalances?.wsol ?? null} />
 
       <CashOutPanel usdcBalance={cashBalances?.usdc ?? null} />
 
