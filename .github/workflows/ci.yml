@@ -55,7 +55,7 @@ jobs:
         run: |
           cargo test --manifest-path programs/isolated_loan/Cargo.toml --test litesvm
           cargo test --manifest-path programs/isolated_loan_v2/Cargo.toml --test litesvm_v2
-          cargo test --manifest-path programs/private_loan_v2/Cargo.toml --lib --test settle
+          cargo test --manifest-path programs/private_loan_v2/Cargo.toml --lib --test settle --test governance
           cargo test --manifest-path programs/private_loan/Cargo.toml --test settle --test worker_claim
       - name: Fuzz (2000 cases)
         run: npm run test:fuzz

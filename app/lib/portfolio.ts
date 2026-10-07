@@ -2,7 +2,7 @@ import type { Connection, GetProgramAccountsFilter, MemcmpFilter, PublicKey } fr
 import { debt } from "./loan-math";
 import { debtOf, type PriceSnapshot } from "./offer-status";
 import { legacyLoanView, v2LoanView } from "./models/loan-view";
-import { offerV2Href, type OfferV2 } from "./v2/offers";
+import { offerV2Href, requestV2Href, type OfferV2, type RequestV2 } from "./v2/offers";
 import { graceEnd, maturity, pricedRecoveryFrom, terminalClaimFrom, fullTermInterest } from "./loan-math-v2";
 import { readOnlyProgram, supportedOfferMints, toOffer, type Offer } from "./offers";
 import type { OfferAccount, RequestAccount } from "./program";
@@ -197,7 +197,7 @@ function offerV2Item(o: OfferV2, me: string, price: PriceSnapshot | null, now: n
     key: o.publicKey,
     side,
     href: offerV2Href(o),
-    principal: t.principal,
+    principal: o.status === "active" ? o.ledger.outstandingPrincipal : t.principal,
     owed: t.principal + fullTermInterest(t),
     collateral: o.status === "open" ? o.collateralRequired : o.collateralLocked,
     offerV2: o,
@@ -278,12 +278,27 @@ function requestItem(r: LoanRequest, me: string): PortfolioItem | null {
   };
 }
 
+/** A V2 request keeps its management link until funded into a loan. */
+function requestV2Item(r: RequestV2, me: string): PortfolioItem | null {
+  if (r.borrower !== me || r.status === "funded") return null;
+  return {
+    key: r.publicKey, side: "borrower", kind: "request",
+    urgency: r.status === "open" ? URGENCY.open : URGENCY.settled,
+    headline: r.status === "open" ? "Waiting for a lender to fund it." : "Cancelled. Close it to get your rent back.",
+    action: r.status === "open" ? "Manage request" : "Close request",
+    href: requestV2Href(r), dueTs: null, counterparty: null,
+    principal: r.terms.principal, owed: r.terms.principal + fullTermInterest(r.terms),
+    collateral: r.status === "open" ? r.collateralAmount : 0n, ltvBps: null,
+  };
+}
+
 /** Everything one wallet is part of, most urgent first, plus totals. */
 export function buildPortfolio(input: {
   me: string;
   offers: Offer[];
   requests: LoanRequest[];
   offersV2?: OfferV2[];
+  requestsV2?: RequestV2[];
   price: PriceSnapshot | null;
   now: number;
 }): { items: PortfolioItem[]; totals: PortfolioTotals } {
@@ -292,6 +307,7 @@ export function buildPortfolio(input: {
     ...offers.map((o) => offerItem(o, me, price, now)),
     ...(input.offersV2 ?? []).map((o) => offerV2Item(o, me, price, now)),
     ...requests.map((r) => requestItem(r, me)),
+    ...(input.requestsV2 ?? []).map((r) => requestV2Item(r, me)),
   ]
     .filter((x): x is PortfolioItem => x !== null)
     .sort((a, b) => a.urgency - b.urgency || (a.dueTs ?? Infinity) - (b.dueTs ?? Infinity) || a.key.localeCompare(b.key));

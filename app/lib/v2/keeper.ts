@@ -6,8 +6,9 @@
  */
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { ComputeBudgetProgram, PublicKey, Transaction, type Connection, type Keypair } from "@solana/web3.js";
+import { utils } from "@coral-xyz/anchor";
 import { collateralValueUsdc } from "../loan-math";
-import { graceEnd, liquidationSplit, payoff as payoffAt } from "../loan-math-v2";
+import { graceEnd, maturity, liquidationSplit, payoff as payoffAt } from "../loan-math-v2";
 import { v2LoanView } from "../models/loan-view";
 import type { PriceSnapshot } from "../offer-status";
 import { KeypairWallet } from "../keypair-wallet";
@@ -63,12 +64,57 @@ export type KeeperDeps = {
   readPrice: () => Promise<PriceSnapshot | null>;
   /** Posts a fresh Pyth update when a candidate needs one. */
   postPrice: () => Promise<void>;
-  /** Persist before confirming, so a crash leaves an uncertain record instead of a blind resend. */
-  recordSignature: (offer: string, signature: string, lastValidBlockHeight: number) => Promise<void>;
+  /** Atomically reserve capital and persist the signed identity BEFORE any network send. */
+  recordSignature: (offer: string, signature: string, lastValidBlockHeight: number, payoff: string, kind: "risk" | "overdue") => Promise<boolean>;
+  recordOutcome: (signature: string, result: string) => Promise<void>;
   limits?: KeeperLimits;
   spentInWindow: bigint;
   now: () => number;
 };
+
+export type PendingKeeperTransaction = { signature: string; lastValidBlockHeight: number; kind: "risk" | "overdue" };
+
+/** A processed signature can still land. Only finalized expiry proves an absent one cannot. */
+export async function reconcileKeeperTransactions(
+  connection: Pick<Connection, "getSignatureStatuses" | "getBlockHeight">,
+  pending: PendingKeeperTransaction[],
+  recordOutcome: KeeperDeps["recordOutcome"],
+): Promise<void> {
+  for (const p of pending) {
+    const status = (await connection.getSignatureStatuses([p.signature], { searchTransactionHistory: true })).value[0];
+    if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") {
+      await recordOutcome(p.signature, status.err ? "failed-chain" : `settled-${p.kind}`);
+    } else if (!status && await connection.getBlockHeight("finalized") > p.lastValidBlockHeight) {
+      await recordOutcome(p.signature, "expired");
+    }
+  }
+}
+
+/** Signed bytes are safe to send only after their durable reservation succeeds. */
+export async function sendReservedKeeperTransaction(
+  connection: Pick<Connection, "sendRawTransaction" | "confirmTransaction">,
+  tx: Transaction,
+  lastValidBlockHeight: number,
+  reserve: (signature: string) => Promise<boolean>,
+  recordOutcome: KeeperDeps["recordOutcome"],
+): Promise<{ signature: string; result: "confirmed" | "failed-chain" | "pending" } | null> {
+  if (!tx.signature || !tx.recentBlockhash) throw new Error("Keeper transaction must be signed before reservation.");
+  const bytes = tx.serialize();
+  const signature = utils.bytes.bs58.encode(tx.signature);
+  if (!await reserve(signature)) return null;
+  try {
+    await connection.sendRawTransaction(bytes, { skipPreflight: true });
+    const res = await connection.confirmTransaction({ signature, blockhash: tx.recentBlockhash, lastValidBlockHeight }, "confirmed");
+    if (res.value.err) {
+      await recordOutcome(signature, "failed-chain");
+      return { signature, result: "failed-chain" };
+    }
+    return { signature, result: "confirmed" };
+  } catch {
+    // Neither a send error nor a confirmation timeout proves the transaction failed.
+    return { signature, result: "pending" };
+  }
+}
 
 /** One pass: find candidates, re-check each from fresh state, simulate, send, confirm. */
 export async function runKeeperOnce(d: KeeperDeps): Promise<{ scanned: number; outcomes: { offer: string; result: string; signature?: string; payoff?: string }[]; usdcBalance: string }> {
@@ -131,16 +177,29 @@ export async function runKeeperOnce(d: KeeperDeps): Promise<{ scanned: number; o
         outcomes.push({ offer: o.publicKey, result: `simulation refused: ${JSON.stringify(sim.value.err)}` });
         continue;
       }
-      const signature = await d.connection.sendRawTransaction(tx.serialize(), { skipPreflight: true });
-      await d.recordSignature(o.publicKey, signature, lastValidBlockHeight);
-      const res = await d.connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
-      if (res.value.err) {
-        outcomes.push({ offer: o.publicKey, result: `failed: ${JSON.stringify(res.value.err)}`, signature });
+      // Reserve the largest remaining payoff, including maturity's fee: accrual while the
+      // signed transaction is in flight must never exceed either capital limit.
+      const reservedPayoff = payoffAt(o.terms, o.ledger, Math.max(d.now(), maturity(o.terms)));
+      if (reservedPayoff > limits.maxPerAction || spent + reservedPayoff > limits.totalCapital || reservedPayoff > usdc) {
+        outcomes.push({ offer: o.publicKey, result: reservedPayoff > limits.maxPerAction ? "over-action-cap" : reservedPayoff > usdc ? "no-funds" : "over-capital" });
         continue;
       }
-      spent += decision.payoff;
+      const sent = await sendReservedKeeperTransaction(d.connection, tx, lastValidBlockHeight, async (signature) => {
+        const reserved = await d.recordSignature(o.publicKey, signature, lastValidBlockHeight, reservedPayoff.toString(), decision.kind);
+        if (reserved) { spent += reservedPayoff; usdc -= reservedPayoff; }
+        return reserved;
+      }, d.recordOutcome);
+      if (!sent) {
+        outcomes.push({ offer: o.publicKey, result: "over-capital" });
+        continue;
+      }
+      if (sent.result !== "confirmed") {
+        outcomes.push({ offer: o.publicKey, result: sent.result, signature: sent.signature });
+        continue;
+      }
+      await d.recordOutcome(sent.signature, `settled-${decision.kind}`);
       usdc = await balance();
-      outcomes.push({ offer: o.publicKey, result: `settled-${decision.kind}`, signature, payoff: decision.payoff.toString() });
+      outcomes.push({ offer: o.publicKey, result: `settled-${decision.kind}`, signature: sent.signature, payoff: reservedPayoff.toString() });
     } catch (e) {
       outcomes.push({ offer: o.publicKey, result: `error: ${String(e).slice(0, 200)}` });
     }

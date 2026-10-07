@@ -7,6 +7,7 @@ import {
 } from "@solana/web3.js";
 import { NETWORK, DEVNET_GENESIS_HASH, PROGRAM_ID } from "./constants";
 import type { LoanSigner } from "./keypair-wallet";
+import { assertOriginationAllowed } from "./ops-transaction";
 
 export type SubmissionState =
   | "rejected"
@@ -213,6 +214,7 @@ export async function submitTransaction(
         "simulation-failed"
       );
     if (ephemeralSigners.length) tx.partialSign(...ephemeralSigners);
+    await assertOriginationAllowed(tx);
     let signed: Transaction;
     try {
       signed = await signer.signTransaction(tx);
