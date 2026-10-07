@@ -17,7 +17,7 @@ export const recordCreated = mutation({
       return existing._id;
     }
     const now = Date.now();
-    return ctx.db.insert("cashTransactions", { wallet, env: env(), rampsId: a.rampsId, mgiTransactionId: a.mgiTransactionId, status: "created", createdAt: now, updatedAt: now });
+    return ctx.db.insert("cashTransactions", { wallet, env: env(), rampsId: a.rampsId, mgiTransactionId: a.mgiTransactionId, status: "created", createdAt: now, updatedAt: now, nextCheckAt: now });
   },
 });
 
@@ -82,7 +82,7 @@ export const setStatus = internalMutation({
     const row = await ctx.db.query("cashTransactions").withIndex("by_ramps", (q) => q.eq("rampsId", a.rampsId)).unique();
     if (!row) return;
     const now = Date.now();
-    await ctx.db.patch(row._id, { status: a.status, lastCheckedAt: now, updatedAt: a.status === row.status ? row.updatedAt : now, ...(a.referenceNumber ? { referenceNumber: a.referenceNumber } : {}) });
+    await ctx.db.patch(row._id, { status: a.status, lastCheckedAt: now, nextCheckAt: CASH_OUT_TERMINAL.has(a.status) ? Number.MAX_SAFE_INTEGER : now + 180_000, updatedAt: a.status === row.status ? row.updatedAt : now, ...(a.referenceNumber ? { referenceNumber: a.referenceNumber } : {}) });
   },
 });
 
@@ -92,5 +92,25 @@ export const open = internalQuery({
   handler: async (ctx) => {
     const rows = await ctx.db.query("cashTransactions").order("desc").take(200);
     return rows.filter((r) => !CASH_OUT_TERMINAL.has(r.status));
+  },
+});
+
+/** Lease the oldest due polls, including failed requests, so newer rows cannot monopolize the batch. */
+export const claimPollBatch = internalMutation({
+  args: {},
+  returns: v.array(v.any()),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const due = await ctx.db.query("cashTransactions").withIndex("by_next_check", (q) => q.lte("nextCheckAt", now)).take(100);
+    const out = [];
+    for (const row of due) {
+      if (CASH_OUT_TERMINAL.has(row.status)) {
+        await ctx.db.patch(row._id, { nextCheckAt: Number.MAX_SAFE_INTEGER });
+      } else if (out.length < 20) {
+        await ctx.db.patch(row._id, { nextCheckAt: now + 180_000 });
+        out.push(row);
+      }
+    }
+    return out;
   },
 });

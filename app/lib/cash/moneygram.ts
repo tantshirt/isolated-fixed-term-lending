@@ -124,6 +124,7 @@ export type SignPayload = {
 };
 
 export function toBaseUnits(amount: string, decimals: number): bigint {
+  if (!/^\d+(?:\.\d+)?$/.test(amount)) throw new Error("Amount must be a decimal string");
   const [whole, fraction = ""] = amount.split(".");
   if (!/^\d+$/.test(whole) || (fraction && !/^\d+$/.test(fraction))) throw new Error("Amount must be a decimal string");
   if (fraction.length > decimals) throw new Error(`Amount has more than ${decimals} decimal places`);

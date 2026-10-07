@@ -85,3 +85,13 @@ test("a running loan near its due date says so in words, and a moved position na
   const r = deskLoanRow({ seq: 1, loan: other, terms: moved }, lender, NOW);
   assert.ok(r.access === "readable" && r.mine && r.holder?.equals(other));
 });
+
+
+test("policy amounts reject incomplete input without throwing and preserve exact atoms", async () => {
+  const { policyAmounts, policyDraftProblem, DEFAULT_POLICY } = await import("./desk-view");
+  for (const value of [".", "-", "", "invalid", "1.1234567", "1e309"])
+    assert.equal(typeof policyAmounts(value, "1000"), "string", value);
+  assert.deepEqual(policyAmounts("0.000001", "1,000.123456"), { minPrincipal: 1n, maxPrincipal: 1_000_123_456n });
+  assert.equal(typeof policyAmounts("0", "18446744073709.551616"), "string");
+  assert.match(policyDraftProblem({ ...DEFAULT_POLICY, maxInterestBps: NaN })!, /valid/);
+});

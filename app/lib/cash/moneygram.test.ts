@@ -90,3 +90,11 @@ test("amounts convert without floats, and funds_received is not terminal", () =>
   assert.equal(CASH_OUT_TERMINAL.has("funds_received"), false);
   assert.equal(CASH_OUT_TERMINAL.has("paid_out"), true);
 });
+
+
+test("malformed provider amounts are rejected rather than truncated", () => {
+  for (const amount of ["1.2.3", "1..", "1.", ".1", "1e3", " 1", "-1"]) {
+    assert.throws(() => toBaseUnits(amount, 6), /decimal string/);
+    assert.equal(reviewSignPayload({ ...good, amount }, "sandbox", 20_000_000n).ok, false);
+  }
+});
