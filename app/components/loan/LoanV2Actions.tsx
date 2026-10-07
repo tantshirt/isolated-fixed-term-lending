@@ -24,6 +24,8 @@ import type { V2Role } from "./LoanV2View";
 import { RefinancePanel } from "./RefinancePanel";
 import { MandatePanel } from "./MandatePanel";
 import { MANDATES_ENABLED } from "@/lib/v2/mandates";
+import { RESALE_NOTICE } from "@/lib/v2/market";
+import { ListingPanel } from "./ListingPanel";
 import styles from "@/components/offer/ActionPanel.module.css";
 
 /** Seconds of accrual a signature allows for while it is reviewed and confirmed. */
@@ -150,6 +152,7 @@ export function LoanV2Actions({ offer, view, role, price, now, balances, onMoved
             <strong>From {formatDeadline(f.terminalClaimFrom)} the lender may take all of your {unit}, even if it is worth more than you owe.</strong>
           </li>
           <li>Charges never exceed {formatUsdc(f.chargeCeiling)} USDC under the lender&apos;s annual ceiling.</li>
+          <li>{RESALE_NOTICE}</li>
         </ul>
         {stale && postPrice ? (
           <Button variant="secondary" size="lg" block loading={busy} onClick={postPrice}>
@@ -168,12 +171,17 @@ export function LoanV2Actions({ offer, view, role, price, now, balances, onMoved
   // ---- Settled ----
   if (offer.status !== "active") {
     if (role === "lender")
-      return panel(
-        "Settled",
-        "Close the account to reclaim its rent.",
-        <Button variant="secondary" size="lg" block loading={busy} onClick={() => run(() => v2.sendCloseOfferV2(signer, offer), "Rent returned to your wallet")}>
-          Close and reclaim rent
-        </Button>,
+      return (
+        <>
+          <ListingPanel offer={offer} signer={signer} now={now} busy={busy} run={run} panel={panel} />
+          {panel(
+            "Settled",
+            "Close the account to reclaim its rent.",
+            <Button variant="secondary" size="lg" block loading={busy} onClick={() => run(() => v2.sendCloseOfferV2(signer, offer), "Rent returned to your wallet")}>
+              Close and reclaim rent
+            </Button>,
+          )}
+        </>
       );
     return panel("Settled", "Nothing is left to do on this loan.");
   }
@@ -257,6 +265,7 @@ export function LoanV2Actions({ offer, view, role, price, now, balances, onMoved
 
   return (
     <>
+      <ListingPanel offer={offer} signer={signer} now={now} busy={busy} run={run} panel={panel} />
       {role === "lender" &&
         panel(
           view?.phase === "Active" ? "Waiting for repayment" : "Recovery",

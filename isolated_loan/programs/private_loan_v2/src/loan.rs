@@ -122,7 +122,7 @@ pub struct LoanTerms {
     pub version: u8,
     /// Immutable: the lender that originated the loan.
     pub origin_lender: Pubkey,
-    /// Receives payments and claims; changes only through a future sale.
+    /// Receives payments and claims; changes only through `transfer_position` (Story 26.8).
     pub current_lender: Pubkey,
     pub borrower: Pubkey,
     pub room_index: u32,

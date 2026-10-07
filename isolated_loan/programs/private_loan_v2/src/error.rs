@@ -124,6 +124,12 @@ pub enum PrivateLoanError {
     #[msg("The borrower's history is full")]
     HistoryFull,
     // ---- end Story 26.7 ----
+    // ---- Story 26.8 (secondary market) ----------------------------------------------------------
+    // Appended so existing error codes do not move; one block for easy rebasing.
+    #[msg("Only Active and Grace loans can be transferred")]
+    PositionNotSellable,
+    #[msg("The buyer must be a wallet other than the seller and the borrower")]
+    BuyerNotAllowed,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

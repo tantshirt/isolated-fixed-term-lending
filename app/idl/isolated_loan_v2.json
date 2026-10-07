@@ -378,6 +378,168 @@
       ]
     },
     {
+      "name": "buy_position",
+      "docs": [
+        "Buyer: pays exactly `expected_price` to the seller and becomes `current_lender`, atomically."
+      ],
+      "discriminator": [
+        210,
+        108,
+        108,
+        28,
+        10,
+        46,
+        226,
+        137
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "offer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  102,
+                  102,
+                  101,
+                  114,
+                  45,
+                  118,
+                  50
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer.origin_lender",
+                "account": "OfferV2"
+              },
+              {
+                "kind": "account",
+                "path": "offer.offer_id",
+                "account": "OfferV2"
+              }
+            ]
+          },
+          "relations": [
+            "listing"
+          ]
+        },
+        {
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller",
+          "docs": [
+            "Receives the listing rent; the price goes to `seller_usdc`."
+          ],
+          "writable": true
+        },
+        {
+          "name": "seller_usdc",
+          "writable": true
+        },
+        {
+          "name": "buyer_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "expected_price",
+          "type": "u64"
+        },
+        {
+          "name": "expected_paid",
+          "type": "u128"
+        }
+      ]
+    },
+    {
+      "name": "cancel_listing",
+      "docs": [
+        "Seller: closes the listing and reclaims its rent."
+      ],
+      "discriminator": [
+        41,
+        183,
+        50,
+        232,
+        230,
+        233,
+        157,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "listing"
+          ]
+        },
+        {
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "listing.offer",
+                "account": "Listing"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "cancel_offer",
       "discriminator": [
         92,
@@ -660,6 +822,57 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_listing",
+      "docs": [
+        "Anyone: closes a void listing (settled or closed loan, stale seller, or expired); rent to the seller."
+      ],
+      "discriminator": [
+        33,
+        15,
+        192,
+        81,
+        78,
+        175,
+        159,
+        97
+      ],
+      "accounts": [
+        {
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "listing.offer",
+                "account": "Listing"
+              }
+            ]
+          }
+        },
+        {
+          "name": "offer"
+        },
+        {
+          "name": "seller",
+          "writable": true
         }
       ],
       "args": []
@@ -1903,6 +2116,101 @@
       "args": []
     },
     {
+      "name": "list_position",
+      "docs": [
+        "Current lender, Active or Grace: lists the position for `price` USDC atoms until `expiry`.",
+        "Listing again updates the same `[\"listing\", offer]` account."
+      ],
+      "discriminator": [
+        252,
+        73,
+        186,
+        182,
+        15,
+        2,
+        202,
+        83
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "offer",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  102,
+                  102,
+                  101,
+                  114,
+                  45,
+                  118,
+                  50
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer.origin_lender",
+                "account": "OfferV2"
+              },
+              {
+                "kind": "account",
+                "path": "offer.offer_id",
+                "account": "OfferV2"
+              }
+            ]
+          }
+        },
+        {
+          "name": "listing",
+          "docs": [
+            "Re-listing by the same seller updates price and expiry in place."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "expiry",
+          "type": "i64"
+        }
+      ]
+    },
+    {
       "name": "rearm_mandate",
       "docs": [
         "Story 26.3. Keeper or borrower: re-arms a fired health trigger once LTV <= trigger - 200 bps."
@@ -2561,6 +2869,19 @@
       ]
     },
     {
+      "name": "Listing",
+      "discriminator": [
+        218,
+        32,
+        50,
+        73,
+        43,
+        134,
+        26,
+        58
+      ]
+    },
+    {
       "name": "Mandate",
       "discriminator": [
         113,
@@ -2667,6 +2988,19 @@
       ]
     },
     {
+      "name": "ListingClosedV2",
+      "discriminator": [
+        108,
+        123,
+        103,
+        53,
+        148,
+        115,
+        206,
+        207
+      ]
+    },
+    {
       "name": "MandateCreated",
       "discriminator": [
         140,
@@ -2742,6 +3076,32 @@
         29,
         64,
         42
+      ]
+    },
+    {
+      "name": "PositionListedV2",
+      "discriminator": [
+        129,
+        88,
+        20,
+        117,
+        22,
+        61,
+        197,
+        200
+      ]
+    },
+    {
+      "name": "PositionSoldV2",
+      "discriminator": [
+        158,
+        20,
+        127,
+        147,
+        188,
+        248,
+        73,
+        186
       ]
     },
     {
@@ -2991,6 +3351,36 @@
       "code": 6043,
       "name": "InvalidCreditConfig",
       "msg": "Credit config is invalid"
+    },
+    {
+      "code": 6044,
+      "name": "PositionNotSellable",
+      "msg": "Only Active and Grace loans can be listed or bought"
+    },
+    {
+      "code": 6045,
+      "name": "StaleListing",
+      "msg": "The listing's seller is no longer the current lender"
+    },
+    {
+      "code": 6046,
+      "name": "ListingExpired",
+      "msg": "The listing has expired"
+    },
+    {
+      "code": 6047,
+      "name": "ListingPriceChanged",
+      "msg": "The listing price differs from the price the buyer signed"
+    },
+    {
+      "code": 6048,
+      "name": "InvalidListing",
+      "msg": "The listing does not match this loan or buyer"
+    },
+    {
+      "code": 6049,
+      "name": "ListingStillValid",
+      "msg": "The listing is still valid; only the seller can cancel it"
     }
   ],
   "types": [
@@ -3422,6 +3812,78 @@
           },
           {
             "name": "late_fee_checked",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Listing",
+      "docs": [
+        "One open sale of one V2 position."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "docs": [
+              "The `current_lender` when listed; the listing is void once that changes."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "price",
+            "docs": [
+              "USDC atoms the buyer pays the seller."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "expiry",
+            "docs": [
+              "Unix seconds; buyable while `now < expiry`."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ListingClosedV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "cancelled",
+            "docs": [
+              "True when the seller cancelled; false when anyone closed a void listing."
+            ],
             "type": "bool"
           }
         ]
@@ -3860,6 +4322,54 @@
           {
             "name": "closed",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionListedV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "expiry",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionSoldV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "price",
+            "type": "u64"
           }
         ]
       }

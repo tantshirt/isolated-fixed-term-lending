@@ -95,6 +95,21 @@ pub enum LoanV2Error {
     #[msg("Credit config is invalid")]
     InvalidCreditConfig,
     // ---- end Story 26.7 ----
+    // ---- Story 26.8 (secondary market) ----------------------------------------------------------
+    // Appended so existing error codes do not move. Kept as one block so a rebase against other
+    // appended blocks (Story 26.7 credit) only reorders whole blocks.
+    #[msg("Only Active and Grace loans can be listed or bought")]
+    PositionNotSellable,
+    #[msg("The listing's seller is no longer the current lender")]
+    StaleListing,
+    #[msg("The listing has expired")]
+    ListingExpired,
+    #[msg("The listing price differs from the price the buyer signed")]
+    ListingPriceChanged,
+    #[msg("The listing does not match this loan or buyer")]
+    InvalidListing,
+    #[msg("The listing is still valid; only the seller can cancel it")]
+    ListingStillValid,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

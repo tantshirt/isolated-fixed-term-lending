@@ -1,4 +1,4 @@
-//! ZenLo V2 public loan (Stories 21.1, 21.2, 26.1, 26.2 and 26.3).
+//! ZenLo V2 public loan (Stories 21.1, 21.2, 26.1, 26.2, 26.3 and 26.8).
 //!
 //! The upgrade authority and the governance key in `Config` are the Squads vault
 //! (docs/governance.md). Governance writes only per-asset `CollateralConfig`s; it can never touch
@@ -13,12 +13,16 @@
 //!
 //! Credit tiers (Story 26.7, `credit.rs`): an invited wSOL borrower with a valid SAS credential
 //! originates at the tier's max LTV; the tier is fixed on the loan at origination.
+//!
+//! Secondary market (Story 26.8, `market.rs`): every position is sellable. A sale moves only
+//! `current_lender`; the borrower's terms never change and every later payment follows the buyer.
 
 pub mod config;
 pub mod contexts;
 pub mod credit;
 pub mod error;
 pub mod mandate;
+pub mod market;
 pub mod state;
 
 use anchor_lang::prelude::*;
@@ -30,6 +34,7 @@ pub use contexts::*;
 use credit::*;
 pub use error::*;
 use mandate::*;
+use market::*;
 pub use state::*;
 
 declare_id!("8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m");
@@ -716,6 +721,29 @@ pub mod isolated_loan_v2 {
     /// enabled flag. The issuer is `Config.authorities.credential_issuer`.
     pub fn set_credit_config(ctx: Context<SetCreditConfig>, args: CreditConfigArgs) -> Result<()> {
         credit::set_credit_config(ctx, args)
+    }
+
+    // ---- Story 26.8: secondary market ----------------------------------------------------------
+
+    /// Current lender, Active or Grace: lists the position for `price` USDC atoms until `expiry`.
+    /// Listing again updates the same `["listing", offer]` account.
+    pub fn list_position(ctx: Context<ListPosition>, price: u64, expiry: i64) -> Result<()> {
+        market::list_position(ctx, price, expiry)
+    }
+
+    /// Seller: closes the listing and reclaims its rent.
+    pub fn cancel_listing(ctx: Context<CancelListing>) -> Result<()> {
+        market::cancel_listing(ctx)
+    }
+
+    /// Buyer: pays exactly `expected_price` to the seller and becomes `current_lender`, atomically.
+    pub fn buy_position(ctx: Context<BuyPosition>, expected_price: u64, expected_paid: u128) -> Result<()> {
+        market::buy_position(ctx, expected_price, expected_paid)
+    }
+
+    /// Anyone: closes a void listing (settled or closed loan, stale seller, or expired); rent to the seller.
+    pub fn close_listing(ctx: Context<CloseListing>) -> Result<()> {
+        market::close_listing(ctx)
     }
 }
 

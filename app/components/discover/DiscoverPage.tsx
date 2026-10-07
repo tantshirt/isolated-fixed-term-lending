@@ -34,6 +34,7 @@ import { LiveBadge } from "./LiveBadge";
 import { PrivateCardList } from "./PrivateCardList";
 import { RequestRow } from "./RequestRow";
 import { RequestV2Row } from "./RequestV2Row";
+import { PositionsForSale } from "./PositionsForSale";
 import { useRequestsV2 } from "@/lib/v2/hooks";
 import { V2_LIVE } from "@/lib/v2/program";
 import styles from "./Discover.module.css";
@@ -273,6 +274,8 @@ export function DiscoverPage() {
         )}
         {body}
       </section>
+
+      {venue === "public" && <PositionsForSale />}
 
       {side === "borrowers" && venue === "public" && mine.length > 0 && (
         <section className={styles.mine} aria-labelledby="mine-heading">

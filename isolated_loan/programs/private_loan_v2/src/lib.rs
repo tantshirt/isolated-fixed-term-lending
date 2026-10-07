@@ -17,6 +17,7 @@ pub mod espl;
 pub mod history;
 pub mod loan;
 pub mod mandate;
+pub mod market;
 pub mod receipt;
 pub mod refinance;
 pub mod room;
@@ -30,6 +31,7 @@ use discovery::*;
 use history::*;
 use loan::*;
 use mandate::*;
+use market::*;
 use receipt::*;
 use refinance::*;
 use room::*;
@@ -281,6 +283,13 @@ pub mod private_loan_v2 {
     /// Ephemeral rollup. Borrower: stops the mandate and revokes its delegate.
     pub fn revoke_private_mandate(ctx: Context<RevokePrivateMandate>) -> Result<()> {
         mandate::revoke_private_mandate(ctx)
+    }
+
+    /// Ephemeral rollup. Seller (current lender) and buyer together: the buyer pays `price` from
+    /// their private USDC balance, becomes the current lender, and the read permission swaps from
+    /// seller to buyer (Story 26.8). Follow with `rebind_watch`.
+    pub fn transfer_position(ctx: Context<TransferPosition>, price: u64, current: Vec<Pubkey>, expected_ledger_revision: u32) -> Result<()> {
+        market::transfer_position(ctx, price, current, expected_ledger_revision)
     }
 
     /// Ephemeral rollup. A liquidator funds the current quote revision.

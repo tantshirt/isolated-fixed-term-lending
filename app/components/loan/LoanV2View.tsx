@@ -177,6 +177,11 @@ function Loaded({ offerKey }: { offerKey: string }) {
           </section>
         )}
 
+        {role === "borrower" && offer.currentLender !== offer.originLender && (
+          <p className={styles.blockNote}>
+            Your lender sold this loan. You now pay <span className="mono">{shortKey(offer.currentLender)}</span>; your terms have not changed.
+          </p>
+        )}
         <p className={styles.blockNote}>
           Lender <span className="mono">{shortKey(offer.currentLender)}</span>
           {offer.borrower && (

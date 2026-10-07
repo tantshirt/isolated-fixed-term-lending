@@ -338,6 +338,20 @@ A lender may sell a V2 position. Every V2 position is transferable; the borrower
 - A listing is void once the loan settles or the seller is no longer `current_lender`.
 - Every loan review states that the position may be sold and that payments then go to the new holder.
 
+Decisions made while building 26.8 (2026-10-07):
+
+- **Every position is sellable.** There is no assignable flag. The borrower's terms, ledger, collateral and deadlines are untouched by a sale; only `current_lender` moves, and the vault PDAs keep signing with `origin_lender`.
+- **When.** A position can be listed and bought only while the loan is `Active` and in its Active or Grace phase. From the end of grace the loan belongs to recovery (overdue liquidation, priced recovery, the terminal claim), and a sale would race those claims, so listing and buying are refused (`PositionNotSellable`).
+- **One listing per loan.** `["listing", offer]`. Listing again by the same holder updates price and expiry in place. The seller can cancel at any time.
+- **Exact price.** The buyer signs `expected_price`; if the seller re-listed at another price in between, the purchase fails (`ListingPriceChanged`) rather than charging a different amount. The price goes to the listing's seller and nowhere else.
+- **Void listings.** A listing is void once the loan settles (any terminal status, including `Refinanced`), its account is closed, the seller is no longer `current_lender`, or it expires. A void listing cannot be bought; anyone may close it and the rent returns to the seller.
+- **Atomicity.** A purchase and a repayment race to one outcome: a repayment built for the old lender fails the payee check after a sale, and a purchase after a closing repayment fails on status.
+- **Mandates.** A public repay mandate pays `current_lender` at execution, so after a sale it pays the buyer with no change. A private repay mandate stays bound to the lender named at its creation and does nothing after a sale until the borrower creates a new one (already decided in 26.3).
+- **Private sales.** Inside the rollup, seller and buyer both sign `transfer_position(price, readers)`. The buyer pays from their private USDC balance to the seller's; the loan's read permission is rewritten so the seller loses read access and the buyer gains it, and consented auditors stay. There is no private order book: the price is agreed privately and bound by both signatures. The client follows with `rebind_watch` so the liquidation crank pays the buyer.
+
 ### Activity export (26.8)
 
 One row per on-chain action: UTC time, slot, signature, loan, role, action, asset, amount in atoms, decimal amount, fee, and resulting status. Public rows are rebuilt from chain with a `(slot, signature)` cursor, so a replay yields the same file. Private rows are exported only in the browser from rollup reads and never pass through a server. The export is an activity record, not tax advice.
+
+- **Fields.** `time_utc` is the block time in ISO 8601 with `Z`; `amount_atoms` is the exact integer; `amount` is the same value written with the asset's decimals by integer arithmetic, never a float; `fee` is the network fee in lamports for public rows (`0` for private rows, where the rollup charges none); `status` is the loan status after the action. The column order and file footer are in [architecture.md](architecture.md#activity-export-story-268).
+- **Cursor.** Public rows sort by `(slot, signature)`, then loan, then action; exact duplicates are dropped, so the same chain data in any order yields a byte-identical file. An export "since the last one" returns the public rows strictly after the saved cursor. Private rows come from the decoded rollup ledger (origination, interest, late fee and principal paid to date, any shortfall, the settlement) rather than per transaction; they carry slot 0 and a synthetic `private:<loan>:<action>` signature and are always included. A private sale price is not stored on the loan, so a buyer's private row records the holding with amount 0.
