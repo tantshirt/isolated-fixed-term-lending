@@ -295,6 +295,17 @@ A borrower may pre-authorize one bounded action per loan: top-up (add collateral
 - A mandate never acts after a settlement. If a liquidation and a mandate land in the same slot, whichever executes first wins; the other fails cleanly.
 - A mandate allowance is never used as liquidation capital. Revoking the mandate or the token delegate stops it at once.
 
+Decisions made while building 26.3 and 26.4 (2026-10-07):
+
+- **Allowance.** The SPL approval is exactly `cumulative_cap`, because fees count toward the cap. `used` adds every amount and fee; `fee_cap ≤ cumulative_cap` and `fee_per_exec ≤ fee_cap` are checked at creation.
+- **One per loan and action.** The PDA is `["mandate", offer, action]`, so a loan can hold one top-up and one repay mandate. A token account has one SPL delegate: a second mandate on the same account replaces the first one's delegation, and the first then fails closed (`MandateDelegateRevoked`).
+- **Fees.** The keeper names the fee; above `fee_per_exec` or past `fee_cap` it is refused, never clamped. The fee is paid in the source asset (collateral for a top-up, USDC for a repay). Private mandates have no keeper, so no fee.
+- **Hysteresis.** A fired mandate always disarms. A health trigger re-arms only through an explicit observation of LTV ≤ trigger − 200 bps at a valid price: `rearm_mandate` (keeper or borrower) on the public program, or the crank itself in the rollup. A top-up that lowers LTV does not re-arm in the same transaction. The trigger must be above 200 bps so the re-arm level is positive.
+- **Time trigger.** Fires once from `maturity − lead_seconds` (`0 < lead ≤ duration`) and never re-arms. It keeps working in grace and later until a settlement executes, as repayment does.
+- **Price.** Health triggers use only the conservative spot (`price − conf`) of the collateral's own feed against the payoff, as at origination; no EMA. A stale price fails the public call and makes the private run a no-op.
+- **Private repay destination.** A private repay mandate is bound to the current lender's USDC ATA when it is created. After a sale it does nothing until the borrower creates a new one.
+- **Pool operations (26.4).** Quote parameters are financial policy, so `authorities.governance` writes them, not the liquidation-pool admin key. Only the quote TTL is a parameter (30–600 s). Draining unused pool liquidity is not built: every pool atom backs a funded ticket or an unclaimed payout, the pool has no on-chain liability ledger, and its balances live in delegated ER accounts the Squads vault cannot sign for. A safe drain needs a liability counter kept by fund, settle, refund and every watch, plus a governance order executed in the rollup. That is a follow-up.
+
 ### Credit tiers (26.7)
 
 An invited wSOL credit pilot lets a verified borrower originate at a higher max LTV. The tier comes from a Solana Attestation Service credential that carries only the tier and an expiry.

@@ -1,4 +1,4 @@
-//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2, 26.1, 26.2). Run `anchor build` first.
+//! V2 instruction tests on LiteSVM (Stories 21.1, 21.2, 26.1, 26.2, 26.3). Run `anchor build` first.
 //! Every boundary is driven by setting the clock to the exact second. The Pyth account is owned by
 //! the real receiver program, so the owner check is exercised, never bypassed.
 
@@ -102,6 +102,8 @@ struct Env {
     /// "jitoSOL (test)": a 9-decimal mint with its own JITOSOL/USD price account.
     jito: Pubkey,
     jito_price: Pubkey,
+    /// `Config.authorities.keeper`: the only key that executes mandates (Story 26.3).
+    keeper: Keypair,
     now: i64,
 }
 
@@ -115,7 +117,9 @@ impl Env {
             svm.airdrop(&k.pubkey(), 10_000_000_000).unwrap();
         }
         let (jito, jito_price) = (Pubkey::new_unique(), Pubkey::new_unique());
-        let mut env = Env { svm, lender, borrower, stranger, price: Pubkey::new_unique(), governance, jito, jito_price, now: START };
+        let keeper = Keypair::new();
+        svm.airdrop(&keeper.pubkey(), 10_000_000_000).unwrap();
+        let mut env = Env { svm, lender, borrower, stranger, price: Pubkey::new_unique(), governance, jito, jito_price, keeper, now: START };
         env.at(START);
         env.put_mint(USDC_MINT, 6);
         env.put_mint(WSOL_MINT, 9);
@@ -124,6 +128,10 @@ impl Env {
             env.put_ata(USDC_MINT, k, 1_000_000_000);
             env.put_ata(WSOL_MINT, k, 10_000_000_000);
             env.put_ata(jito, k, 10_000_000_000);
+        }
+        let k = env.keeper.pubkey();
+        for mint in [USDC_MINT, WSOL_MINT, jito] {
+            env.put_ata(mint, k, 0);
         }
         env.price_usd(150, 150);
         env.put_config();
@@ -140,7 +148,7 @@ impl Env {
             ai_worker: Pubkey::new_unique(),
             liquidation_pool_admin: Pubkey::new_unique(),
             credential_issuer: Pubkey::new_unique(),
-            keeper: Pubkey::new_unique(),
+            keeper: self.keeper.pubkey(),
         };
         let mut data = Vec::new();
         Config { version: 1, authorities, bump }.try_serialize(&mut data).unwrap();
@@ -1344,4 +1352,398 @@ fn jitosol_refinance_moves_jitosol_and_reads_its_own_feed() {
     env.repay_to(n, payoff, s.pubkey(), jito).unwrap();
     assert_eq!(env.offer(n).status, StatusV2::Repaid);
     assert_eq!(env.balance(ata(b.pubkey(), jito)), b_jito0 + JITO_COLLATERAL, "every jitoSOL atom came back");
+}
+
+// ---- Story 26.3: automation mandates ---------------------------------------------------------
+
+use isolated_loan_v2::mandate::{Mandate, MandateArgs, MANDATE_SEED};
+use loan_core::mandate::{ACTION_REPAY, ACTION_TOP_UP, TRIGGER_HEALTH, TRIGGER_TIME};
+
+const SOL: u64 = 1_000_000_000;
+
+fn mandate_pda(offer: Pubkey, action: u8) -> Pubkey {
+    pda(&[MANDATE_SEED, offer.as_ref(), &[action]])
+}
+
+/// A health-triggered top-up: 0.01 collateral per execution, 0.025 in all, fees 0.001 / 0.002.
+fn top_up_args(trigger_ltv_bps: u16, expiry: i64) -> MandateArgs {
+    MandateArgs {
+        action: ACTION_TOP_UP,
+        trigger: TRIGGER_HEALTH,
+        trigger_ltv_bps,
+        lead_seconds: 0,
+        amount_per_exec: SOL / 100,
+        cumulative_cap: SOL / 40,
+        fee_per_exec: SOL / 1_000,
+        fee_cap: SOL / 500,
+        expiry,
+    }
+}
+
+/// A time-triggered repay of `amount` USDC atoms, firing `lead` seconds before maturity.
+fn repay_args(amount: u64, cap: u64, lead: i64, expiry: i64) -> MandateArgs {
+    MandateArgs {
+        action: ACTION_REPAY,
+        trigger: TRIGGER_TIME,
+        trigger_ltv_bps: 0,
+        lead_seconds: lead,
+        amount_per_exec: amount,
+        cumulative_cap: cap,
+        fee_per_exec: 1_000_000,
+        fee_cap: 2_000_000,
+        expiry,
+    }
+}
+
+fn delegation(env: &Env, token_account: Pubkey) -> (Option<Pubkey>, u64) {
+    let d = env.svm.get_account(&token_account).unwrap().data;
+    let delegate = if d[72] == 1 { Some(Pubkey::new_from_array(d[76..108].try_into().unwrap())) } else { None };
+    (delegate, u64::from_le_bytes(d[121..129].try_into().unwrap()))
+}
+
+impl Env {
+    fn mandate(&self, offer: Pubkey, action: u8) -> Mandate {
+        Mandate::try_deserialize(&mut &self.svm.get_account(&mandate_pda(offer, action)).expect("mandate exists").data[..]).unwrap()
+    }
+
+    fn create_mandate(&mut self, offer: Pubkey, args: MandateArgs, source: Pubkey) -> Result<(), String> {
+        let b = self.borrower.insecure_clone();
+        self.create_mandate_as(&b, offer, args, source)
+    }
+
+    fn create_mandate_as(&mut self, b: &Keypair, offer: Pubkey, args: MandateArgs, source: Pubkey) -> Result<(), String> {
+        let ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::CreateMandate {
+                borrower: b.pubkey(),
+                offer,
+                mandate: mandate_pda(offer, args.action),
+                source,
+                token_program: TOKEN_PROGRAM,
+                system_program: SYSTEM_PROGRAM,
+            }
+            .to_account_metas(None),
+            data: isolated_loan_v2::instruction::CreateMandate { args }.data(),
+        };
+        self.send(ix, b)
+    }
+
+    /// `signer` (normally the keeper) executes; `mint` is the loan's collateral mint.
+    #[allow(clippy::too_many_arguments)]
+    fn execute_with(&mut self, signer: &Keypair, offer: Pubkey, action: u8, fee: u64, mint: Pubkey, price: Pubkey, extra: Vec<AccountMeta>) -> Result<(), String> {
+        let md = self.mandate(offer, action);
+        let o = self.offer(offer);
+        let src_mint = if action == ACTION_TOP_UP { mint } else { USDC_MINT };
+        let repay = action == ACTION_REPAY;
+        let mut accounts = isolated_loan_v2::accounts::ExecuteMandate {
+            keeper: signer.pubkey(),
+            config: pda(&[CONFIG_SEED]),
+            offer,
+            mandate: mandate_pda(offer, action),
+            source: md.source,
+            keeper_token: ata(signer.pubkey(), src_mint),
+            wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
+            price_update: price,
+            lender_usdc: repay.then(|| ata(o.current_lender, USDC_MINT)),
+            borrower: repay.then_some(o.borrower),
+            borrower_wsol: repay.then(|| ata(o.borrower, mint)),
+            token_program: TOKEN_PROGRAM,
+        }
+        .to_account_metas(None);
+        accounts.extend(extra);
+        let ix = Instruction { program_id: ID, accounts, data: isolated_loan_v2::instruction::ExecuteMandate { fee }.data() };
+        self.send(ix, signer)
+    }
+
+    fn execute(&mut self, offer: Pubkey, action: u8, fee: u64) -> Result<(), String> {
+        let (k, price) = (self.keeper.insecure_clone(), self.price);
+        self.execute_with(&k, offer, action, fee, WSOL_MINT, price, vec![])
+    }
+
+    fn rearm_with(&mut self, signer: &Keypair, offer: Pubkey, action: u8, price: Pubkey, extra: Vec<AccountMeta>) -> Result<(), String> {
+        let mut accounts = isolated_loan_v2::accounts::RearmMandate {
+            signer: signer.pubkey(),
+            config: pda(&[CONFIG_SEED]),
+            offer,
+            mandate: mandate_pda(offer, action),
+            wsol_vault: pda(&[WSOL_VAULT_SEED, offer.as_ref()]),
+            price_update: price,
+        }
+        .to_account_metas(None);
+        accounts.extend(extra);
+        let ix = Instruction { program_id: ID, accounts, data: isolated_loan_v2::instruction::RearmMandate {}.data() };
+        self.send(ix, signer)
+    }
+
+    fn rearm(&mut self, offer: Pubkey, action: u8) -> Result<(), String> {
+        let (k, price) = (self.keeper.insecure_clone(), self.price);
+        self.rearm_with(&k, offer, action, price, vec![])
+    }
+
+    fn revoke_mandate(&mut self, offer: Pubkey, action: u8) -> Result<(), String> {
+        let b = self.borrower.insecure_clone();
+        let source = self.mandate(offer, action).source;
+        let ix = Instruction {
+            program_id: ID,
+            accounts: isolated_loan_v2::accounts::RevokeMandate { borrower: b.pubkey(), mandate: mandate_pda(offer, action), source, token_program: TOKEN_PROGRAM }
+                .to_account_metas(None),
+            data: isolated_loan_v2::instruction::RevokeMandate {}.data(),
+        };
+        self.send(ix, &b)
+    }
+
+    /// SPL Token `Revoke` signed by the owner, outside ZenLo.
+    fn spl_revoke(&mut self, source: Pubkey, owner: &Keypair) -> Result<(), String> {
+        let ix = Instruction { program_id: TOKEN_PROGRAM, accounts: vec![AccountMeta::new(source, false), AccountMeta::new_readonly(owner.pubkey(), true)], data: vec![5] };
+        self.send(ix, owner)
+    }
+}
+
+#[test]
+fn mandate_creation_approves_exactly_the_cap_and_checks_every_bound() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let (b, s) = (env.borrower.insecure_clone(), env.stranger.insecure_clone());
+    let wsol_src = ata(b.pubkey(), WSOL_MINT);
+    let expiry = START + 10 * DAY;
+    // The trigger must sit below the liquidation line; the source must hold the action's asset.
+    assert_err(env.create_mandate(o, top_up_args(LIQ_LTV, expiry), wsol_src), LoanV2Error::MandateInvalid);
+    assert_err(env.create_mandate(o, MandateArgs { fee_cap: SOL, ..top_up_args(7_000, expiry) }, wsol_src), LoanV2Error::MandateInvalid);
+    assert_err(env.create_mandate(o, MandateArgs { expiry: START, ..top_up_args(7_000, expiry) }, wsol_src), LoanV2Error::MandateInvalid);
+    assert_err(env.create_mandate(o, top_up_args(7_000, expiry), ata(b.pubkey(), USDC_MINT)), LoanV2Error::MandateWrongSource);
+    // Only the borrower, from their own account.
+    assert_err(env.create_mandate_as(&s, o, top_up_args(7_000, expiry), ata(s.pubkey(), WSOL_MINT)), LoanV2Error::UnauthorizedBorrower);
+    env.create_mandate(o, top_up_args(7_000, expiry), wsol_src).unwrap();
+    assert_eq!(delegation(&env, wsol_src), (Some(mandate_pda(o, ACTION_TOP_UP)), SOL / 40), "fees are inside the one approval");
+    let md = env.mandate(o, ACTION_TOP_UP);
+    assert_eq!((md.borrower, md.offer, md.source, md.armed, md.used, md.fees_paid), (b.pubkey(), o, wsol_src, true, 0, 0));
+    // One mandate per loan and action.
+    assert!(env.create_mandate(o, top_up_args(7_000, expiry), wsol_src).is_err());
+    env.create_mandate(o, repay_args(10_000_000, 50_000_000, DAY, expiry), ata(b.pubkey(), USDC_MINT)).unwrap();
+}
+
+#[test]
+fn health_top_up_fires_then_waits_for_the_rearm_gap() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let b = env.borrower.insecure_clone();
+    env.create_mandate(o, top_up_args(7_000, START + 10 * DAY), ata(b.pubkey(), WSOL_MINT)).unwrap();
+    env.at(START + DAY);
+    // ~66% at 150: below the 70% trigger.
+    env.price_usd(150, 150);
+    assert_err(env.execute(o, ACTION_TOP_UP, 0), LoanV2Error::MandateNotTriggered);
+    // ~73.6% at 135: fires once.
+    env.price_usd(135, 135);
+    let (vault, borrower0) = (pda(&[WSOL_VAULT_SEED, o.as_ref()]), env.wsol(&b));
+    env.execute(o, ACTION_TOP_UP, SOL / 1_000).unwrap();
+    assert_eq!(env.balance(vault), COLLATERAL + SOL / 100);
+    assert_eq!(env.offer(o).collateral_locked, COLLATERAL + SOL / 100);
+    assert_eq!(borrower0 - env.wsol(&b), SOL / 100 + SOL / 1_000);
+    assert_eq!(env.wsol(&env.keeper.insecure_clone()), SOL / 1_000, "the fee goes to the keeper");
+    let md = env.mandate(o, ACTION_TOP_UP);
+    assert_eq!((md.armed, md.used, md.fees_paid, md.executions), (false, SOL / 100 + SOL / 1_000, SOL / 1_000, 1));
+    // A deeper wick does not fire again until re-armed.
+    env.price_usd(120, 120);
+    assert_err(env.execute(o, ACTION_TOP_UP, 0), LoanV2Error::MandateNotTriggered);
+    // ~68.6% at 140 is above the 68% re-arm level.
+    env.price_usd(140, 140);
+    assert_err(env.rearm(o, ACTION_TOP_UP), LoanV2Error::MandateNotTriggered);
+    // A stranger cannot re-arm; the keeper or the borrower can, at a valid price.
+    env.price_usd(150, 150);
+    let s = env.stranger.insecure_clone();
+    let price = env.price;
+    assert_err(env.rearm_with(&s, o, ACTION_TOP_UP, price, vec![]), LoanV2Error::WrongAuthority);
+    env.rearm_with(&b, o, ACTION_TOP_UP, price, vec![]).unwrap();
+    assert!(env.mandate(o, ACTION_TOP_UP).armed);
+    env.price_usd(135, 135);
+    env.execute(o, ACTION_TOP_UP, 0).unwrap();
+    assert_eq!(env.mandate(o, ACTION_TOP_UP).executions, 2);
+}
+
+#[test]
+fn mandate_stops_at_the_cumulative_cap_and_the_fee_cap() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let b = env.borrower.insecure_clone();
+    env.create_mandate(o, top_up_args(7_000, START + 10 * DAY), ata(b.pubkey(), WSOL_MINT)).unwrap();
+    env.at(START + DAY);
+    let fire = |env: &mut Env, fee: u64| {
+        env.price_usd(150, 150);
+        if !env.mandate(o, ACTION_TOP_UP).armed {
+            env.rearm(o, ACTION_TOP_UP).unwrap();
+        }
+        env.price_usd(135, 135);
+        env.execute(o, ACTION_TOP_UP, fee)
+    };
+    let fee = SOL / 1_000;
+    fire(&mut env, fee).unwrap();
+    // A fee above the per-execution bound is refused, never clamped.
+    assert_err(fire(&mut env, fee + 1), LoanV2Error::MandateFeeAboveCap);
+    fire(&mut env, fee).unwrap();
+    // Two fees used the whole fee cap.
+    assert_err(fire(&mut env, fee), LoanV2Error::MandateFeeAboveCap);
+    // 0.025 cap - 0.022 used: the amount clamps to the 0.003 left.
+    fire(&mut env, 0).unwrap();
+    let md = env.mandate(o, ACTION_TOP_UP);
+    assert_eq!((md.used, md.fees_paid), (SOL / 40, 2 * fee));
+    assert_eq!(env.offer(o).collateral_locked, COLLATERAL + 2 * SOL / 100 + 3 * SOL / 1_000);
+    assert_err(fire(&mut env, 0), LoanV2Error::MandateCapReached);
+    assert_eq!(delegation(&env, ata(b.pubkey(), WSOL_MINT)).1, 0, "the allowance is spent exactly");
+}
+
+#[test]
+fn mandate_fails_closed_after_expiry_and_for_anyone_but_the_keeper() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let (b, s, l, g) = (env.borrower.insecure_clone(), env.stranger.insecure_clone(), env.lender.insecure_clone(), env.governance.insecure_clone());
+    env.put_ata(WSOL_MINT, g.pubkey(), 0);
+    env.create_mandate(o, top_up_args(7_000, START + 2 * DAY), ata(b.pubkey(), WSOL_MINT)).unwrap();
+    env.at(START + DAY);
+    env.price_usd(135, 135);
+    let price = env.price;
+    for who in [&s, &l, &g] {
+        assert_err(env.execute_with(who, o, ACTION_TOP_UP, 0, WSOL_MINT, price, vec![]), LoanV2Error::WrongAuthority);
+    }
+    // The borrower's own fee account is the source itself, so it is refused even earlier.
+    assert_rejected(env.execute_with(&b, o, ACTION_TOP_UP, 0, WSOL_MINT, price, vec![]), &[DUPLICATE, &code(LoanV2Error::WrongAuthority)]);
+    env.at(START + 2 * DAY);
+    env.price_usd(135, 135);
+    assert_err(env.execute(o, ACTION_TOP_UP, 0), LoanV2Error::MandateExpired);
+    assert_eq!(env.offer(o).collateral_locked, COLLATERAL);
+}
+
+#[test]
+fn a_revoked_delegate_or_mandate_stops_execution_at_once() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let b = env.borrower.insecure_clone();
+    let src = ata(b.pubkey(), WSOL_MINT);
+    env.create_mandate(o, top_up_args(7_000, START + 10 * DAY), src).unwrap();
+    env.at(START + DAY);
+    env.price_usd(135, 135);
+    // Revoked outside ZenLo, with the token program.
+    env.spl_revoke(src, &b).unwrap();
+    assert_err(env.execute(o, ACTION_TOP_UP, 0), LoanV2Error::MandateDelegateRevoked);
+    // revoke_mandate closes the record; a fresh mandate is then revoked through ZenLo.
+    env.revoke_mandate(o, ACTION_TOP_UP).unwrap();
+    assert!(!env.exists(mandate_pda(o, ACTION_TOP_UP)));
+    env.create_mandate(o, top_up_args(7_000, START + 10 * DAY), src).unwrap();
+    env.revoke_mandate(o, ACTION_TOP_UP).unwrap();
+    assert_eq!(delegation(&env, src), (None, 0));
+    let k = env.keeper.insecure_clone();
+    let ix = Instruction {
+        program_id: ID,
+        accounts: isolated_loan_v2::accounts::ExecuteMandate {
+            keeper: k.pubkey(),
+            config: pda(&[CONFIG_SEED]),
+            offer: o,
+            mandate: mandate_pda(o, ACTION_TOP_UP),
+            source: src,
+            keeper_token: ata(k.pubkey(), WSOL_MINT),
+            wsol_vault: pda(&[WSOL_VAULT_SEED, o.as_ref()]),
+            price_update: env.price,
+            lender_usdc: None,
+            borrower: None,
+            borrower_wsol: None,
+            token_program: TOKEN_PROGRAM,
+        }
+        .to_account_metas(None),
+        data: isolated_loan_v2::instruction::ExecuteMandate { fee: 0 }.data(),
+    };
+    assert_rejected(env.send(ix, &k), &[CLOSED_VAULT]);
+    assert_eq!(env.offer(o).collateral_locked, COLLATERAL);
+}
+
+#[test]
+fn time_repay_clamps_to_the_payoff_and_closes_the_loan() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let b = env.borrower.insecure_clone();
+    let t = env.terms(o);
+    // 500 USDC per execution against a ~105 USDC payoff, firing a day before maturity.
+    env.create_mandate(o, repay_args(500_000_000, 600_000_000, DAY, t.maturity() + DAY), ata(b.pubkey(), USDC_MINT)).unwrap();
+    env.at(t.maturity() - DAY - 1);
+    assert_err(env.execute(o, ACTION_REPAY, 0), LoanV2Error::MandateNotTriggered);
+    env.at(t.maturity() - DAY);
+    let payoff = env.payoff(o);
+    let (l0, b_usdc0, b_wsol0) = (env.usdc(&env.lender.insecure_clone()), env.usdc(&b), env.wsol(&b));
+    env.execute(o, ACTION_REPAY, 1_000_000).unwrap();
+    assert_eq!(env.usdc(&env.lender.insecure_clone()) - l0, payoff, "the lender gets exactly the payoff");
+    assert_eq!(b_usdc0 - env.usdc(&b), payoff + 1_000_000);
+    assert_eq!(env.wsol(&b) - b_wsol0, COLLATERAL, "all collateral returns");
+    let s = env.offer(o);
+    assert_eq!((s.status, s.collateral_locked), (StatusV2::Repaid, 0));
+    assert_eq!(env.mandate(o, ACTION_REPAY).used, payoff + 1_000_000);
+    // After settlement the mandate fails cleanly; the borrower still reclaims its rent.
+    assert_rejected(env.execute(o, ACTION_REPAY, 0), &[CLOSED_VAULT, &code(LoanV2Error::WrongStatus)]);
+    env.revoke_mandate(o, ACTION_REPAY).unwrap();
+}
+
+#[test]
+fn a_partial_repay_mandate_pays_the_fixed_amount_once() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let b = env.borrower.insecure_clone();
+    let t = env.terms(o);
+    env.create_mandate(o, repay_args(20_000_000, 100_000_000, 5 * DAY, t.maturity()), ata(b.pubkey(), USDC_MINT)).unwrap();
+    env.at(t.maturity() - 5 * DAY);
+    let l0 = env.usdc(&env.lender.insecure_clone());
+    env.execute(o, ACTION_REPAY, 0).unwrap();
+    assert_eq!(env.usdc(&env.lender.insecure_clone()) - l0, 20_000_000);
+    assert_eq!(env.offer(o).status, StatusV2::Active);
+    // A time trigger fires once and never re-arms.
+    assert_err(env.execute(o, ACTION_REPAY, 0), LoanV2Error::MandateNotTriggered);
+    assert_err(env.rearm(o, ACTION_REPAY), LoanV2Error::MandateNotTriggered);
+}
+
+#[test]
+fn a_mandate_racing_a_liquidation_fails_cleanly_and_is_never_liquidation_capital() {
+    let mut env = Env::new();
+    let o = env.open_loan(1, 1);
+    let (b, k) = (env.borrower.insecure_clone(), env.keeper.insecure_clone());
+    let usdc_src = ata(b.pubkey(), USDC_MINT);
+    let health_repay = MandateArgs { trigger: TRIGGER_HEALTH, trigger_ltv_bps: 7_000, lead_seconds: 0, ..repay_args(20_000_000, 100_000_000, 1, START + 10 * DAY) };
+    env.create_mandate(o, health_repay, usdc_src).unwrap();
+    env.at(START + DAY);
+    env.price_usd(100, 100);
+    // The keeper cannot pay a liquidation from the borrower's delegated account.
+    let mut accounts = env.liquidation_accounts(o, &k);
+    accounts[4] = AccountMeta::new(usdc_src, false);
+    let ix = Instruction { program_id: ID, accounts, data: isolated_loan_v2::instruction::Liquidate {}.data() };
+    assert!(env.send(ix, &k).is_err());
+    // The liquidation lands first; the mandate then fails and moves nothing.
+    let s = env.stranger.insecure_clone();
+    env.liquidate(o, &s).unwrap();
+    let before = env.usdc(&b);
+    assert_rejected(env.execute(o, ACTION_REPAY, 0), &[CLOSED_VAULT, &code(LoanV2Error::WrongStatus)]);
+    assert_eq!(env.usdc(&b), before);
+    assert_eq!(delegation(&env, usdc_src).1, 100_000_000, "the allowance is untouched");
+}
+
+#[test]
+fn jitosol_top_up_mandate_reads_its_own_feed() {
+    let mut env = Env::new();
+    env.configure_jito(true);
+    env.jito_usd(180, 180);
+    let o = open_jito_loan(&mut env, 1);
+    let (jito, jp, extra) = (env.jito, env.jito_price, env.jito_extra());
+    let (b, k) = (env.borrower.insecure_clone(), env.keeper.insecure_clone());
+    // jitoSOL liquidates at 70%, so the trigger must be below it.
+    assert_err(env.create_mandate(o, top_up_args(7_000, START + 10 * DAY), ata(b.pubkey(), jito)), LoanV2Error::MandateInvalid);
+    assert_err(env.create_mandate(o, top_up_args(6_500, START + 10 * DAY), ata(b.pubkey(), WSOL_MINT)), LoanV2Error::MandateWrongSource);
+    env.create_mandate(o, top_up_args(6_500, START + 10 * DAY), ata(b.pubkey(), jito)).unwrap();
+    env.at(START + DAY);
+    // ~66% of 1.1 jitoSOL at 140.
+    env.jito_usd(140, 140);
+    env.price_usd(150, 150);
+    let sol_price = env.price;
+    assert_err(env.execute_with(&k, o, ACTION_TOP_UP, 0, jito, jp, vec![]), LoanV2Error::CollateralNotConfigured);
+    assert_err(env.execute_with(&k, o, ACTION_TOP_UP, 0, jito, sol_price, extra.clone()), LoanV2Error::InvalidFeedId);
+    env.execute_with(&k, o, ACTION_TOP_UP, SOL / 1_000, jito, jp, extra.clone()).unwrap();
+    assert_eq!(env.balance(pda(&[WSOL_VAULT_SEED, o.as_ref()])), JITO_COLLATERAL + SOL / 100);
+    assert_eq!(env.balance(ata(k.pubkey(), jito)), SOL / 1_000, "the fee is paid in the source asset");
+    assert_eq!(env.offer(o).collateral_locked, JITO_COLLATERAL + SOL / 100);
+    // Re-arm also reads the jitoSOL feed.
+    env.jito_usd(180, 180);
+    env.rearm_with(&k, o, ACTION_TOP_UP, jp, extra).unwrap();
 }

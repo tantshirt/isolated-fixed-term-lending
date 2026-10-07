@@ -23,6 +23,8 @@ pub const DESK_POLICY_SEED: &[u8] = b"desk-policy";
 /// ER-only loan-book entry: desk + sequence → loan anchor.
 pub const DESK_LOAN_SEED: &[u8] = b"desk-loan";
 pub const RECEIPT_SEED: &[u8] = b"receipt";
+/// Base layer, governance-written: liquidation quote parameters (Story 26.4).
+pub const QUOTE_PARAMS_SEED: &[u8] = b"quote-params";
 
 /// MagicBlock Devnet TEE validator (docs/architecture.md, Private protocol).
 pub const TEE_VALIDATOR: Pubkey = pubkey!("MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo");

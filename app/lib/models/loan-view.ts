@@ -6,6 +6,7 @@ import { collateralValueUsdc, currentLtvBps, healthBps } from "../loan-math";
 import { graceEnd, liquidationTrigger, maturity, payoff as payoffV2, phase as phaseV2, pricedRecoveryFrom, terminalClaimFrom, type LiquidationKind, type Phase } from "../loan-math-v2";
 import type { OfferV2 } from "../v2/offers";
 import { REFINANCE_ENABLED } from "../v2/refinance";
+import { MANDATES_ENABLED } from "../v2/mandates";
 
 export type Deadline = { kind: "maturity" | "grace-end" | "priced-recovery" | "terminal-claim"; at: number };
 
@@ -79,7 +80,7 @@ export function legacyLoanView(offer: Offer, price: PriceSnapshot | null, chainN
  * V2 loans: payoff from the shared accounting, the four post-deadline windows, and the same
  * spot-plus-EMA trigger the program uses. Repayment stays available until a settlement executes.
  */
-export function v2LoanView(o: OfferV2, price: PriceSnapshot | null, chainNow: number, flags: OpsFlag[] = [], refinanceEnabled = REFINANCE_ENABLED): LoanView {
+export function v2LoanView(o: OfferV2, price: PriceSnapshot | null, chainNow: number, flags: OpsFlag[] = [], refinanceEnabled = REFINANCE_ENABLED, mandatesEnabled = MANDATES_ENABLED): LoanView {
   const active = o.status === "active";
   const phase = active ? phaseV2(o.terms, chainNow) : undefined;
   const owed = active ? payoffV2(o.terms, o.ledger, chainNow) : 0n;
@@ -122,6 +123,8 @@ export function v2LoanView(o: OfferV2, price: PriceSnapshot | null, chainNow: nu
         !refinanceEnabled ? "Refinancing is not enabled on this deployment yet." : "Refinancing closes when grace ends. Repay, or the recovery rules apply.",
       ),
     );
+    // Story 26.3: an automation mandate is servicing, so an originations pause never blocks it.
+    actions.push(gate("mandate", "borrower", mandatesEnabled, "Automatic top-ups and repayments are not enabled on this deployment yet."));
     actions.push(
       gate(
         "liquidate",

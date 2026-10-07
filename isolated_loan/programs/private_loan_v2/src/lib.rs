@@ -15,6 +15,7 @@ pub mod discovery;
 pub mod error;
 pub mod espl;
 pub mod loan;
+pub mod mandate;
 pub mod receipt;
 pub mod refinance;
 pub mod room;
@@ -26,6 +27,7 @@ use config::*;
 use desk::*;
 use discovery::*;
 use loan::*;
+use mandate::*;
 use receipt::*;
 use refinance::*;
 use room::*;
@@ -246,9 +248,37 @@ pub mod private_loan_v2 {
         settle::schedule_watch(ctx)
     }
 
-    /// Ephemeral rollup. Signer-free: risk or overdue quotes, and their execution.
+    /// Ephemeral rollup. Signer-free: risk or overdue quotes, and their execution. The governance
+    /// `QuoteParams` is an optional trailing account.
     pub fn watch_loan(ctx: Context<WatchLoan>) -> Result<()> {
         settle::watch_loan(ctx)
+    }
+
+    /// Ephemeral rollup. Anyone, after a position changes hands: a watch bound to the current
+    /// lender (Story 26.4).
+    pub fn rebind_watch(ctx: Context<ScheduleWatch>) -> Result<()> {
+        settle::rebind_watch(ctx)
+    }
+
+    /// Base layer. Governance only: the liquidation quote TTL (Story 26.4).
+    pub fn set_quote_params(ctx: Context<SetQuoteParams>, quote_ttl_seconds: i64) -> Result<()> {
+        settle::set_quote_params(ctx, quote_ttl_seconds)
+    }
+
+    /// Ephemeral rollup. Borrower: a bounded top-up or repay mandate evaluated by its own crank in
+    /// the rollup, never off-chain (Story 26.3).
+    pub fn create_private_mandate(ctx: Context<CreatePrivateMandate>, args: PrivateMandateArgs) -> Result<()> {
+        mandate::create_private_mandate(ctx, args)
+    }
+
+    /// Ephemeral rollup. Signer-free: the mandate crank.
+    pub fn run_mandate(ctx: Context<RunMandate>) -> Result<()> {
+        mandate::run_mandate(ctx)
+    }
+
+    /// Ephemeral rollup. Borrower: stops the mandate and revokes its delegate.
+    pub fn revoke_private_mandate(ctx: Context<RevokePrivateMandate>) -> Result<()> {
+        mandate::revoke_private_mandate(ctx)
     }
 
     /// Ephemeral rollup. A liquidator funds the current quote revision.

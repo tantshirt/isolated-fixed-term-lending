@@ -233,7 +233,7 @@ pub(crate) fn transfer<'info>(
 
 /// Creates an ER-only record paid for and permission-signed by the loan anchor.
 #[allow(clippy::too_many_arguments)]
-fn create_loan_record<'info>(
+pub(crate) fn create_loan_record<'info>(
     anchor: &Account<'info, LoanAnchor>,
     record: &AccountInfo<'info>,
     permission: &AccountInfo<'info>,
