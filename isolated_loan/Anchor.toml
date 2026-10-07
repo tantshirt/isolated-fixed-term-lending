@@ -8,6 +8,7 @@ skip-lint = false
 [programs.localnet]
 isolated_loan = "CKvMgaAJmtoUN73wDxAKvjYs2d5fcirttjjEjrV9hnef"
 private_loan = "HwK4hxKqe94pLGkC9bGciENCCzvWwUAaz1mxVTDxMcK"
+isolated_loan_v2 = "8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m"
 
 [provider]
 cluster = "localnet"

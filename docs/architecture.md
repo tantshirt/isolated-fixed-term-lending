@@ -263,3 +263,38 @@ Decisions:
 - **Capabilities.** Each provider capability is keyed by network and mint. Flags can pause new originations or a provider without blocking recovery of existing loans.
 
 Account layouts, seeds and instruction rules are added to this file story by story (Epics 20–24) as they are implemented. A seed is not specified here until its story is built.
+
+## Public V2 program (`isolated_loan_v2`, Stories 21.1–21.2)
+
+Program ID `8hxagcQkw1Km6PWZgpA92qUnqvnFufC7tx2jvxf9Ko8m`. The program has no admin keys; its only authority is the upgrade authority, which belongs to the Squads vault ([governance.md](governance.md)). Economics come only from `loan_core::accounting` ([research.md](research.md#v2-accounting-approved-2026-10-07)).
+
+### Accounts and seeds
+
+| Account | Seeds | Notes |
+| --- | --- | --- |
+| `OfferV2` | `["offer-v2", origin_lender, offer_id_le]` | `version = 2`. Fields: `origin_lender` (immutable, PDA signer), `current_lender` (receives payments and claims), `borrower`, `restricted_borrower` (default = anyone), mints, `terms`, `collateral_required`, `collateral_locked`, LTV pair, `status`, `ledger`, `shortfall`, `settled_ts`, 64 reserved bytes |
+| USDC vault | `["usdc-vault-v2", offer]` | Open offers only; closed at accept (rent to the origin lender) |
+| wSOL vault | `["wsol-vault-v2", offer]` | Active loans; closed at settlement (rent to the borrower) |
+| `RequestV2` | `["request-v2", borrower, request_id_le]` | A borrower's ask, with collateral locked in `["request-wsol-v2", request]` |
+
+Statuses: `Open`, `Active`, `Repaid`, `Liquidated`, `OverdueLiquidated`, `PricedRecovered`, `TerminalClaimed`, `Cancelled`. Every instruction that settles a loan requires `Active`, so a loan reaches exactly one terminal status.
+
+### Instructions
+
+| Instruction | Who | When | Effect |
+| --- | --- | --- | --- |
+| `create_offer(id, terms, restricted_borrower)` | lender | — | Validates V1 caps plus V2 rules (grace 24–48 h, late fee ≤ 5%, ceiling ≤ 600% and ≥ term interest), then locks principal |
+| `cancel_offer` | current lender | Open | Principal and vault rent back |
+| `accept_offer` | borrower ≠ lender, matching `restricted_borrower` if set | Open | LTV of **max exposure** ≤ max LTV at the fresh spot. Principal out, collateral in, ledger opened |
+| `repay(amount)` | borrower | Active, **any phase** | Interest, then late fee, then principal, paid directly to the current lender. `amount ≥ payoff` closes the loan, takes only the payoff, and returns all collateral. `amount` bounds the signature. |
+| `add_collateral(amount)` | borrower | Active | No oracle needed |
+| `liquidate` | anyone except the borrower | Active or Grace | Spot **and** EMA LTV ≥ threshold, or spot ≥ threshold + 300. The caller pays the payoff and takes payoff × 1.05 in wSOL; the surplus goes to the borrower |
+| `liquidate_overdue` | anyone except the borrower | from grace end | The same split regardless of LTV; needs a valid spot |
+| `claim_priced_recovery` | current lender | from grace end + 24 h | Payoff-equivalent wSOL with no bonus; surplus to the borrower; uncovered payoff recorded as `shortfall` |
+| `claim_terminal` | current lender | from grace end + 7 d | All remaining wSOL, with no price account read |
+| `close_offer` / `close_request` | current lender / borrower | settled | Rent back |
+| `create_request`, `cancel_request`, `fund_request(offer_id)` | borrower / borrower / lender | — | As in V1. Funding creates an `Active` `OfferV2` and checks max exposure. |
+
+Fails closed: wrong status; a signer other than the named party; a restricted borrower mismatch; any Pyth owner, feed, age, band or exponent failure on a priced path; an early call (`TooEarly`); a zero amount; any mint other than canonical USDC and wSOL. The borrower cannot liquidate their own loan; the duplicate-account guard or `BorrowerCannotLiquidate` stops it.
+
+`programs/isolated_loan_v2/tests/litesvm_v2.rs` (16 tests) covers each boundary to the second.
