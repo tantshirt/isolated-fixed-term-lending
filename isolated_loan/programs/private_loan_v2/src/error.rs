@@ -118,6 +118,12 @@ pub enum PrivateLoanError {
     NothingToRebind,
     #[msg("Quote parameters are outside their allowed range")]
     InvalidQuoteParams,
+    // ---- Story 26.7 (credit history). Appended as one block so existing codes do not move. ----
+    #[msg("This loan is already counted in the borrower's history")]
+    HistoryAlreadyCounted,
+    #[msg("The borrower's history is full")]
+    HistoryFull,
+    // ---- end Story 26.7 ----
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

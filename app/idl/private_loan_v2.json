@@ -523,6 +523,132 @@
       "args": []
     },
     {
+      "name": "attest_history",
+      "docs": [
+        "Ephemeral rollup. The borrower publishes their history counts through a post-commit action."
+      ],
+      "discriminator": [
+        53,
+        171,
+        28,
+        144,
+        40,
+        38,
+        48,
+        15
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "anchor",
+          "docs": [
+            "Any of the borrower's loan anchors: committed, and the action's escrow authority."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor.creator",
+                "account": "LoanAnchor"
+              },
+              {
+                "kind": "account",
+                "path": "anchor.nonce",
+                "account": "LoanAnchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "terms",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "history"
+        },
+        {
+          "name": "attestation",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  100,
+                  105,
+                  116,
+                  45,
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "borrower"
+              }
+            ]
+          }
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "cancel_loan",
       "docs": [
         "Ephemeral rollup. Lender cancels before acceptance; principal returns."
@@ -3269,6 +3395,69 @@
       ]
     },
     {
+      "name": "open_history_attestation",
+      "docs": [
+        "Base layer. The borrower creates their empty `HistoryAttestation` once."
+      ],
+      "discriminator": [
+        215,
+        91,
+        246,
+        30,
+        139,
+        198,
+        129,
+        233
+      ],
+      "accounts": [
+        {
+          "name": "borrower",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "attestation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  100,
+                  105,
+                  116,
+                  45,
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "borrower"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "open_join_queue",
       "docs": [
         "Ephemeral rollup. Owner creates the join queue only they can read."
@@ -4097,6 +4286,190 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "record_history",
+      "docs": [
+        "Ephemeral rollup. Anyone adds one settled loan to its borrower's private history, once."
+      ],
+      "discriminator": [
+        130,
+        66,
+        91,
+        233,
+        74,
+        195,
+        18,
+        41
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "anchor",
+          "docs": [
+            "Sponsors the history record on its first write."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor.creator",
+                "account": "LoanAnchor"
+              },
+              {
+                "kind": "account",
+                "path": "anchor.nonce",
+                "account": "LoanAnchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "terms",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  45,
+                  116,
+                  101,
+                  114,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "anchor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "history",
+          "writable": true
+        },
+        {
+          "name": "history_permission",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "optional": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "optional": true,
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "permission_program",
+          "optional": true,
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "record_history_attestation",
+      "docs": [
+        "Base layer, Magic Action only: writes the attestation scheduled by `attest_history`."
+      ],
+      "discriminator": [
+        180,
+        21,
+        133,
+        46,
+        212,
+        221,
+        245,
+        51
+      ],
+      "accounts": [
+        {
+          "name": "attestation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  100,
+                  105,
+                  116,
+                  45,
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "args.borrower"
+              }
+            ]
+          }
+        },
+        {
+          "name": "anchor"
+        },
+        {
+          "name": "destination_program",
+          "address": "JAzy8NP6V8AGrAko8vfgrD44BDghN6eLwqB7vjuYhHNq"
+        },
+        {
+          "name": "escrow_auth",
+          "docs": [
+            "program can sign for."
+          ]
+        },
+        {
+          "name": "escrow",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "HistoryAttestationArgs"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "record_receipt",
@@ -5763,6 +6136,19 @@
       ]
     },
     {
+      "name": "HistoryAttestation",
+      "discriminator": [
+        181,
+        148,
+        111,
+        79,
+        135,
+        53,
+        102,
+        106
+      ]
+    },
+    {
       "name": "LiquidationPool",
       "discriminator": [
         186,
@@ -5825,6 +6211,21 @@
         232,
         187,
         4
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "HistoryAttested",
+      "discriminator": [
+        29,
+        248,
+        195,
+        161,
+        216,
+        55,
+        82,
+        22
       ]
     }
   ],
@@ -6113,6 +6514,16 @@
       "code": 6056,
       "name": "InvalidQuoteParams",
       "msg": "Quote parameters are outside their allowed range"
+    },
+    {
+      "code": 6057,
+      "name": "HistoryAlreadyCounted",
+      "msg": "This loan is already counted in the borrower's history"
+    },
+    {
+      "code": 6058,
+      "name": "HistoryFull",
+      "msg": "The borrower's history is full"
     }
   ],
   "types": [
@@ -6312,6 +6723,149 @@
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HistoryAttestation",
+      "docs": [
+        "Base layer, program-owned. Written only by the post-commit action scheduled by `attest_history`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "repaid",
+            "docs": [
+              "`on_time + late`."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "on_time",
+            "type": "u32"
+          },
+          {
+            "name": "late",
+            "type": "u32"
+          },
+          {
+            "name": "liquidated",
+            "type": "u32"
+          },
+          {
+            "name": "defaulted",
+            "type": "u32"
+          },
+          {
+            "name": "loans_counted",
+            "docs": [
+              "Loans counted in the history (including refinanced ones, which count as nothing else)."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "rollup_slot",
+            "docs": [
+              "Rollup slot and time at which the counts were read. Zero until the first attestation."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "attested_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HistoryAttestationArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "anchor_creator",
+            "docs": [
+              "The loan anchor used as the action's escrow authority, named by its seeds."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "anchor_nonce",
+            "type": "u64"
+          },
+          {
+            "name": "repaid",
+            "type": "u32"
+          },
+          {
+            "name": "on_time",
+            "type": "u32"
+          },
+          {
+            "name": "late",
+            "type": "u32"
+          },
+          {
+            "name": "liquidated",
+            "type": "u32"
+          },
+          {
+            "name": "defaulted",
+            "type": "u32"
+          },
+          {
+            "name": "loans_counted",
+            "type": "u16"
+          },
+          {
+            "name": "rollup_slot",
+            "type": "u64"
+          },
+          {
+            "name": "attested_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HistoryAttested",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "repaid",
+            "type": "u32"
+          },
+          {
+            "name": "defaulted",
+            "type": "u32"
+          },
+          {
+            "name": "rollup_slot",
+            "type": "u64"
           }
         ]
       }

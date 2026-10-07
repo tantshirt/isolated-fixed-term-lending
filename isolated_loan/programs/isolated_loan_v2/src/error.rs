@@ -85,6 +85,16 @@ pub enum LoanV2Error {
     MandateDelegateRevoked,
     #[msg("Account does not match the mandate's loan, borrower or asset")]
     MandateWrongSource,
+    // ---- Story 26.7 (credit tiers). Appended as one block so existing codes do not move. ----
+    #[msg("Credit-tier terms need a valid credential of at least that tier")]
+    CreditTierRequired,
+    #[msg("Credit-tier terms are invite-only: a wSOL offer restricted to one borrower")]
+    CreditNotInvited,
+    #[msg("The credit pilot is disabled or its config accounts are missing")]
+    CreditDisabled,
+    #[msg("Credit config is invalid")]
+    InvalidCreditConfig,
+    // ---- end Story 26.7 ----
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

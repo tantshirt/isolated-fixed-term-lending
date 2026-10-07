@@ -35,6 +35,14 @@ pub struct OfferV2 {
     pub reserved: [u8; 64],
 }
 
+impl OfferV2 {
+    /// Story 26.7: the credit tier fixed at origination (0 = standard caps). Stored in
+    /// `reserved[crate::credit::CREDIT_TIER_INDEX]` (account byte 416), so the layout is unchanged.
+    pub fn credit_tier(&self) -> u8 {
+        self.reserved[crate::credit::CREDIT_TIER_INDEX]
+    }
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, InitSpace)]
 pub enum StatusV2 {
     Open,

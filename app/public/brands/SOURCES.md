@@ -28,3 +28,7 @@ Helius has no logo because nothing in the app uses Helius yet.
 Added on 2026-10-07 for Story 26.6:
 
 - Umbra: the logo mark from the header of [umbraprivacy.com](https://umbraprivacy.com) (`/assets/umbra-logo-mark.svg`), shown only beside the Shield wSOL panel and always with the word Umbra.
+Added on 2026-10-07 for the credit pilot (Story 26.7). Both appear only on credential screens:
+
+- Solana Attestation Service: the header logo from [attest.solana.com](https://attest.solana.com/logo.svg), always shown with the words "Solana Attestation Service".
+- Reclaim: the official logo from [reclaimprotocol.org](https://www.reclaimprotocol.org/reclaim-logo.png), shown only on the income-proof step.

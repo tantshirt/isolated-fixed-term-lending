@@ -2440,6 +2440,84 @@
           }
         }
       ]
+    },
+    {
+      "name": "set_credit_config",
+      "docs": [
+        "Story 26.7. Governance only: the credit pilot's SAS program, credential, schema and",
+        "enabled flag. The issuer is `Config.authorities.credential_issuer`."
+      ],
+      "discriminator": [
+        179,
+        131,
+        109,
+        219,
+        146,
+        61,
+        138,
+        203
+      ],
+      "accounts": [
+        {
+          "name": "governance",
+          "docs": [
+            "Must be `config.authorities.governance`; pays rent on the first write."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "credit_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  100,
+                  105,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CreditConfigArgs"
+            }
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -2467,6 +2545,19 @@
         250,
         204,
         130
+      ]
+    },
+    {
+      "name": "CreditConfig",
+      "discriminator": [
+        114,
+        112,
+        9,
+        165,
+        97,
+        111,
+        111,
+        107
       ]
     },
     {
@@ -2547,6 +2638,32 @@
         233,
         180,
         148
+      ]
+    },
+    {
+      "name": "CreditConfigSet",
+      "discriminator": [
+        164,
+        208,
+        96,
+        90,
+        162,
+        209,
+        165,
+        23
+      ]
+    },
+    {
+      "name": "CreditOriginatedV2",
+      "discriminator": [
+        15,
+        118,
+        118,
+        24,
+        73,
+        195,
+        175,
+        69
       ]
     },
     {
@@ -2854,6 +2971,26 @@
       "code": 6039,
       "name": "MandateWrongSource",
       "msg": "Account does not match the mandate's loan, borrower or asset"
+    },
+    {
+      "code": 6040,
+      "name": "CreditTierRequired",
+      "msg": "Credit-tier terms need a valid credential of at least that tier"
+    },
+    {
+      "code": 6041,
+      "name": "CreditNotInvited",
+      "msg": "Credit-tier terms are invite-only: a wSOL offer restricted to one borrower"
+    },
+    {
+      "code": 6042,
+      "name": "CreditDisabled",
+      "msg": "The credit pilot is disabled or its config accounts are missing"
+    },
+    {
+      "code": 6043,
+      "name": "InvalidCreditConfig",
+      "msg": "Credit config is invalid"
     }
   ],
   "types": [
@@ -3110,6 +3247,142 @@
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreditConfig",
+      "docs": [
+        "Governance-written pilot settings. Seeds `[\"credit\"]`. The issuer key is not copied here: it is",
+        "`Config.authorities.credential_issuer`, so a rotation takes effect at once."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "enabled",
+            "docs": [
+              "Gates credit-tier originations only; loans already open keep their tier."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "sas_program",
+            "docs": [
+              "SAS program that must own the attestation account."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "credential",
+            "docs": [
+              "SAS credential account (the issuer's credential)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "schema",
+            "docs": [
+              "SAS schema account for the ZenLo credit tier (`tier: u8, expiry: i64`)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreditConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sas_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "credential",
+            "type": "pubkey"
+          },
+          {
+            "name": "schema",
+            "type": "pubkey"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreditConfigSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sas_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "credential",
+            "type": "pubkey"
+          },
+          {
+            "name": "schema",
+            "type": "pubkey"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreditOriginatedV2",
+      "docs": [
+        "A loan originated at a credit tier. Carries no income data: only the tier and caps."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier",
+            "type": "u8"
+          },
+          {
+            "name": "max_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "liquidation_ltv_bps",
+            "type": "u16"
           }
         ]
       }

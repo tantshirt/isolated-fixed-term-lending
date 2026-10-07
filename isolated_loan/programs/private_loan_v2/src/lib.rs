@@ -14,6 +14,7 @@ pub mod desk;
 pub mod discovery;
 pub mod error;
 pub mod espl;
+pub mod history;
 pub mod loan;
 pub mod mandate;
 pub mod receipt;
@@ -26,6 +27,7 @@ use ai::*;
 use config::*;
 use desk::*;
 use discovery::*;
+use history::*;
 use loan::*;
 use mandate::*;
 use receipt::*;
@@ -304,5 +306,27 @@ pub mod private_loan_v2 {
     /// Base layer, Magic Action only: writes the receipt once.
     pub fn record_receipt(ctx: Context<RecordReceipt>, status: u8, commitment: [u8; 32], settled_at: i64) -> Result<()> {
         receipt::record_receipt(ctx, status, commitment, settled_at)
+    }
+
+    // ---- Story 26.7: repayment history and its rollup-signed attestation ----
+
+    /// Ephemeral rollup. Anyone adds one settled loan to its borrower's private history, once.
+    pub fn record_history(ctx: Context<RecordHistory>) -> Result<()> {
+        history::record_history(ctx)
+    }
+
+    /// Base layer. The borrower creates their empty `HistoryAttestation` once.
+    pub fn open_history_attestation(ctx: Context<OpenHistoryAttestation>) -> Result<()> {
+        history::open_history_attestation(ctx)
+    }
+
+    /// Ephemeral rollup. The borrower publishes their history counts through a post-commit action.
+    pub fn attest_history(ctx: Context<AttestHistory>) -> Result<()> {
+        history::attest_history(ctx)
+    }
+
+    /// Base layer, Magic Action only: writes the attestation scheduled by `attest_history`.
+    pub fn record_history_attestation(ctx: Context<RecordHistoryAttestation>, args: HistoryAttestationArgs) -> Result<()> {
+        history::record_history_attestation(ctx, args)
     }
 }
