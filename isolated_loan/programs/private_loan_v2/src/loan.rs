@@ -264,7 +264,7 @@ fn create_loan_record<'info>(
 macro_rules! loan_signer {
     ($anchor:expr, $nonce:ident, $seeds:ident) => {
         let $nonce = $anchor.nonce.to_le_bytes();
-        let $seeds: [&[u8]; 4] = [LOAN_SEED, $anchor.creator.as_ref(), &$nonce, core::slice::from_ref(&$anchor.bump)];
+        let $seeds: [&[u8]; 4] = [$crate::constants::LOAN_SEED, $anchor.creator.as_ref(), &$nonce, core::slice::from_ref(&$anchor.bump)];
     };
 }
 pub(crate) use loan_signer;
@@ -469,15 +469,24 @@ pub fn cancel_loan(ctx: Context<LenderMoves>) -> Result<()> {
 }
 
 /// Borrower approves the same `revision`: collateral in, principal out. Origination LTV uses
-/// the maximum contractual exposure.
-pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32) -> Result<()> {
+/// the maximum contractual exposure. `auditor_hash` is the audience the borrower was shown;
+/// for a desk loan it must match the pinned policy, which is checked again here, and the named
+/// auditors become read-only members of the loan.
+pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32, auditor_hash: [u8; 32]) -> Result<()> {
     let a = &ctx.accounts;
     let info = a.terms.to_account_info();
     let mut t: LoanTerms = load(&info)?;
     require_keys_eq!(t.borrower, a.borrower.key(), PrivateLoanError::NotBorrower);
     require!(t.status == STATUS_FUNDED, PrivateLoanError::WrongStatus);
     require!(t.revision == revision && t.funded_revision == revision, PrivateLoanError::StaleRevision);
+    require!(t.auditor_hash == auditor_hash, PrivateLoanError::AuditorMismatch);
     a.check_accounts(&t)?;
+    let auditors: Vec<Pubkey> = if t.desk != Pubkey::default() {
+        let policy_info = a.desk_policy.as_ref().ok_or(error!(PrivateLoanError::InvalidRecord))?;
+        crate::desk::check_desk_policy(&t, &policy_info.to_account_info())?.args.auditors().to_vec()
+    } else {
+        Vec::new()
+    };
 
     // One accepted proposal per borrowing request: the first acceptance records itself, and any
     // competing proposal for the same request fails. Other requests in the room are unaffected.
@@ -527,6 +536,20 @@ pub fn accept_loan(ctx: Context<BorrowerMoves>, revision: u32) -> Result<()> {
     t.collateral_locked = t.collateral_required;
     t.status = STATUS_ACTIVE;
     t.accepted_revision = revision;
+    if !auditors.is_empty() {
+        let missing = || error!(PrivateLoanError::InvalidRecord);
+        let (_, terms_bump) = Pubkey::find_program_address(&[LOAN_TERMS_SEED, a.anchor.key().as_ref()], &crate::ID);
+        crate::desk::set_loan_readers(
+            &a.anchor,
+            &info,
+            terms_bump,
+            &a.terms_permission.as_ref().ok_or_else(missing)?.to_account_info(),
+            &a.vault.as_ref().ok_or_else(missing)?.to_account_info(),
+            &a.magic_program.as_ref().ok_or_else(missing)?.to_account_info(),
+            &a.permission_program.as_ref().ok_or_else(missing)?.to_account_info(),
+            crate::desk::loan_readers(&t, &auditors),
+        )?;
+    }
     store(&info, &t)
 }
 
@@ -766,6 +789,11 @@ pub struct BorrowerMoves<'info> {
     pub vault: Option<UncheckedAccount<'info>>,
     pub magic_program: Option<Program<'info, MagicProgram>>,
     pub permission_program: Option<Program<'info, PermissionProgram>>,
+    /// CHECK: The loan's terms permission (desk loans with auditors, accept only).
+    #[account(mut)]
+    pub terms_permission: Option<UncheckedAccount<'info>>,
+    /// CHECK: The pinned `DeskPolicy` (desk loans, accept only); address checked in the handler.
+    pub desk_policy: Option<UncheckedAccount<'info>>,
 }
 
 #[derive(Accounts)]
