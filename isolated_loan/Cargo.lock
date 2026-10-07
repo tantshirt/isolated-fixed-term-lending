@@ -2566,6 +2566,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "private_loan_v2"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "ephemeral-rollups-sdk",
+ "governance",
+ "litesvm",
+ "loan-core",
+ "pyth-solana-receiver-sdk",
+ "solana-account 3.4.0",
+ "solana-clock 3.2.1",
+ "solana-keypair",
+ "solana-message 3.1.0",
+ "solana-sha256-hasher 3.1.0",
+ "solana-signer",
+ "solana-transaction",
+]
+
+[[package]]
 name = "proc-macro-crate"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

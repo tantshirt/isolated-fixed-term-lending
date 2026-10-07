@@ -39,18 +39,23 @@ jobs:
           cargo build-sbf --manifest-path programs/isolated_loan/Cargo.toml
           cargo build-sbf --manifest-path programs/private_loan/Cargo.toml
           cargo build-sbf --manifest-path programs/isolated_loan_v2/Cargo.toml
+          cargo build-sbf --manifest-path programs/private_loan_v2/Cargo.toml
       - name: Program size budget
         run: |
           # V2 is deployed with headroom; fail early if it outgrows it (bytes).
           size=$(stat -c %s target/deploy/isolated_loan_v2.so)
           echo "isolated_loan_v2.so: $size bytes"
           test "$size" -le 640000
+          size=$(stat -c %s target/deploy/private_loan_v2.so)
+          echo "private_loan_v2.so: $size bytes"
+          test "$size" -le 1000000
       - run: npm run test:rust
       - run: npm run test:ts
       - name: LiteSVM attack tests
         run: |
           cargo test --manifest-path programs/isolated_loan/Cargo.toml --test litesvm
           cargo test --manifest-path programs/isolated_loan_v2/Cargo.toml --test litesvm_v2
+          cargo test --manifest-path programs/private_loan_v2/Cargo.toml --lib --test settle --test governance
           cargo test --manifest-path programs/private_loan/Cargo.toml --test settle --test worker_claim
       - name: Fuzz (2000 cases)
         run: npm run test:fuzz

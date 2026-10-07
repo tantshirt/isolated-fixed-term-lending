@@ -20,3 +20,6 @@ opt-level = "z"
 
 [profile.release.package.isolated_loan_v2]
 opt-level = "z"
+
+[profile.release.package.private_loan_v2]
+opt-level = "z"
