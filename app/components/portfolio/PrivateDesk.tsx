@@ -31,7 +31,7 @@ export function PrivateDesk() {
     return (
       <section className={s.privateDesk} aria-labelledby="pd-h">
         <h2 id="pd-h">Private loans</h2>
-        <PrivateTotalsRow positions={null} />
+        <PrivateTotalsRow locked positions={null} />
         <p>Private amounts stay locked until you sign in privately. It asks your wallet to sign a message; nothing is sent or spent.</p>
         <Button variant="secondary" onClick={connect} loading={status === "verifying" || status === "signing"}>
           Sign in privately
@@ -42,7 +42,7 @@ export function PrivateDesk() {
   return (
     <section className={s.privateDesk} aria-labelledby="pd-h">
       <h2 id="pd-h">Private loans</h2>
-      <PrivateTotalsRow positions={positions} />
+      <PrivateTotalsRow locked={false} positions={positions} />
       <InvitesPanel er={er} wallet={wallet} />
       <PrivateBorrowing positions={positions} />
       {bids === null ? (
@@ -79,9 +79,9 @@ export function PrivateDesk() {
 }
 
 /** Private totals sit apart from public ones. Unknown is "Locked" or "Reading", never zero. */
-function PrivateTotalsRow({ positions }: { positions: PrivatePosition[] | null }) {
+function PrivateTotalsRow({ locked, positions }: { locked: boolean; positions: PrivatePosition[] | null }) {
   const t = positions ? privateTotals(positions) : null;
-  const value = (v: bigint | undefined) => (positions === null ? "Locked" : t ? `${formatUsdc(v!)} USDC` : "Reading…");
+  const value = (v: bigint | undefined) => (locked ? "Locked" : t === null ? "Reading…" : `${formatUsdc(v!)} USDC`);
   return (
     <dl className={s.privateTotals} aria-label="Private totals">
       <div>

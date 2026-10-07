@@ -114,3 +114,58 @@ Without the token, sends fail permanently with that reason and nothing else brea
 - chat linked to the signed-in wallet;
 - a replayed link sent no second message;
 - the scan queued "1 hour before deadline" and "grace started" reminders, each once.
+
+## MoneyGram cash-out (Story 24.4)
+
+The integration follows the official Ramps developer docs (quickstarts/web-solana, guides/web-solana, reference/transaction-status-webhooks). The roadmap's earlier draft spec is not used. MoneyGram's sandbox settles in ZenLo's canonical Devnet USDC (`4zMMC9…ncDU`), so no substitute mint is needed.
+
+1. **Session.** The browser calls `POST {CONVEX_SITE_URL}/cash/session` with its ZenLo token. Convex creates the Ramps session for that verified wallet with `x-api-key: RAMPS_SECRET_KEY`; the secret never reaches the browser. Sessions last one hour and are created fresh every time.
+2. **Widget.** The hosted MoneyGram widget (`/sdk/index.global.js`) runs KYC, quotes, countries and fees. `onTransactionCreated` stores the Ramps `id` and `mgiTransactionId` in `cashTransactions` before anything moves.
+3. **Signing.** `onSignTransaction` passes MoneyGram's payload through `reviewSignPayload`, which checks:
+   - Solana and USDC;
+   - the environment's network (`testnet` in sandbox);
+   - the canonical mint and 6 decimals;
+   - a valid recipient;
+   - a positive amount the wallet holds, converted without floats.
+
+   The user then sees the amount, recipient and network and approves, and only then does the wallet sign a `transferChecked` to MoneyGram's associated token account. The signature and reviewed transfer are stored.
+4. **Webhook.** `POST /moneygram/webhook` is verified exactly as documented:
+   - Ed25519 over `{t}.{host}.{message}`, with `message` taken raw from the body and never re-serialized;
+   - the environment's `G…` strkey;
+   - a 65-minute freshness window, because retries replay the original timestamp.
+
+   Each delivery is deduplicated on `(id, status)`, acknowledged quickly, and then confirmed with `GET /v1/transactions/{id}/status?sync=true` before any status is recorded. Webhook status words are never used to move funds.
+5. **Polling.** `cashNode:poll` reconciles in-flight cash-outs every 3 minutes where webhooks are not enabled. `funds_received` is not terminal; `completed` means ready for pickup and `paid_out` means collected. Refund states are tracked through to `refunded` or `refund_failed`.
+6. **Monitoring.** A cash-out that has not changed for 2 hours appears as a stuck provider session in `/ops/health`.
+
+**Disclosures in the interface:**
+- this step is not private;
+- MoneyGram sets countries, agents and fees;
+- cash-out only, so borrowers still need USDC to repay;
+- sandbox never pays real cash.
+
+**Env:**
+- Convex: `RAMPS_SECRET_KEY` (`ramps_sk_sbox_…`), `MONEYGRAM_ENV` (`sandbox` or `production`), and optionally `MONEYGRAM_WEBHOOK_HOST` (defaults to the Convex site host).
+- App: `NEXT_PUBLIC_MONEYGRAM_ENABLED=1` and `NEXT_PUBLIC_MONEYGRAM_ENV`.
+- MoneyGram side: the app domain must be allowlisted, and the webhook URL is registered in the partner portal (Settings → Integration).
+
+**Checks:**
+- `npm test` (`lib/cash/moneygram.test.ts`):
+  - the published keys decode to 32 bytes;
+  - header parsing keeps base64 padding;
+  - genuine notifications verify, including a 64-minute retry;
+  - forged, re-serialized, wrong-host and stale notifications are refused;
+  - every bad sign payload is refused;
+  - amounts convert without floats.
+- Live on local Convex:
+  - an unsigned webhook gets 401;
+  - a forged webhook gets 401;
+  - a session request without a token gets 401;
+  - a signed-in session request without the key gets 503 with a one-line reason.
+
+## Pilot gate metrics (Story 24.5)
+
+- **Sharing.** Pilot participants opt in to sharing `desk_activated` and `loan_confirmed` events through `pilot:record`. A loan event must be reported by one of its parties and is counted once.
+- **Assisted loans.** Operations wallets mark loans the developer helped with using `pilot:markAssisted`.
+- **The report.** `pilot:gate` runs `evaluateGate` from `app/lib/pilot/gate.ts`, which excludes the developer wallets listed in `developer-wallets.json`. It is visible to operations wallets only, at `/devnet/ops`.
+- **No terms.** No amounts or terms are stored.

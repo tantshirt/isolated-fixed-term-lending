@@ -125,6 +125,54 @@ export default defineSchema({
     .index("by_wallet", ["wallet"])
     .index("by_active", ["active"]),
 
+  /**
+   * MoneyGram cash-outs (Story 24.4). Operational references only: ids, the reviewed transfer,
+   * and provider status. MoneyGram holds the customer's identity details; ZenLo does not.
+   */
+  cashTransactions: defineTable({
+    wallet: v.string(),
+    env: v.union(v.literal("sandbox"), v.literal("production")),
+    rampsId: v.string(),
+    mgiTransactionId: v.optional(v.string()),
+    status: v.string(),
+    amountAtoms: v.optional(v.string()),
+    depositAddress: v.optional(v.string()),
+    signature: v.optional(v.string()),
+    referenceNumber: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    lastCheckedAt: v.optional(v.number()),
+  })
+    .index("by_ramps", ["rampsId"])
+    .index("by_mgi", ["mgiTransactionId"])
+    .index("by_wallet", ["wallet"])
+    .index("by_status", ["status"]),
+
+  /** Webhook deliveries already handled, keyed by MoneyGram id and status (retries replay). */
+  moneygramEvents: defineTable({
+    key: v.string(),
+    receivedAt: v.number(),
+  }).index("by_key", ["key"]),
+
+  /**
+   * Pilot measurement (Story 24.5). Shared only by participants who opt in; holds wallet keys and
+   * desk ids for counting, never amounts or terms.
+   */
+  pilotEvents: defineTable({
+    kind: v.union(v.literal("desk_activated"), v.literal("loan_confirmed")),
+    deskId: v.string(),
+    operator: v.optional(v.string()),
+    loan: v.optional(v.string()),
+    lender: v.optional(v.string()),
+    borrower: v.optional(v.string()),
+    signers: v.array(v.string()),
+    assisted: v.boolean(),
+    at: v.number(),
+    recordedBy: v.string(),
+  })
+    .index("by_at", ["at"])
+    .index("by_loan", ["loan"]),
+
   authFailures: defineTable({
     reason: v.string(),
     at: v.number(),

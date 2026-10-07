@@ -47,10 +47,7 @@ test("capabilities are specific to network and mint and explain unavailability",
   assert.equal(wrongMint.available, false);
   const mg = capabilityFor("moneygram", "devnet", DEVNET_USDC, "cash-out");
   assert.equal(mg.available, false);
-  if (!mg.available) {
-    assert.equal(mg.simulationOnly, true);
-    assert.match(mg.reason, /sandbox/);
-  }
+  if (!mg.available) assert.match(mg.reason, /not connected/);
   assert.equal(capabilityFor("moneygram", "mainnet", DEVNET_USDC, "cash-out").available, false);
 });
 

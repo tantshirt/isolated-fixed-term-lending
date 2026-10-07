@@ -5,6 +5,8 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/Button";
 import { useBackendSession } from "@/lib/auth/wallet-session";
+import { capabilityFor } from "@/lib/capabilities";
+import { formatDeadline } from "@/lib/format";
 import styles from "@/components/offer/ActionPanel.module.css";
 
 const BACKEND = Boolean(process.env.NEXT_PUBLIC_CONVEX_URL);
@@ -29,6 +31,15 @@ function Inner({ kind, loan, deadlines }: Parameters<typeof AlertsPanel>[0]) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const sub = mine?.subscriptions.find((s) => s.loan === loan);
+  const telegram = capabilityFor("telegram", "devnet", "*", "notify");
+  const deadlineRows: [string, number | undefined][] = deadlines
+    ? [
+        ["Due", deadlines.maturity],
+        ["Grace ends", deadlines.graceEnd],
+        ["Priced recovery from", deadlines.pricedFrom],
+        ["Collateral can be claimed from", deadlines.terminalFrom],
+      ]
+    : [];
 
   const act = async (f: () => Promise<unknown>) => {
     setBusy(true);
@@ -53,6 +64,18 @@ function Inner({ kind, loan, deadlines }: Parameters<typeof AlertsPanel>[0]) {
         Alerts
       </h2>
       <p className={styles.body}>{body}</p>
+      {kind === "private" && deadlineRows.length > 0 && (
+        <dl className={styles.deadlines}>
+          {deadlineRows
+            .filter((r): r is [string, number] => r[1] !== undefined)
+            .map(([label, ts]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd className="num">{formatDeadline(ts)}</dd>
+              </div>
+            ))}
+        </dl>
+      )}
       {!signedIn ? (
         <Button variant="secondary" block loading={session.status === "signing"} onClick={() => act(session.signIn)} disabled={session.status === "no-wallet" || session.status === "no-sign-message"}>
           Sign in to set alerts
@@ -68,7 +91,11 @@ function Inner({ kind, loan, deadlines }: Parameters<typeof AlertsPanel>[0]) {
               Alert me about this loan
             </Button>
           )}
-          {mine && !mine.telegramLinked && (
+          {mine && !mine.telegramLinked && !telegram.available && <p className={styles.body}>{telegram.reason}</p>}
+          {mine && !mine.telegramLinked && telegram.available && (
+            <p className={styles.body}>Telegram is not private. It sees that ZenLo messaged you and when. Messages about private loans say only that a deadline is near.</p>
+          )}
+          {mine && !mine.telegramLinked && telegram.available && (
             <Button
               variant="ghost"
               block

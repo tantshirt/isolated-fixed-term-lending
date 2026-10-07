@@ -32,9 +32,10 @@ export const CAPABILITIES: Capability[] = [
     network: "devnet",
     mint: DEVNET_USDC,
     operation: "cash-out",
-    available: false,
-    simulationOnly: true,
-    reason: "MoneyGram's sandbox has not been proven with ZenLo's Devnet USDC yet.",
+    // MoneyGram's sandbox settles in this exact Devnet USDC mint (guides/web-solana, Step 5);
+    // it is switched on per deployment once the sandbox keys and allowlisted domain exist.
+    available: process.env.NEXT_PUBLIC_MONEYGRAM_ENABLED === "1",
+    reason: "MoneyGram cash-out is not connected on this deployment yet.",
   },
   {
     provider: "moneygram",
@@ -44,7 +45,15 @@ export const CAPABILITIES: Capability[] = [
     available: false,
     reason: "Cash-in is a later, separate journey.",
   },
-  { provider: "telegram", network: "devnet", mint: "*", operation: "notify", available: false, reason: "Telegram alerts are not connected yet." },
+  {
+    provider: "telegram",
+    network: "devnet",
+    mint: "*",
+    operation: "notify",
+    // On once the deployment has a bot token and webhook secret.
+    available: process.env.NEXT_PUBLIC_TELEGRAM_ENABLED === "1",
+    reason: "Telegram alerts are not connected on this deployment yet.",
+  },
   {
     provider: "umbra",
     network: "devnet",

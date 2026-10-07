@@ -87,7 +87,10 @@ export const health = internalQuery({
       oracleAgeS: oracle?.publishTime ? Math.round(oracle.at / 1000 - oracle.publishTime) : null,
       oracleError: oracle?.error ?? null,
       authFailuresLastHour: byReason,
-      stuckProviderSessions: 0,
+      // A cash-out with no status change for two hours, not yet terminal, needs a look.
+      stuckProviderSessions: (await ctx.db.query("cashTransactions").order("desc").take(200)).filter(
+        (r) => !["paid_out", "failed", "quote_expired", "refunded", "refund_failed"].includes(r.status) && now - r.updatedAt > 2 * 3_600_000,
+      ).length,
       keeper: await (async () => {
         const last = await ctx.db.query("keeperCapital").withIndex("by_at").order("desc").first();
         const runs = await ctx.db.query("keeperRuns").withIndex("by_at", (q) => q.gte("at", now - 86_400_000)).take(500);
