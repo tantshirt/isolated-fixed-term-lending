@@ -1,0 +1,42 @@
+[package]
+name = "private_loan_v2"
+version = "0.1.0"
+description = "ZenLo V2 private loans on MagicBlock: multi-loan rooms, V2 accounting, governed authorities"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "private_loan_v2"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+local-mints = ["loan-core/local-mints"]
+
+[dependencies]
+anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }
+anchor-spl = "1.0.2"
+ephemeral-rollups-sdk = { version = "=0.17.3", features = ["anchor", "access-control"] }
+loan-core = { path = "../../crates/loan-core" }
+governance = { path = "../../crates/governance" }
+solana-sha256-hasher = "3.1.0"
+
+[dev-dependencies]
+litesvm = "0.10.0"
+solana-account = "3.4.0"
+solana-clock = "3.2.1"
+solana-message = "3.0.1"
+solana-transaction = "3.0.2"
+solana-signer = "3.0.0"
+solana-keypair = "3.0.1"
+pyth-solana-receiver-sdk = "2.0.0"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

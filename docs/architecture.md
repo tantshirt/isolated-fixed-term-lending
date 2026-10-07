@@ -298,3 +298,40 @@ Statuses: `Open`, `Active`, `Repaid`, `Liquidated`, `OverdueLiquidated`, `Priced
 Fails closed: wrong status; a signer other than the named party; a restricted borrower mismatch; any Pyth owner, feed, age, band or exponent failure on a priced path; an early call (`TooEarly`); a zero amount; any mint other than canonical USDC and wSOL. The borrower cannot liquidate their own loan; the duplicate-account guard or `BorrowerCannotLiquidate` stops it.
 
 `programs/isolated_loan_v2/tests/litesvm_v2.rs` (16 tests) covers each boundary to the second.
+
+## Private V2 program (`private_loan_v2`, Stories 22.1–22.2)
+
+Program ID `JAzy8NP6V8AGrAko8vfgrD44BDghN6eLwqB7vjuYhHNq`. V1 rooms and loans stay on `private_loan`.
+
+| Record | Seeds | Where | Notes |
+| --- | --- | --- | --- |
+| `Config` | `["config"]` | Solana | `governance::Authorities`. Written once by the upgrade authority; only the Squads vault rotates it. Replaces the hard-coded `AI_ADMIN`. |
+| `RoomAnchor` | `["room", creator, room_id]` | Delegated | Namespaced by its creator |
+| `RoomState` | `["room-state", room]` | ER-only | Up to 16 members with role bits (borrower 1, lender 2, viewer 4). The owner holds only the roles they gave themselves, so there is no owner bypass. Also holds `next_loan_index`. |
+| Room registry | `["room-loan", room, index_le]` | ER-only | The loan anchor for each room index, readable by the room's members |
+| `LoanAnchor` | `["loan", creator, nonce_le]` | Delegated | The creator (the lender) is the only wallet that can run the first private setup. Owns the loan's eATAs. |
+| `LoanTerms` | `["loan-terms", loan]` | ER-only | V2 terms and ledger, origin and current lender, room and request index, `ledger_revision`, shortfall, and reserved desk, policy-version and auditor-hash fields. Readable by lender and borrower only. |
+| Deal | `["room-deal", room, request_index_le]` | ER-only | One accepted proposal per borrowing request; a room holds many requests |
+| Quote | `["quote", loan]` | ER (public) | Version 2 layout: quoted debt (payoff at quote expiry), payout, ledger revision, kind (risk or overdue), and tickets with an `excess` field |
+
+### Rules
+
+- **Initial private setup.** `propose_terms` requires:
+  - the anchor's creator as signer;
+  - the anchor bound to this room;
+  - an active lender role and an active borrower role;
+  - a fresh registry slot.
+
+  It allocates `next_loan_index` and writes the registry entry in the same instruction. The index is metadata only.
+- **Acceptance.** `accept_loan` checks the maximum-exposure LTV at a fresh price and creates or verifies the deal for `request_index`.
+- **Repayment and top-up.** `repay(amount)` and `add_collateral(amount)` follow the shared accounting. Both bump `ledger_revision`.
+- **Lender recovery.** `claim_priced_recovery` and `claim_terminal` follow the public V2 rules.
+- **`watch_loan`.**
+  - Before grace ends it quotes only when the risk trigger fires: spot and EMA, or spot alone 300 bps past the line.
+  - After grace it quotes regardless of LTV.
+  - A quote is reissued when it expires, when the ledger revision changes, or when its kind changes.
+  - At execution the current lender receives the exact payoff. The winning ticket's excess funding is returned by `settle_ticket` together with the wSOL payout, exactly once.
+  - The watch runs through the terminal-claim window.
+- **Not yet built.** Rebinding a watch after the lender changes belongs to the secondary market (Epic 26).
+
+Tests: `programs/private_loan_v2` has 10 unit tests and 7 LiteSVM settlement tests (`npm run test:litesvm`). The Devnet TEE proof is `scripts/private/v2-rooms.ts`.
