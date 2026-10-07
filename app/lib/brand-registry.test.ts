@@ -28,3 +28,13 @@ test("providers without sourced artwork are text labels, not logos", () => {
   const withLogo = new Set(registry.assets.map((a) => a.provider));
   for (const t of registry.textLabels) assert.equal(withLogo.has(t.provider), false, t.provider);
 });
+
+test("every provider logo the pages use is registered", async () => {
+  const { PROVIDER_LOGO_FILES } = await import("./provider-logos");
+  for (const f of PROVIDER_LOGO_FILES) assert.ok(registry.assets.some((a) => a.file === f), `${f} is not in the registry`);
+});
+
+test("logo styles never recolor official artwork", () => {
+  const css = readFileSync(join(__dirname, "..", "components", "brand", "ProviderLogo.module.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.doesNotMatch(css, /\b(filter|fill|mix-blend-mode|opacity)\s*:/);
+});

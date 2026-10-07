@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ProviderLogo } from "@/components/brand/ProviderLogo";
+import { StatusBadge } from "./StatusBadge";
 import { UseCaseVisual } from "./vignettes/Scenes";
 import { USE_CASES } from "./use-cases";
 import u from "@/app/use-cases/UseCases.module.css";
 
 type Venue = "all" | "private" | "public";
 
-/** The six use cases in detail, filterable by venue. */
+/** Every use case in detail, filterable by venue. */
 export function UseCaseList() {
   const [venue, setVenue] = useState<Venue>("all");
   const count = (v: Venue) =>
@@ -43,9 +45,13 @@ export function UseCaseList() {
               <UseCaseVisual scene={c.scene} />
             </div>
             <div className={u.caseText}>
-              <p className={u.caseTag} data-venue={c.venue}>
-                {c.venue === "private" ? "Private" : "Public"}
-              </p>
+              <div className={u.caseTags}>
+                <p className={u.caseTag} data-venue={c.venue}>
+                  {c.venue === "private" ? "Private" : "Public"}
+                </p>
+                {c.feature && <StatusBadge feature={c.feature} />}
+                {c.provider && <ProviderLogo id={c.provider} height={20} />}
+              </div>
               <h2>{c.intent}</h2>
               <p className={u.hook}>{c.hook}</p>
               <dl>

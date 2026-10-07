@@ -1,0 +1,21 @@
+/* Logos keep their own colors: no filter, fill or opacity here (brand-registry test). */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.logo img {
+  display: block;
+}
+
+.text {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.logo[data-tone="navy"] .text {
+  color: var(--color-on-navy);
+}

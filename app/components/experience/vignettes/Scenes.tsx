@@ -192,6 +192,107 @@ function Verify() {
   );
 }
 
+function Desk() {
+  return (
+    <Stage tone="navy" label="An example private lender desk: its lending policy and two members, an admin and a lender.">
+      <Card tone="navy" style={{ marginInline: "6%" }}>
+        <div className={s.head}>
+          <span className={s.eyebrow}>Desk policy</span>
+          <Lock />
+        </div>
+        <Rows items={[["Loan size", "100 to 500 USDC"], ["Starting LTV", "up to 60%"], ["Term", "7 to 30 days"]]} />
+        <Rows
+          items={[
+            [<span key="o" className={s.mono}>7xKX…9fQa</span>, <Pill key="p1" tone="navy">Admin</Pill>],
+            [<span key="m" className={s.mono}>9cTr…4hUe</span>, <Pill key="p2" tone="navy">Lender</Pill>],
+          ]}
+        />
+      </Card>
+    </Stage>
+  );
+}
+
+function RepayEarly() {
+  return (
+    <Stage label="An example early payoff on day 3 of 7: interest is charged for the days used, never below the 25% minimum.">
+      <Card style={{ marginInline: "6%" }}>
+        <div className={s.head}>
+          <span className={s.eyebrow}>Repay early · day 3 of 7</span>
+          <Pill tone="good">Days used</Pill>
+        </div>
+        <Amount value="102.14" unit="USDC" />
+        <Rows
+          items={[
+            ["Interest for 3 days", "2.14 USDC"],
+            ["Full-term interest", "5 USDC"],
+          ]}
+        />
+        <span className={s.button}>Repay now</span>
+      </Card>
+    </Stage>
+  );
+}
+
+function Auditor() {
+  return (
+    <Stage tone="navy" label="An example consent step: the borrower sees the named auditor before signing, and the auditor can read only after consent.">
+      <Card style={{ marginInline: "6%" }}>
+        <div className={s.head}>
+          <span className={s.eyebrow}>Who else can read this loan</span>
+          <Lock />
+        </div>
+        <Rows
+          items={[
+            [<span key="a" className={s.mono}>Auditor 3fLm…8kPw</span>, <Pill key="n">Named</Pill>],
+            ["Before you sign", <Pill key="h" tone="navy">Hidden</Pill>],
+            ["After you sign", <Pill key="v" tone="good">Can read</Pill>],
+          ]}
+        />
+        <span className={s.button}>Consent and sign</span>
+      </Card>
+    </Stage>
+  );
+}
+
+function Alerts() {
+  return (
+    <Stage label="An example reminder: the loan is due in 24 hours and health has dropped to watch, with a link back to the loan.">
+      <div className={s.lanes} style={{ gap: "0.6em", marginInline: "6%" }}>
+        <Card style={{ padding: "0.8em 1em" }}>
+          <div className={s.head}>
+            <span className={s.value}>Due in 24 hours</span>
+            <Ring left={0.14} size={32} />
+          </div>
+          <span className={s.label}>Repay 105 USDC to get 1.1 wSOL back.</span>
+        </Card>
+        <Card style={{ padding: "0.8em 1em" }}>
+          <div className={s.head}>
+            <span className={s.value}>Health: watch</span>
+            <Pill tone="risk">LTV 78%</Pill>
+          </div>
+          <span className={s.label}>Top up or repay before 85%.</span>
+        </Card>
+      </div>
+    </Stage>
+  );
+}
+
+function CashOut() {
+  return (
+    <Stage label="An example cash-out handoff: 100 USDC leaves the wallet for a cash pickup, marked as not private.">
+      <Card style={{ marginInline: "6%" }}>
+        <div className={s.head}>
+          <span className={s.eyebrow}>Cash out</span>
+          <Pill tone="risk">Not private</Pill>
+        </div>
+        <Amount value="100" unit="USDC" />
+        <Rows items={[["Pick up", "Cash, local currency"], ["Your loan", "Not shared"]]} />
+        <span className={s.button}>Continue to provider</span>
+      </Card>
+    </Stage>
+  );
+}
+
 export const USE_CASE_SCENES = {
   "private-borrow": PrivateBorrow,
   "invited-lend": InvitedLend,
@@ -199,6 +300,11 @@ export const USE_CASE_SCENES = {
   liquidate: Liquidate,
   learn: Learn,
   verify: Verify,
+  desk: Desk,
+  "repay-early": RepayEarly,
+  auditor: Auditor,
+  alerts: Alerts,
+  "cash-out": CashOut,
 } as const;
 
 export type UseCaseScene = keyof typeof USE_CASE_SCENES;

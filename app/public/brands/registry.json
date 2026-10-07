@@ -103,43 +103,103 @@
         "jupiter.svg"
       ],
       "placement": "Wallet catalog"
+    },
+    {
+      "id": "pyth",
+      "provider": "Pyth",
+      "file": "pyth.svg",
+      "source": "https://legacy.pyth.network/brand-assets/pyth-logotype.zip (Pyth Logotype_Dark.svg)",
+      "sourcePage": "https://legacy.pyth.network/brand",
+      "retrieved": "2026-10-07",
+      "sha256": "bd0b3e2cfaece0fc2fbd80b6248f2bdf9f5c9a25c628ebf065f028af5ca8f9ba",
+      "variants": [
+        "pyth.svg"
+      ],
+      "placement": "Oracle provenance: price checks on the landing page and use cases"
+    },
+    {
+      "id": "squads",
+      "provider": "Squads",
+      "file": "squads-white.svg",
+      "source": "https://squads.xyz (site header logo)",
+      "sourcePage": "https://squads.xyz",
+      "retrieved": "2026-10-07",
+      "sha256": "7deaf722ea04527ccac40564752d1caea6f793b67ada71c7c9aeefcda504cb90",
+      "variants": [
+        "squads-white.svg",
+        "squads-black.svg"
+      ],
+      "placement": "Governance provenance: program upgrades held by a Squads multisig"
+    },
+    {
+      "id": "squads-black",
+      "provider": "Squads",
+      "file": "squads-black.svg",
+      "source": "derived from squads-white.svg, fill changed to black for light surfaces",
+      "sourcePage": "https://squads.xyz",
+      "retrieved": "2026-10-07",
+      "sha256": "90a57ec127ec46a4b99ae990881304b64296c1f1bb9b689907a04e791da98235",
+      "variants": [],
+      "placement": "Governance provenance on light surfaces"
+    },
+    {
+      "id": "convex",
+      "provider": "Convex",
+      "file": "convex.svg",
+      "source": "https://www.convex.dev/resources/logos.zip (Logos/SVG/logo-color.svg)",
+      "sourcePage": "https://www.convex.dev/brand",
+      "retrieved": "2026-10-07",
+      "sha256": "aff1e6fb757cda7fd8ac2a709a1af10d7347511bf163f1aa349a3beb41957567",
+      "variants": [
+        "convex.svg"
+      ],
+      "placement": "Infrastructure provenance: wallet sign-in, jobs, alerts and cash handoffs"
+    },
+    {
+      "id": "vercel",
+      "provider": "Vercel",
+      "file": "vercel.svg",
+      "source": "https://vercel.com/geist/brands (logo-vercel-light.svg)",
+      "sourcePage": "https://vercel.com/geist/brands",
+      "retrieved": "2026-10-07",
+      "sha256": "27622083391fe7729d41233aa75e24fa6f7ea25b37f43f6cb1b7917f0be0a2dc",
+      "variants": [
+        "vercel.svg"
+      ],
+      "placement": "Infrastructure provenance: hosting and scheduled settlement, always with a text label"
+    },
+    {
+      "id": "telegram",
+      "provider": "Telegram",
+      "file": "telegram.svg",
+      "source": "https://telegram.org/file/464001088/1/bI7AJLo7oX4.287931.zip/374fe3b0a59dc60005 (Logo.svg)",
+      "sourcePage": "https://telegram.org/tour/screenshots",
+      "retrieved": "2026-10-07",
+      "sha256": "54842d414c100f0110f90caf09ff58cd0d229629820e4576bd70befca88befd5",
+      "variants": [
+        "telegram.svg"
+      ],
+      "placement": "Notification setup and the alerts use case, always with a text label"
+    },
+    {
+      "id": "moneygram",
+      "provider": "MoneyGram",
+      "file": "moneygram.svg",
+      "source": "https://cdn.prod.website-files.com/69e24c063beca24ba258eadd/69f27bbc9fca0561085aabde_logo_horizontal_color.svg",
+      "sourcePage": "https://corporate.moneygram.com",
+      "retrieved": "2026-10-07",
+      "sha256": "ad40ff67d2327934de999d24356a3297ac57eb5b0fb6c014336f14965f76af35",
+      "variants": [
+        "moneygram.svg"
+      ],
+      "placement": "Cash-service handoffs and the cash-out use case, next to the not-private disclosure"
     }
   ],
   "textLabels": [
     {
-      "provider": "Pyth",
-      "placement": "Oracle provenance",
-      "sourcePage": "https://www.pyth.network/brand"
-    },
-    {
-      "provider": "Squads",
-      "placement": "Governance provenance",
-      "sourcePage": "https://squads.so"
-    },
-    {
-      "provider": "Convex",
-      "placement": "Infrastructure provenance",
-      "sourcePage": "https://www.convex.dev/brand"
-    },
-    {
-      "provider": "Vercel",
-      "placement": "Infrastructure provenance",
-      "sourcePage": "https://vercel.com/geist/brands"
-    },
-    {
       "provider": "Helius",
       "placement": "Indexing provenance",
       "sourcePage": "https://www.helius.dev/brand"
-    },
-    {
-      "provider": "Telegram",
-      "placement": "Notification setup",
-      "sourcePage": "https://telegram.org/tour/screenshots"
-    },
-    {
-      "provider": "MoneyGram",
-      "placement": "Cash-service handoffs",
-      "sourcePage": "https://zeroheight.com/833c7683f/p/464181-brand-center"
     },
     {
       "provider": "Jito",

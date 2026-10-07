@@ -343,3 +343,16 @@ Applied: all 8 must-fixes and the 3 nice-to-haves.
 | Verified: no hex or rgb() outside `globals.css`; MoneyGram "not private" beside the signature; Telegram warning above its button; private totals never zero; auditor alert blocks signing; Simulation labelled; no page errors or horizontal scroll at 390 and 1440 px | Plumb | — |
 
 Applied: all 10 must-fixes, plus the TeeCard copy nice-to-have. Deferred nice-to-haves: Discover unit and chip scroll cue, translated backend errors, in-app confirm for desk removals, site-wide MagicBlock badge review.
+
+## Landing and use cases after the desk roadmap (2026-10-07)
+
+| Decision | Applied argument | Reason |
+| --- | --- | --- |
+| Every feature claim carries a derived badge (Live on Devnet, Pilot · gated, Sandbox) from `lib/feature-status.ts`; "live" needs a Devnet evidence pointer, providers follow their flag, MoneyGram is never live | Plumb / Hollis | Honest states, enforced by a test. |
+| Desk copy uses the real roles (admin, lender) and says the policy is private | Plumb / Sol | `architecture.md` desk roles. |
+| Governance claims name only `isolated_loan_v2` | Plumb | `governance.md` authority table. |
+| Late-loan timeline uses the `lib/phase-words.ts` names and includes the +5% overdue bonus and priced recovery | Sol / Plumb | One vocabulary; `research.md` phase table. |
+| Provider logos are official, unrecolored, beside the feature that uses them; built-in clear space is evened out by display scale, never by cropping | Indigo / Kestrel | Story 19.6 and 19.7. |
+| Landing leads with the live repay-early case, not the gated desk | Fovea | Lead with what works today. |
+
+Applied: all 6 must-fixes and 5 nice-to-haves. Deferred: nudging the Convex logo's built-in left clear space on phones.

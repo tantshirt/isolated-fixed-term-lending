@@ -194,7 +194,18 @@
   color: var(--color-on-navy);
 }
 
-.caseTag,
+.caseTags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.caseTags .caseTag {
+  margin: 0;
+}
+
+.caseTags,
 .caseCard h3,
 .caseCard p:not(.caseTag),
 .caseStart {
@@ -320,4 +331,29 @@
   .caseStart span {
     transition: none;
   }
+}
+
+.privateStatus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin-block: -16px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.privateStatus li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footerStack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 22px;
+  margin-top: 14px;
 }

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { PoweredByMagicBlock } from "@/components/brand/PoweredByMagicBlock";
+import { ProviderLogo } from "@/components/brand/ProviderLogo";
 import { Wordmark } from "@/components/brand/Wordmark";
 import s from "./Landing.module.css";
 
 const COLUMNS = [
-  { title: "Try it", links: [{ label: "Demo, no wallet", href: "/demo" }, { label: "Discover loans", href: "/devnet/discover" }, { label: "Devnet offers", href: "/devnet" }, { label: "Create an offer", href: "/devnet/create" }] },
-  { title: "Private", links: [{ label: "Private rooms", href: "/devnet/private" }, { label: "Private requests", href: "/devnet/discover?side=borrowers&venue=private" }, { label: "Liquidation quotes", href: "/devnet/private/liquidate" }] },
+  { title: "Try it", links: [{ label: "Demo, no wallet", href: "/demo" }, { label: "Discover loans", href: "/devnet/discover" }, { label: "Devnet offers", href: "/devnet" }, { label: "Create an offer", href: "/devnet/create" }, { label: "My loans", href: "/devnet/me" }] },
+  { title: "Private", links: [{ label: "Private rooms", href: "/devnet/private" }, { label: "Private requests", href: "/devnet/discover?side=borrowers&venue=private" }, { label: "Lender desks", href: "/devnet/private/desk" }, { label: "Liquidation quotes", href: "/devnet/private/liquidate" }] },
   { title: "Learn", links: [{ label: "Learning paths", href: "/learn" }, { label: "Loan Lab", href: "/devnet/learn" }, { label: "Use cases", href: "/use-cases" }, { label: "How it works", href: "/#how-it-works" }, { label: "What is proven", href: "/devnet/private/proof" }] },
 ];
 
@@ -17,6 +18,12 @@ export function SiteFooter() {
         <p>Clear terms. Zero drama.</p>
         <p className={s.note}>Built on Solana and MagicBlock. Devnet only, with test assets. Nothing here is a guaranteed return.</p>
         <PoweredByMagicBlock />
+        <div className={s.footerStack} aria-label="Also runs on">
+          <ProviderLogo id="pyth" height={18} />
+          <ProviderLogo id="squads" height={14} />
+          <ProviderLogo id="convex" height={12} />
+          <ProviderLogo id="vercel" height={16} />
+        </div>
       </div>
       {COLUMNS.map((c) => (
         <nav key={c.title} aria-label={c.title} className={s.footerCol}>

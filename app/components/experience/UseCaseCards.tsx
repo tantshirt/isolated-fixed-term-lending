@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ProviderLogo } from "@/components/brand/ProviderLogo";
+import { StatusBadge } from "./StatusBadge";
 import { UseCaseVisual } from "./vignettes/Scenes";
 import { USE_CASES } from "./use-cases";
 import s from "./Landing.module.css";
@@ -37,9 +39,13 @@ export function UseCaseCards({
             <div className={s.caseArt}>
               <UseCaseVisual scene={u.scene} />
             </div>
-            <p className={s.caseTag} data-venue={u.venue}>
-              {u.venue === "private" ? "Private" : "Public"}
-            </p>
+            <div className={s.caseTags}>
+              <p className={s.caseTag} data-venue={u.venue}>
+                {u.venue === "private" ? "Private" : "Public"}
+              </p>
+              {u.feature && <StatusBadge feature={u.feature} />}
+              {u.provider && <ProviderLogo id={u.provider} height={18} />}
+            </div>
             <h3>
               {anchors ? <a href={`/use-cases#case-${USE_CASES.indexOf(u) + 1}`}>{u.intent}</a> : u.intent}
             </h3>

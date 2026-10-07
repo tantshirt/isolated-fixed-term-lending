@@ -41,7 +41,7 @@ const steps = [
     unit: "USDC" as const,
     detail: "100 principal + 5 fixed interest",
     body: "Before the deadline, the borrower repays 105 USDC. The lender receives the principal and interest; the borrower gets all 1.1 wSOL back.",
-    note: "Repay early if you like. The 5 USDC full-term interest stays the same.",
+    note: "Repay early if you like. Newer loans charge only for the days used, never below a quarter of the 5 USDC; older loans keep the full 5 USDC.",
     flow: "settle" as const,
   },
 ];

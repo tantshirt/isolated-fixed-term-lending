@@ -2,13 +2,16 @@ import Link from "next/link";
 import { CtaScene, HeroScene } from "@/components/experience/vignettes/Scenes";
 import { LoanStory } from "@/components/experience/LoanStory";
 import { PrivateChapter } from "@/components/experience/PrivateChapter";
+import { ProviderLogo, type ProviderLogoId } from "@/components/brand/ProviderLogo";
 import { PublicHeader } from "@/components/experience/PublicHeader";
 import { SiteFooter } from "@/components/experience/SiteFooter";
+import { StatusBadge } from "@/components/experience/StatusBadge";
 import { UseCaseCards } from "@/components/experience/UseCaseCards";
+import type { FeatureId } from "@/lib/feature-status";
 import h from "@/components/experience/Home.module.css";
 
 const PROMISES = [
-  { title: "One fixed cost", body: "5% means 5 USDC on 100. Not an annual rate, not a surprise." },
+  { title: "A cost rule fixed at signing", body: "5% means at most 5 USDC on 100. Repay early and pay only for the days used, never below the minimum." },
   { title: "Collateral held by code", body: "Your wSOL sits in the program’s vault for this one loan, not in a person’s wallet." },
   { title: "A deadline you can read", body: "The exact end time is shown before you sign, then counts down for both sides." },
 ];
@@ -21,16 +24,25 @@ const USUAL = [
 ];
 
 const OURS = [
-  "One cost for the whole term, fixed at signing.",
+  "The cost rule is fixed at signing, with a ceiling it can never pass.",
   "Both sides see every number before committing.",
   "The program enforces the deadline, for both of you. Nobody can move it, including us.",
   "One loan, one vault. Nothing is pooled.",
 ];
 
+const STACK: { name: string; logo?: ProviderLogoId; feature?: FeatureId; does: string }[] = [
+  { name: "Pyth", logo: "pyth", feature: "v2-loans", does: "SOL prices. Every loan checks the spot price and its average, and refuses a stale or unverified one." },
+  { name: "Squads", logo: "squads", feature: "governance", does: "Holds the upgrade key of the newer public loan program: two of three signers, then a 24-hour time lock." },
+  { name: "Telegram", logo: "telegram", feature: "alerts", does: "Deadline and health reminders, only for loans you switch on. Private loans get generic messages." },
+  { name: "MoneyGram", logo: "moneygram", feature: "cash-out", does: "Turns USDC into cash. This step is not private, and the app says so before you continue." },
+  { name: "Convex", logo: "convex", does: "Wallet sign-in, scheduled jobs, alerts and cash handoffs. Never private terms, books or keys." },
+  { name: "Vercel", logo: "vercel", does: "Hosts the app and runs scheduled settlement checks." },
+];
+
 const FAQ = [
   {
     q: "Is the interest an annual rate?",
-    a: "No. It is the fixed cost for the entire term. A 100 USDC loan at 5% costs 5 USDC, even if you repay early.",
+    a: "No. It is the cost for the whole term: a 100 USDC loan at 5% costs at most 5 USDC. Newer loans charge only for the days used if you repay early, with a minimum of a quarter of the full interest, and an annual ceiling caps every charge. Older loans charge the full 5 USDC whenever you repay.",
   },
   {
     q: "What is wSOL?",
@@ -46,7 +58,15 @@ const FAQ = [
   },
   {
     q: "Can I change a loan after it starts?",
-    a: "No. The terms are fixed. A lender may cancel an offer before acceptance. After acceptance, the loan ends through repayment, liquidation, or expiry.",
+    a: "The terms never change, but on newer loans you can act within them: pay part of the debt early, or add wSOL to keep the loan healthy. The deadline and grace period do not move. Older loans are all-or-nothing: repay in full, or the loan is liquidated or expires.",
+  },
+  {
+    q: "What happens if I am late?",
+    a: "Newer loans give you 24 hours of grace after the deadline, with a late fee of 1% of the principal still unpaid. After grace, anyone can repay the debt and take collateral worth it plus 5%; the rest comes back to you. If nobody does, the lender can claim collateral worth the debt a day later, and all of it seven days later. Every step is shown before you sign.",
+  },
+  {
+    q: "Who can change the program?",
+    a: "Upgrades to the newer public loan program need two of three signers on a Squads multisig, then a 24-hour time lock before they run. Every proposal is public for that whole day before it can run.",
   },
   {
     q: "Do I need an account?",
@@ -142,21 +162,23 @@ export default function Home() {
             <div className={h.sectionHead}>
               <p className={h.eyebrow}>Clear terms include the risks</p>
               <h2 id="endings-h" className={h.h2}>
-                Every loan has three possible endings.
+                Every ending is written down before you sign.
               </h2>
               <p className={h.lede}>
-                All three are written down before you sign. Neither side has a
-                guaranteed return.
+                Repaid, liquidated, or late: each one, and who receives what, is
+                on the page before anyone signs. Neither side has a guaranteed
+                return.
               </p>
             </div>
             <div className={h.endings}>
               <article className={h.ending}>
                 <span className={`${h.pill} ${h.repaid}`}>Repaid</span>
-                <h3>You pay back on time.</h3>
-                <div className={h.fundFlow} aria-label="Repayment fund flow"><span>Borrower <b>105 USDC →</b> Lender</span><span>Vault <b>1.1 wSOL →</b> Borrower</span></div>
+                <h3>You pay back, early or on time.</h3>
+                <div className={h.fundFlow} aria-label="Repayment fund flow"><span>Borrower <b>up to 105 USDC →</b> Lender</span><span>Vault <b>1.1 wSOL →</b> Borrower</span></div>
                 <p>
-                  The borrower repays 105 USDC before the deadline and gets all
-                  1.1 wSOL back. The lender receives the 105.
+                  Repay by the deadline and get all 1.1 wSOL back. On newer
+                  loans, repaying on day 3 of 7 costs about 102.14 USDC, and
+                  you can pay in parts along the way.
                 </p>
               </article>
               <article className={h.ending}>
@@ -170,17 +192,25 @@ export default function Home() {
                 </p>
               </article>
               <article className={h.ending}>
-                <span className={`${h.pill} ${h.expired}`}>Expired</span>
+                <span className={`${h.pill} ${h.expired}`}>Late</span>
                 <h3>The clock runs out.</h3>
-                <div className={h.fundFlow} aria-label="Expiry fund flow"><span>Vault <b>All wSOL →</b> Lender</span><span>Borrower <b>loses collateral</b></span></div>
+                <div className={h.fundFlow} aria-label="Late loan timeline"><span>Deadline <b>+24h →</b> In grace</span><span>Grace ends <b>+1 day →</b> Priced recovery is open</span><span>Then <b>+7 days →</b> Final claim is open</span></div>
                 <p>
-                  If you do not repay by then, the lender receives your wSOL. Its
-                  value may be less than the debt.
+                  Newer loans give 24 hours of grace with a 1% late fee. Then
+                  anyone can repay the debt for collateral worth it plus 5%, and
+                  a day later the lender can take collateral worth the debt. The
+                  surplus returns to you until the final claim, seven days after
+                  grace ends, which can take it all.
                 </p>
               </article>
             </div>
+            <p className={h.fine}>
+              Older loans on the first program have no grace: at the deadline
+              the lender receives all the wSOL, which may be worth less than
+              the debt.
+            </p>
             <Link className={`${h.btn} ${h.solid}`} href="/demo">
-              Play all three endings in the demo <span aria-hidden>→</span>
+              Play every ending in the demo <span aria-hidden>→</span>
             </Link>
           </div>
         </section>
@@ -191,9 +221,33 @@ export default function Home() {
 
         <div className={h.tinted}>
           <div className={h.wrap}>
-            <UseCaseCards featured={[0, 2, 4]} anchors />
+            <UseCaseCards featured={[7, 0, 6]} anchors />
           </div>
         </div>
+
+        <section className={`${h.wrap} ${h.section}`} aria-labelledby="runs-h">
+          <div className={h.sectionHead}>
+            <p className={h.eyebrow}>How it runs</p>
+            <h2 id="runs-h" className={h.h2}>
+              Every outside service, named, with what it does.
+            </h2>
+            <p className={h.lede}>
+              Each badge says whether that part is live on Devnet today or
+              still a gated pilot waiting on its provider.
+            </p>
+          </div>
+          <ul className={h.stack}>
+            {STACK.map((x) => (
+              <li key={x.name} className={h.stackItem}>
+                <div className={h.stackHead}>
+                  {x.logo ? <ProviderLogo id={x.logo} height={22} /> : <strong>{x.name}</strong>}
+                  {x.feature && <StatusBadge feature={x.feature} />}
+                </div>
+                <p>{x.does}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         <section className={`${h.wrap} ${h.section}`} id="faq" aria-labelledby="faq-h">
           <div className={h.faq}>
