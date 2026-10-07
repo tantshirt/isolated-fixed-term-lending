@@ -8,7 +8,7 @@ import { formatDeadline, formatUsdc, shortKey } from "@/lib/format";
 import { pollAfterCompletion } from "@/lib/private/poll";
 import { usePrivate } from "@/lib/private/use-private";
 import { DESK_ROLE, REPAYMENT_MODE, hasRole, type DeskPolicyV2 } from "@/lib/private/v2-codec";
-import { DEFAULT_POLICY, DESK_ROLE_WORDS, deskLoanRow, deskOverview, policyDraftProblem, policyRows, roleNames, type DeskLoanRow, type PolicyDraft } from "@/lib/private/desk-view";
+import { DEFAULT_POLICY, DESK_ROLE_WORDS, deskLoanRow, deskOverview, policyAmounts, policyDraftProblem, policyRows, roleNames, type DeskLoanRow, type PolicyDraft } from "@/lib/private/desk-view";
 import { deskRef, finishDesk, publishPolicy, readDesk, rememberDesk, setDeskMember, type DeskRead } from "@/lib/private/v2-desks";
 import { PRIVATE_V2_LIVE } from "@/lib/private/v2-codec";
 import { TeeCard } from "../TeeCard";
@@ -332,7 +332,6 @@ function FinishDesk({ run, onDone }: { run: (alsoLend: boolean) => Promise<unkno
 
 // ------------------------------------------------------------------------------- policy
 
-const toAtoms = (usdc: string) => BigInt(Math.round(Number(usdc || "0") * 1e6));
 const toBps = (pct: string) => Math.round(Number(pct || "0") * 100);
 const toSeconds = (days: string) => Math.round(Number(days || "0") * 86_400);
 
@@ -409,9 +408,10 @@ function PolicyForm({ start, publish, onCancel }: { start: PolicyDraft; publish:
         return `${l.slice(0, 8)}… is not a wallet address.`;
       }
     }
+    const amounts = policyAmounts(f.minUsdc, f.maxUsdc);
+    if (typeof amounts === "string") return amounts;
     const p: PolicyDraft = {
-      minPrincipal: toAtoms(f.minUsdc),
-      maxPrincipal: toAtoms(f.maxUsdc),
+      ...amounts,
       minDurationSeconds: toSeconds(f.minDays),
       maxDurationSeconds: toSeconds(f.maxDays),
       maxAnnualCeilingBps: toBps(f.ceiling),
