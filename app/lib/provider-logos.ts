@@ -9,12 +9,12 @@ export const PROVIDER_LOGOS = {
   vercel: { file: "vercel.svg", ratio: 1, name: "Vercel", mark: true },
   telegram: { file: "telegram.svg", ratio: 1, name: "Telegram", mark: true },
   moneygram: { file: "moneygram.svg", ratio: 262 / 68, name: "MoneyGram", mark: false, scale: 1.4 },
-  umbra: { file: "umbra.svg", ratio: 1, name: "Umbra", mark: true },
   // Story 26.7: credential screens only.
   sas: { file: "sas.svg", ratio: 92 / 23, name: "Solana Attestation Service", mark: false },
   reclaim: { file: "reclaim.png", ratio: 1, name: "Reclaim", mark: true },
   // Story 27.1: the private tier option on the credit screen only.
   arcium: { file: "arcium.svg", ratio: 1596 / 204, name: "Arcium", mark: false },
+  umbra: { file: "umbra.svg", ratio: 1, name: "Umbra", mark: true },
 } as const;
 
 export type ProviderLogoId = keyof typeof PROVIDER_LOGOS;
