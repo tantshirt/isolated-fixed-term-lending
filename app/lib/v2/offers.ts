@@ -3,7 +3,7 @@ import { PublicKey, type Connection } from "@solana/web3.js";
 import { EarlyRepayment, type Ledger, type TermsV2 } from "../loan-math-v2";
 import { OFFER_V2_OFFSETS, PROGRAM_V2_ID, REQUEST_V2_OFFSETS, v2Coder } from "./program";
 
-export type StatusV2 = "open" | "active" | "repaid" | "liquidated" | "overdueLiquidated" | "pricedRecovered" | "terminalClaimed" | "cancelled";
+export type StatusV2 = "open" | "active" | "repaid" | "liquidated" | "overdueLiquidated" | "pricedRecovered" | "terminalClaimed" | "cancelled" | "refinanced";
 export type RequestStatusV2 = "open" | "funded" | "cancelled";
 
 /** Plain, serialisable V2 offer. Amounts stay bigint. */

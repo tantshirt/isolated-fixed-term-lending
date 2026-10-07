@@ -16,6 +16,7 @@ import { TeeCard } from "../TeeCard";
 import { DeskPilotShare } from "./DeskPilotShare";
 import shared from "../private.module.css";
 import s from "./Desk.module.css";
+import { REFINANCED_WORD } from "@/lib/phase-words";
 
 const TABS = ["Overview", "Loans", "Policy", "People"] as const;
 type Tab = (typeof TABS)[number];
@@ -30,6 +31,7 @@ const STATUS_WORDS: Record<string, string> = {
   overdueLiquidated: "Settled after grace",
   pricedRecovered: "Recovered at the market price",
   terminalClaimed: "Collateral claimed",
+  refinanced: REFINANCED_WORD,
 };
 
 /**

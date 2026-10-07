@@ -5,7 +5,7 @@ import { asSigner, type LoanSigner } from "../keypair-wallet";
 import { bnU64, getConnection } from "../program";
 import { submitTransaction } from "../transaction-lifecycle";
 import type { EarlyRepayment, TermsV2 } from "../loan-math-v2";
-import { getProgramV2, offerV2Pda, requestV2Pda, requestVaultV2Pda, usdcVaultV2Pda, wsolVaultV2Pda } from "./program";
+import { collateralConfigV2Pda, getProgramV2, offerV2Pda, requestV2Pda, requestVaultV2Pda, usdcVaultV2Pda, wsolVaultV2Pda } from "./program";
 import type { OfferV2, RequestV2 } from "./offers";
 import { collateralAsset } from "../models/collateral";
 import { collateralPriceAccount, collateralRemainingAccounts, submitCollateralTx } from "./collateral-accounts";
@@ -120,6 +120,37 @@ export async function sendAddCollateralV2(signerLike: AnySigner, o: OfferV2, lam
     .accountsPartial({ borrower, offer, wsolVault: wsolVaultV2Pda(offer), borrowerWsol: ata(o.wsolMint, borrower), tokenProgram: TOKEN_PROGRAM_ID })
     .transaction();
   return submitTransaction(connection, signer, tx);
+}
+
+/**
+ * Refinance and rollover (Story 26.1): the borrower moves an Active or Grace loan into an open
+ * offer. The old lender receives exactly the payoff (the new principal plus the borrower's
+ * contribution), collateral moves vault to vault, and the new loan starts now, all at once.
+ * `maxContribution` bounds what the borrower pays if interest accrues while signing.
+ */
+export async function sendRefinanceV2(signerLike: AnySigner, old: OfferV2, next: OfferV2, maxContribution: bigint, priceUpdate = PYTH_PRICE_UPDATE_ACCOUNT, connection = getConnection()): Promise<string> {
+  const signer = asSigner(signerLike);
+  priceUpdate = collateralPriceAccount(old.wsolMint, priceUpdate);
+  const borrower = signer.publicKey;
+  const oldOffer = new PublicKey(old.publicKey);
+  const newOffer = new PublicKey(next.publicKey);
+  const mint = new PublicKey(old.wsolMint);
+  const oldLender = new PublicKey(old.currentLender);
+  // Non-wSOL collateral passes its governance CollateralConfig, as accept does.
+  const remaining = mint.equals(NATIVE_WSOL_MINT) ? [] : [{ pubkey: collateralConfigV2Pda(mint), isSigner: false, isWritable: false }];
+  const tx = await getProgramV2(signer, connection)
+    .methods.refinanceInto(bnU64(maxContribution))
+    .accountsPartial({
+      borrower, oldOffer, oldWsolVault: wsolVaultV2Pda(oldOffer), oldLender, oldLenderUsdc: ata(old.usdcMint, oldLender), newOffer,
+      newLender: new PublicKey(next.originLender), newUsdcVault: usdcVaultV2Pda(newOffer),
+      newLenderUsdc: ata(old.usdcMint, new PublicKey(next.originLender)), wsolMint: mint, newWsolVault: wsolVaultV2Pda(newOffer),
+      borrowerUsdc: ata(old.usdcMint, borrower), borrowerWsol: ata(mint, borrower), priceUpdate, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
+    })
+    .remainingAccounts(remaining)
+    // A lender who closed their USDC account cannot block the payoff.
+    .preInstructions([ensureAta(borrower, oldLender, old.usdcMint), ensureAta(borrower, borrower, old.usdcMint), ensureAta(borrower, borrower, mint)])
+    .transaction();
+  return submitCollateralTx(connection, signer, old.wsolMint, tx);
 }
 
 /** Risk liquidation (`overdue: false`) or overdue liquidation after grace (`overdue: true`). */

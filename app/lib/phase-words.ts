@@ -8,3 +8,6 @@ export const PHASE_WORDS: Record<Phase, string> = {
   PricedRecovery: "Priced recovery is open",
   Terminal: "Final claim is open",
 };
+
+/** Terminal status of a loan moved into a new one (Story 26.1). Never shown as "Repaid". */
+export const REFINANCED_WORD = "Refinanced";

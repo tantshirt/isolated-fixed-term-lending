@@ -1,11 +1,12 @@
-//! ZenLo V2 public loan (Stories 21.1, 21.2 and 26.2).
+//! ZenLo V2 public loan (Stories 21.1, 21.2, 26.1 and 26.2).
 //!
 //! The upgrade authority and the governance key in `Config` are the Squads vault
 //! (docs/governance.md). Governance writes only per-asset `CollateralConfig`s; it can never touch
 //! a loan. All economics come from `loan_core::accounting`.
 //!
 //! Collateral is canonical wSOL (built-in SOL/USD constants) or a mint with a `CollateralConfig`
-//! passed as the first remaining account of create, accept, fund, liquidation and priced recovery.
+//! passed as the first remaining account of create, accept, fund, refinance, liquidation and priced
+//! recovery. `refinance_into` (Story 26.1) moves a loan into a new offer with the borrower's signature.
 
 pub mod config;
 pub mod contexts;
@@ -259,6 +260,123 @@ pub mod isolated_loan_v2 {
             adjustment: p.adjustment,
             closed: p.closed,
         });
+        Ok(())
+    }
+
+    /// Story 26.1. The borrower moves an Active or Grace loan into an open offer, atomically: the
+    /// old lender receives exactly the old payoff (the new principal plus the borrower's
+    /// contribution), collateral moves vault to vault, and the new loan starts now after passing
+    /// origination against a fresh price with its own terms. The old loan ends `Refinanced`.
+    /// `max_contribution` is the most the borrower signed for, in case interest accrues meanwhile.
+    pub fn refinance_into(ctx: Context<RefinanceInto>, max_contribution: u64) -> Result<()> {
+        let borrower = ctx.accounts.borrower.key();
+        let (old, new) = (&ctx.accounts.old_offer, &ctx.accounts.new_offer);
+        require!(borrower != new.origin_lender && borrower != new.current_lender, LoanV2Error::SameBorrowerAndLender);
+        require!(new.restricted_borrower == Pubkey::default() || new.restricted_borrower == borrower, LoanV2Error::RestrictedBorrower);
+        let clock = Clock::get()?;
+        let now = clock.unix_timestamp;
+
+        // The old loan settles exactly as a full repayment would, using the same accounting.
+        let old_terms = old.terms.core()?;
+        require!(matches!(acc::phase(&old_terms, now), Phase::Active | Phase::Grace), LoanV2Error::RefinanceClosed);
+        let payoff_old = core(acc::payoff(&old_terms, &old.ledger.into(), now))?;
+        let (old_ledger, paid) = core(acc::apply_payment(&old_terms, &old.ledger.into(), now, payoff_old))?;
+        require!(paid.closed && paid.used == payoff_old, LoanV2Error::MathOverflow);
+        let new_principal = new.terms.principal;
+        require!(new_principal <= payoff_old, LoanV2Error::RefinanceCashOut);
+        let contribution = payoff_old - new_principal;
+        require!(contribution <= max_contribution, LoanV2Error::PaymentAboveLimit);
+
+        // The new loan passes origination now, on its own terms and a fresh price.
+        let mut terms = new.terms;
+        terms.start_ts = now;
+        let core_terms = terms.core()?;
+        core(core_terms.validate())?;
+        let exposure = core(core_terms.max_exposure())?;
+        let c = config::resolve(&new.wsol_mint, ctx.remaining_accounts, true)?;
+        c.check_caps(new.max_ltv_bps, new.liquidation_ltv_bps)?;
+        let required = new.collateral_required;
+        let value = spot_value(&ctx.accounts.price_update.to_account_info(), &c, required, &clock)?;
+        let ltv = core(loan_core::math::current_ltv_bps(exposure, value))?;
+        require!(ltv <= new.max_ltv_bps, LoanV2Error::InsufficientCollateral);
+
+        let program = ctx.accounts.token_program.key();
+        let held = ctx.accounts.old_wsol_vault.amount;
+        let moved = held.min(required);
+        let to_borrower = held - moved;
+        let top_up = required - moved;
+
+        // New lender's principal goes straight to the old lender; the vault closes as at accept.
+        {
+            let n = &ctx.accounts.new_offer;
+            let (id, bump) = (n.offer_id.to_le_bytes(), [n.bump]);
+            let seeds = offer_seeds(n, &id, &bump);
+            let signer = &[&seeds[..]];
+            let info = ctx.accounts.new_offer.to_account_info();
+            let vault = ctx.accounts.new_usdc_vault.to_account_info();
+            pay_out(&program, &vault, &ctx.accounts.old_lender_usdc.to_account_info(), &info, signer, new_principal)?;
+            // Anything in the vault beyond the principal goes back to the new lender: a refinance
+            // never pays USDC to the borrower (research.md, Refinance and rollover).
+            let extra = ctx.accounts.new_usdc_vault.amount.saturating_sub(new_principal);
+            pay_out(&program, &vault, &ctx.accounts.new_lender_usdc.to_account_info(), &info, signer, extra)?;
+            close_vault(&program, &vault, &ctx.accounts.new_lender.to_account_info(), &info, signer)?;
+        }
+        if contribution > 0 {
+            token::transfer(
+                CpiContext::new(
+                    program,
+                    Transfer {
+                        from: ctx.accounts.borrower_usdc.to_account_info(),
+                        to: ctx.accounts.old_lender_usdc.to_account_info(),
+                        authority: ctx.accounts.borrower.to_account_info(),
+                    },
+                ),
+                contribution,
+            )?;
+        }
+        // Collateral moves vault to vault. The new loan locks exactly what its offer requires.
+        {
+            let o = &ctx.accounts.old_offer;
+            let (id, bump) = (o.offer_id.to_le_bytes(), [o.bump]);
+            let seeds = offer_seeds(o, &id, &bump);
+            let signer = &[&seeds[..]];
+            let info = ctx.accounts.old_offer.to_account_info();
+            let vault = ctx.accounts.old_wsol_vault.to_account_info();
+            pay_out(&program, &vault, &ctx.accounts.new_wsol_vault.to_account_info(), &info, signer, moved)?;
+            pay_out(&program, &vault, &ctx.accounts.borrower_wsol.to_account_info(), &info, signer, to_borrower)?;
+            close_vault(&program, &vault, &ctx.accounts.borrower.to_account_info(), &info, signer)?;
+        }
+        if top_up > 0 {
+            token::transfer(
+                CpiContext::new(
+                    program,
+                    Transfer {
+                        from: ctx.accounts.borrower_wsol.to_account_info(),
+                        to: ctx.accounts.new_wsol_vault.to_account_info(),
+                        authority: ctx.accounts.borrower.to_account_info(),
+                    },
+                ),
+                top_up,
+            )?;
+        }
+
+        let (old_key, new_key) = (ctx.accounts.old_offer.key(), ctx.accounts.new_offer.key());
+        let o = &mut ctx.accounts.old_offer;
+        o.ledger = old_ledger.into();
+        o.collateral_locked = 0;
+        o.status = StatusV2::Refinanced;
+        o.settled_ts = now;
+        emit!(SettledV2 { offer: old_key, status: StatusV2::Refinanced, to_borrower, to_recipient: 0, paid: payoff_old, shortfall: 0 });
+
+        let ledger = core(acc::open(&core_terms))?;
+        let n = &mut ctx.accounts.new_offer;
+        n.borrower = borrower;
+        n.terms = terms;
+        n.collateral_locked = required;
+        n.ledger = ledger.into();
+        n.status = StatusV2::Active;
+        emit!(AcceptedV2 { offer: new_key, borrower, start_ts: now, maturity_ts: core_terms.maturity(), grace_end_ts: core_terms.grace_end() });
+        emit!(RefinancedV2 { old_offer: old_key, new_offer: new_key, borrower, payoff_old, new_principal, contribution, collateral_moved: moved, collateral_returned: to_borrower, collateral_added: top_up });
         Ok(())
     }
 
@@ -617,6 +735,20 @@ pub struct PaymentV2 {
     pub principal: u64,
     pub adjustment: u64,
     pub closed: bool,
+}
+
+/// Story 26.1. `payoff_old == new_principal + contribution`, all paid to the old lender.
+#[event]
+pub struct RefinancedV2 {
+    pub old_offer: Pubkey,
+    pub new_offer: Pubkey,
+    pub borrower: Pubkey,
+    pub payoff_old: u64,
+    pub new_principal: u64,
+    pub contribution: u64,
+    pub collateral_moved: u64,
+    pub collateral_returned: u64,
+    pub collateral_added: u64,
 }
 
 #[event]

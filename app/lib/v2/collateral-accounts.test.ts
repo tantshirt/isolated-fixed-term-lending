@@ -11,7 +11,7 @@ import { validateRiskStep } from "../offer-validation";
 import { collateralConfigPda, collateralPriceAccount, collateralRemainingAccounts, feedPriceAccount, needsCollateralConfig } from "./collateral-accounts";
 import type { OfferV2, RequestV2 } from "./offers";
 import { PROGRAM_V2_ID, getProgramV2 } from "./program";
-import { sendAcceptOfferV2, sendFundRequestV2, sendLenderClaimV2, sendLiquidateV2 } from "./transactions";
+import { sendAcceptOfferV2, sendFundRequestV2, sendLenderClaimV2, sendLiquidateV2, sendRefinanceV2 } from "./transactions";
 
 const k = () => Keypair.generate().publicKey;
 
@@ -127,7 +127,8 @@ test("transactions pass the config as the last account on priced paths for non-w
     await assert.rejects(sendLenderClaimV2(signer, o, false, PYTH_PRICE_UPDATE_ACCOUNT, connection));
     await assert.rejects(sendLenderClaimV2(signer, o, true, PYTH_PRICE_UPDATE_ACCOUNT, connection));
     await assert.rejects(sendFundRequestV2(signer, r, 7n, PYTH_PRICE_UPDATE_ACCOUNT, connection));
-    assert.equal(seen.length, 6);
+    await assert.rejects(sendRefinanceV2(signer, o, offer(mint), 0n, PYTH_PRICE_UPDATE_ACCOUNT, connection));
+    assert.equal(seen.length, 7);
     const wsol = mint.equals(NATIVE_WSOL_MINT);
     seen.forEach((tx, i) => {
       const accounts = programIx(tx);

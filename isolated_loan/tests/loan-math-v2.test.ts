@@ -21,6 +21,8 @@ import {
   type Ledger,
   type TermsV2,
 } from "../../app/lib/loan-math-v2";
+import { refinanceQuote } from "../../app/lib/v2/refinance";
+import type { OfferV2 } from "../../app/lib/v2/offers";
 
 const v = JSON.parse(readFileSync(new URL("../crates/loan-core/vectors-v2.json", import.meta.url), "utf8"));
 
@@ -62,6 +64,18 @@ for (const c of v.cases) {
     steps++;
     if (s.op === "payoff") assert.equal(payoff(t, l, s.now).toString(), s.expect, `${c.name} payoff @${s.now}`);
     else if (s.op === "phase") assert.equal(phase(t, s.now), s.expect, `${c.name} phase @${s.now}`);
+    else if (s.op === "refinance") {
+      // Story 26.1: the app's quote must agree with the program's rule on payoff, contribution and refusal.
+      const loan = { publicKey: "old", status: "active", terms: t, ledger: l, usdcMint: "u", wsolMint: "w", originLender: "a", currentLender: "a", collateralLocked: 1n } as OfferV2;
+      const next = { publicKey: "new", status: "open", terms: { ...t, principal: BigInt(s.new_principal) }, usdcMint: "u", wsolMint: "w", originLender: "n", currentLender: "n", restrictedBorrower: null, collateralRequired: 1n } as OfferV2;
+      const q = refinanceQuote(loan, next, "b", s.now);
+      const reason = q.reason === null ? null : /grace/.test(q.reason) ? "phase" : /cash out/.test(q.reason) ? "cash-out" : q.reason;
+      assert.deepEqual(
+        { payoff_old: q.payoffOld.toString(), contribution: reason === null ? q.contribution.toString() : null, reason },
+        s.expect,
+        `${c.name} refinance @${s.now}`,
+      );
+    }
     else {
       const amount = BigInt(s.amount);
       const [n, p] = applyPayment(t, l, s.now, amount);

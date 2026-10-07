@@ -15,6 +15,7 @@ export type LoanAction =
   | "propose"
   | "repay"
   | "add-collateral"
+  | "refinance"
   | "liquidate"
   | "liquidate-overdue"
   | "claim"
@@ -25,7 +26,7 @@ export type LoanAction =
   | "withdraw";
 
 /** Actions that start new exposure. Everything else services or recovers an existing position. */
-export const ORIGINATING: ReadonlySet<LoanAction> = new Set(["create-offer", "create-request", "accept", "fund", "propose"]);
+export const ORIGINATING: ReadonlySet<LoanAction> = new Set(["create-offer", "create-request", "accept", "fund", "propose", "refinance"]);
 
 export type Allowed = { allowed: true } | { allowed: false; reason: string };
 

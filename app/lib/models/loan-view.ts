@@ -5,6 +5,7 @@ import type { ProgramGeneration } from "./index";
 import { collateralValueUsdc, currentLtvBps, healthBps } from "../loan-math";
 import { graceEnd, liquidationTrigger, maturity, payoff as payoffV2, phase as phaseV2, pricedRecoveryFrom, terminalClaimFrom, type LiquidationKind, type Phase } from "../loan-math-v2";
 import type { OfferV2 } from "../v2/offers";
+import { REFINANCE_ENABLED } from "../v2/refinance";
 
 export type Deadline = { kind: "maturity" | "grace-end" | "priced-recovery" | "terminal-claim"; at: number };
 
@@ -78,7 +79,7 @@ export function legacyLoanView(offer: Offer, price: PriceSnapshot | null, chainN
  * V2 loans: payoff from the shared accounting, the four post-deadline windows, and the same
  * spot-plus-EMA trigger the program uses. Repayment stays available until a settlement executes.
  */
-export function v2LoanView(o: OfferV2, price: PriceSnapshot | null, chainNow: number, flags: OpsFlag[] = []): LoanView {
+export function v2LoanView(o: OfferV2, price: PriceSnapshot | null, chainNow: number, flags: OpsFlag[] = [], refinanceEnabled = REFINANCE_ENABLED): LoanView {
   const active = o.status === "active";
   const phase = active ? phaseV2(o.terms, chainNow) : undefined;
   const owed = active ? payoffV2(o.terms, o.ledger, chainNow) : 0n;
@@ -112,6 +113,15 @@ export function v2LoanView(o: OfferV2, price: PriceSnapshot | null, chainNow: nu
     const needPrice = "A fresh price is needed. Post one, then try again.";
     actions.push(gate("repay", "borrower", true));
     actions.push(gate("add-collateral", "borrower", true));
+    // Story 26.1: only before grace ends, and only with the borrower's own signature.
+    actions.push(
+      gate(
+        "refinance",
+        "borrower",
+        refinanceEnabled && (phase === "Active" || phase === "Grace"),
+        !refinanceEnabled ? "Refinancing is not enabled on this deployment yet." : "Refinancing closes when grace ends. Repay, or the recovery rules apply.",
+      ),
+    );
     actions.push(
       gate(
         "liquidate",

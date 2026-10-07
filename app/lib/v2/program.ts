@@ -46,6 +46,9 @@ export const usdcVaultV2Pda = (offer: PublicKey) => pda([USDC_VAULT_V2_SEED, off
 export const wsolVaultV2Pda = (offer: PublicKey) => pda([WSOL_VAULT_V2_SEED, offer.toBuffer()]);
 export const requestV2Pda = (borrower: PublicKey, requestId: bigint) => pda([REQUEST_V2_SEED, borrower.toBuffer(), u64le(requestId)]);
 export const requestVaultV2Pda = (request: PublicKey) => pda([REQUEST_WSOL_V2_SEED, request.toBuffer()]);
+/** Governance `CollateralConfig` for a non-wSOL collateral mint (Story 26.2). */
+export const COLLATERAL_CONFIG_V2_SEED = Buffer.from("collateral");
+export const collateralConfigV2Pda = (mint: PublicKey) => pda([COLLATERAL_CONFIG_V2_SEED, mint.toBuffer()]);
 
 /** Byte offsets after the 8-byte discriminator and 1-byte version, for memcmp filters. */
 export const OFFER_V2_OFFSETS = { originLender: 9, currentLender: 41, borrower: 73 } as const;

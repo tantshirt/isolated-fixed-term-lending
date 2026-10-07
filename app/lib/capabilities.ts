@@ -4,7 +4,7 @@
  */
 export type Network = "devnet" | "localnet" | "mainnet";
 export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra" | "privacy-cash";
-export type Operation = "originate" | "service" | "cash-out" | "cash-in" | "notify" | "shield";
+export type Operation = "originate" | "service" | "refinance" | "cash-out" | "cash-in" | "notify" | "shield";
 
 export type Capability = {
   provider: Provider;
@@ -50,6 +50,16 @@ export const CAPABILITIES: Capability[] = [
     // The flag pauses new jitoSOL loans only; existing ones stay serviceable.
     available: JITOSOL_TEST_MINT !== "",
     reason: "This deployment has no jitoSOL (test) mint.",
+  },
+  {
+    provider: "zenlo-public",
+    network: "devnet",
+    mint: DEVNET_USDC,
+    operation: "refinance",
+    // Story 26.1: `refinance_into` on isolated_loan_v2. On once the upgrade carrying it has passed
+    // the Squads vault and its 24-hour time lock.
+    available: process.env.NEXT_PUBLIC_REFINANCE_ENABLED === "1",
+    reason: "Refinancing is not enabled on this deployment yet.",
   },
   { provider: "zenlo-private", network: "devnet", mint: DEVNET_USDC, operation: "originate", available: true },
   { provider: "zenlo-private", network: "devnet", mint: DEVNET_USDC, operation: "service", available: true },
