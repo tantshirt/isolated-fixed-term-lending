@@ -104,7 +104,7 @@ export function verifyWebhook(input: { signature: string | null; rawBody: string
   if (!Number.isFinite(age) || age < -WEBHOOK_MAX_SKEW_MS || age > WEBHOOK_MAX_AGE_MS) return { ok: false, reason: "stale" };
   try {
     const tx = (JSON.parse(message) as { transaction?: WebhookTransaction }).transaction;
-    if (!tx || typeof tx.id !== "string" || typeof tx.status !== "string") return { ok: false, reason: "bad-message" };
+    if (!tx || typeof tx.id !== "string" || typeof tx.status !== "string" || (tx.kind !== "deposit" && tx.kind !== "withdrawal")) return { ok: false, reason: "bad-message" };
     return { ok: true, transaction: tx };
   } catch {
     return { ok: false, reason: "bad-message" };
@@ -193,55 +193,68 @@ export const CASH_OUT_TERMINAL = new Set(["paid_out", "failed", "quote_expired",
 export type CashDirection = "in" | "out";
 export const KIND_FOR: Record<CashDirection, WebhookTransaction["kind"]> = { in: "deposit", out: "withdrawal" };
 
+/** Documented Web SDK config: guides/web-solana § Cash-in (on-ramp). */
+export function cashWidgetConfig(direction: CashDirection, widgetUrl: string) {
+  if (direction !== "in" && direction !== "out") throw new Error("Choose cash-in or cash-out.");
+  const mode = direction === "in" ? "on-ramp" : "off-ramp";
+  const url = new URL(widgetUrl);
+  // set replaces the session default and removes duplicate mode parameters.
+  url.searchParams.set("mode", mode);
+  return { widgetUrl: url.toString(), mode, transaction: { type: mode } };
+}
+
+/** Reject a different widget flow instead of labeling its transaction with our requested direction. */
+export function createdTransactionError(tx: { id?: string; type?: string; chain?: string; asset?: string; walletAddress?: string }, direction: CashDirection, wallet: string): string | null {
+  if (!tx.id || tx.type !== (direction === "in" ? "cash-in" : "cash-out")) return "MoneyGram created a transaction in a different or unknown direction. Open it again.";
+  if (tx.chain !== "solana" || tx.asset !== "USDC" || tx.walletAddress !== wallet) return "MoneyGram created a transaction for a different wallet or asset.";
+  return null;
+}
+
 /**
  * Ramps cash-in statuses. A deposit is complete only when MoneyGram has sent the USDC; cash handed
  * to an agent (`funds_received`) is not yet USDC in the wallet. Unknown statuses stay in flight.
  */
 export const CASH_IN_WORDS: Record<string, string> = {
   created: "Started",
-  pending_commit: "Waiting for you to confirm in MoneyGram",
-  awaiting_funds: "Waiting for your cash at a MoneyGram agent",
+  validated: "MoneyGram checked the deposit details",
+  pending_kyc: "Complete MoneyGram's identity checks",
+  committed: "Take the confirmation code and cash to the MoneyGram agent",
   funds_received: "MoneyGram received your cash. USDC is not in your wallet yet.",
-  pending_transfer: "MoneyGram is sending USDC to your wallet",
   completed: "USDC sent to your wallet",
   failed: "Failed",
-  expired: "Expired before the cash was paid in",
   quote_expired: "The quote expired",
-  refund_requested: "Refund requested",
-  refund_mgi_pending: "Refund in progress",
-  refund_mgi_success: "Refund in progress",
-  refunded: "Refunded: MoneyGram returned your cash",
-  refund_failed: "Refund failed",
 };
 
 /** Sandbox deposits never imply that real cash was taken. */
 export const SANDBOX_CASH_IN_WORDS: Record<string, string> = {
   ...CASH_IN_WORDS,
-  awaiting_funds: "Sandbox: waiting for the test payment (no real cash)",
+  committed: "Sandbox: waiting for the test payment (no real cash)",
   funds_received: "Sandbox: test payment received. USDC is not in your wallet yet.",
   completed: "Sandbox: test USDC sent to your wallet",
 };
 
-/** Final for a deposit: nothing can change it. */
-export const CASH_IN_FINAL = new Set(["completed", "refunded", "refund_failed"]);
-/** Stops polling; a failed or expired deposit can still move into a refund. */
-export const CASH_IN_TERMINAL = new Set([...CASH_IN_FINAL, "failed", "expired", "quote_expired"]);
-const REFUND_STATES = new Set(["refund_requested", "refund_mgi_pending", "refund_mgi_success", "refunded", "refund_failed"]);
+/** Cash-in has no wallet refund lifecycle. These are the documented polling stop states. */
+export const CASH_IN_FINAL = new Set(["completed", "failed", "quote_expired"]);
+export const CASH_IN_TERMINAL = CASH_IN_FINAL;
+const CASH_IN_PHASE: Record<string, number> = { created: 0, validated: 1, pending_kyc: 1, committed: 2, funds_received: 3, completed: 4 };
 
 export function isTerminal(direction: CashDirection, status: string): boolean {
   return (direction === "in" ? CASH_IN_TERMINAL : CASH_OUT_TERMINAL).has(status);
 }
 
 /**
- * The status to store, or null to ignore it. Cash-out keeps the provider's word (Story 24.4).
- * A deposit never leaves a final state, and a failed or expired deposit only moves into a refund,
- * so a late or replayed status cannot reopen it.
+ * API statuses only, never webhook status vocabulary. Cash-out retains its existing lifecycle.
+ * Deposits cannot regress when overlapping reconciliation requests finish out of order; KYC and
+ * validated may alternate before commit. Unknown states remain unconfirmed instead of guessed.
+ * Source: reference/transaction-status-webhooks § Cash-in status phases.
  */
 export function nextCashStatus(direction: CashDirection, current: string, incoming: string): string | null {
-  if (direction === "out" || current === incoming) return incoming;
-  if (CASH_IN_FINAL.has(current)) return null;
-  if (CASH_IN_TERMINAL.has(current) && !REFUND_STATES.has(incoming)) return null;
-  return incoming;
+  if (direction === "out") return incoming;
+  if (!Object.hasOwn(CASH_IN_WORDS, incoming)) return null;
+  if (current === incoming) return incoming;
+  if (CASH_IN_TERMINAL.has(current)) return null;
+  if (incoming === "failed" || incoming === "quote_expired") return incoming;
+  return CASH_IN_PHASE[incoming] >= (CASH_IN_PHASE[current] ?? -1) ? incoming : null;
 }
 
 /**
@@ -249,7 +262,7 @@ export function nextCashStatus(direction: CashDirection, current: string, incomi
  * asset as `USDC`, `solana:USDC:<mint>` or the bare mint; any other asset, chain or mint is refused.
  */
 export function depositAssetOk(tx: WebhookTransaction, env: RampsEnv): { ok: true } | { ok: false; reason: "wrong-network" | "wrong-asset" | "wrong-mint" } {
-  if (tx.network !== undefined && !/^(sol|solana)$/i.test(tx.network)) return { ok: false, reason: "wrong-network" };
+  if (typeof tx.network !== "string" || !/^(sol|solana)$/i.test(tx.network)) return { ok: false, reason: "wrong-network" };
   const asset = tx.amount_out_asset;
   if (asset === undefined) return { ok: true };
   const mint = RAMPS[env].usdcMint;

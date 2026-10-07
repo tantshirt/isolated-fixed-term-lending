@@ -15,6 +15,8 @@ import {
   SANDBOX_CASH_IN_WORDS,
   SANDBOX_CASH_OUT_WORDS,
   cashInShortfall,
+  cashWidgetConfig,
+  createdTransactionError,
   reviewSignPayload,
   type CashDirection,
   type ReviewedTransfer,
@@ -154,7 +156,7 @@ function Live({ direction, usdcBalance }: { direction: CashDirection; usdcBalanc
       if (!signer) throw new Error("Connect a wallet first.");
       const res = await session.authorizedPost("/cash/session");
       const body = (await res.json()) as { sessionToken?: string; widgetUrl?: string; error?: string };
-      if (!res.ok || !body.sessionToken) throw new Error(body.error ?? "MoneyGram is unavailable right now.");
+      if (!res.ok || !body.sessionToken || !body.widgetUrl) throw new Error(body.error ?? "MoneyGram is unavailable right now.");
       await loadSdk(RAMPS[ENV].sdk);
       widget.current?.destroy();
       rampsId.current = null;
@@ -162,11 +164,16 @@ function Live({ direction, usdcBalance }: { direction: CashDirection; usdcBalanc
       widget.current = window.RampsSDK!.createRamps({
         container: container.current,
         sessionToken: body.sessionToken,
-        widgetUrl: body.widgetUrl,
-        // Cash-in opens the widget on the deposit (cash-in) flow; cash-out keeps its Story 24.4 config.
-        ...(cashIn ? { flow: "cash-in" } : {}),
+        ...cashWidgetConfig(direction, body.widgetUrl),
         wallet: { address: signer.publicKey.toBase58(), chain: "solana", asset: "USDC", walletType: "non-custodial", displayName: "ZenLo" },
-        onTransactionCreated: async (tx: { id: string; mgiTransactionId?: string; amount?: number }) => {
+        onTransactionCreated: async (tx: { id: string; type?: string; chain?: string; asset?: string; walletAddress?: string; mgiTransactionId?: string; amount?: number }) => {
+          const mismatch = createdTransactionError(tx, direction, signer.publicKey.toBase58());
+          if (mismatch) {
+            rampsId.current = null;
+            creation.current = null;
+            setError(mismatch);
+            return;
+          }
           rampsId.current = tx.id;
           creation.current = created({ rampsId: tx.id, mgiTransactionId: tx.mgiTransactionId, amount: tx.amount !== undefined ? String(tx.amount) : undefined, direction });
           await creation.current;
@@ -194,6 +201,8 @@ function Live({ direction, usdcBalance }: { direction: CashDirection; usdcBalanc
             setReview({ rampsId: rampsId.current, wallet: signer.publicKey.toBase58(), transfer: checked.transfer, resolve, reject });
           }),
         onComplete: async (tx: { id: string; referenceNumber?: string }) => {
+          if (tx.id !== rampsId.current || !creation.current) return;
+          await creation.current;
           if (tx.referenceNumber) await reference({ rampsId: tx.id, referenceNumber: tx.referenceNumber });
         },
         onError: (e: { reason?: string }) => setError(e.reason ?? "MoneyGram reported an error."),

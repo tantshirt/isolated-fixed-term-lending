@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import nacl from "tweetnacl";
-import { RAMPS, cashInShortfall, depositAssetOk, isTerminal, nextCashStatus, strkeyToEd25519, type CashDirection } from "./moneygram";
+import { RAMPS, cashWidgetConfig, createdTransactionError, cashInShortfall, depositAssetOk, isTerminal, nextCashStatus, strkeyToEd25519, type CashDirection } from "./moneygram";
 import { handleWebhook, type WebhookDeps } from "./webhook";
 import { cashInEnabled, CAPABILITIES, capabilityFor, DEVNET_USDC, type Capability } from "../capabilities";
 
@@ -100,7 +100,7 @@ test("deposits naming another mint, asset or chain are refused", async () => {
   }
   assert.deepEqual(h.reconciled, []);
   assert.deepEqual(h.failures, ["moneygram-deposit-wrong-mint", "moneygram-deposit-wrong-mint", "moneygram-deposit-wrong-asset", "moneygram-deposit-wrong-asset", "moneygram-deposit-wrong-network"]);
-  for (const asset of ["USDC", MINT, `solana:USDC:${MINT}`, undefined]) assert.equal(depositAssetOk({ id: "a", kind: "deposit", status: "completed", amount_out_asset: asset }, "sandbox").ok, true);
+  for (const asset of ["USDC", MINT, `solana:USDC:${MINT}`, undefined]) assert.equal(depositAssetOk({ id: "a", kind: "deposit", network: "SOL", status: "completed", amount_out_asset: asset }, "sandbox").ok, true);
 });
 
 test("a deposit webhook cannot drive a cash-out row, or the reverse", async () => {
@@ -111,22 +111,53 @@ test("a deposit webhook cannot drive a cash-out row, or the reverse", async () =
   assert.deepEqual(h.failures, ["moneygram-wrong-kind", "moneygram-wrong-kind"]);
 });
 
-test("refunds: a failed or expired cash-in moves only into refund states, and refunded is final", async () => {
-  const h = harness();
-  assert.deepEqual(await h.deliver(deposit({ status: "refunded" })), { status: 200, handled: "reconcile" });
-  assert.equal(nextCashStatus("in", "funds_received", "failed"), "failed");
-  assert.equal(nextCashStatus("in", "failed", "refund_requested"), "refund_requested");
-  assert.equal(nextCashStatus("in", "expired", "refunded"), "refunded");
-  assert.equal(nextCashStatus("in", "failed", "completed"), null);
-  assert.equal(nextCashStatus("in", "refunded", "completed"), null);
-  assert.equal(nextCashStatus("in", "completed", "awaiting_funds"), null);
-  assert.equal(nextCashStatus("in", "refund_mgi_pending", "refund_failed"), "refund_failed");
-  assert.equal(isTerminal("in", "refunded"), true);
-  assert.equal(isTerminal("in", "refund_requested"), false);
+test("cash-in follows API lifecycle and refuses obsolete or cash-out states", () => {
+  for (const [before, after] of [["created", "validated"], ["validated", "pending_kyc"], ["pending_kyc", "committed"], ["committed", "funds_received"], ["funds_received", "completed"]]) {
+    assert.equal(nextCashStatus("in", before, after), after);
+  }
+  assert.equal(nextCashStatus("in", "funds_received", "committed"), null);
+  assert.equal(nextCashStatus("in", "created", "quote_expired"), "quote_expired");
+  for (const terminal of ["failed", "quote_expired", "completed"]) {
+    assert.equal(isTerminal("in", terminal), true);
+    assert.equal(nextCashStatus("in", terminal, "committed"), null);
+    assert.equal(nextCashStatus("in", terminal, "refund_requested"), null);
+  }
+  for (const unknown of ["awaiting_funds", "pending_transfer", "expired", "refunded", "pending_anchor"]) assert.equal(nextCashStatus("in", "committed", unknown), null);
   assert.equal(isTerminal("in", "funds_received"), false);
-  // Cash-out keeps Story 24.4's behaviour.
   assert.equal(nextCashStatus("out", "paid_out", "refunded"), "refunded");
   assert.equal(isTerminal("out", "completed"), false);
+});
+
+test("widget builder sets all documented selectors and replaces duplicate URL modes", () => {
+  for (const [direction, mode] of [["in", "on-ramp"], ["out", "off-ramp"]] as const) {
+    const config = cashWidgetConfig(direction, "https://widget.example/?session=abc&mode=off-ramp&mode=on-ramp");
+    const url = new URL(config.widgetUrl);
+    assert.deepEqual(url.searchParams.getAll("mode"), [mode]);
+    assert.equal(url.searchParams.get("session"), "abc");
+    assert.equal(config.mode, mode);
+    assert.deepEqual(config.transaction, { type: mode });
+    assert.equal("flow" in config, false);
+  }
+  assert.throws(() => cashWidgetConfig("unknown" as CashDirection, "https://widget.example/"));
+});
+
+test("creation events must identify direction, wallet and asset", () => {
+  const tx = { id: "r1", type: "cash-in", chain: "solana", asset: "USDC", walletAddress: "wallet1" };
+  assert.equal(createdTransactionError(tx, "in", "wallet1"), null);
+  assert.equal(createdTransactionError({ ...tx, type: "cash-out" }, "out", "wallet1"), null);
+  for (const patch of [{ type: undefined }, { type: "cash-out" }, { chain: "stellar" }, { asset: "USDT" }, { walletAddress: "other" }]) assert.ok(createdTransactionError({ ...tx, ...patch }, "in", "wallet1"));
+});
+
+test("signed webhooks cannot guess direction or Solana network", async () => {
+  for (const kind of [undefined, "unknown"]) {
+    const h = harness();
+    const result = await h.deliver(deposit({ kind }));
+    assert.equal(result.handled, "rejected");
+    assert.deepEqual(h.reconciled, []);
+  }
+  const h = harness();
+  assert.deepEqual(await h.deliver(deposit({ network: undefined })), { status: 200, handled: "rejected" });
+  assert.deepEqual(h.reconciled, []);
 });
 
 test("capability cash-in follows its own flag and still needs MoneyGram", () => {
