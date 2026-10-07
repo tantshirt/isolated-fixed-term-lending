@@ -56,7 +56,11 @@ export function CashOutPanel({ usdcBalance }: { usdcBalance: bigint | null }) {
         <li>Cash-out only for now. If you borrowed, you still need USDC to repay; cash-in is not available here.</li>
         <li>{ENV === "sandbox" ? "Sandbox: no real cash is ever paid out." : "Production cash-out."}</li>
       </ul>
-      {!capability.available ? <p className={styles.unavailable}>{capability.reason}</p> : BACKEND ? <Live usdcBalance={usdcBalance} /> : null}
+      {!capability.available ? <p className={styles.unavailable}>{capability.reason}</p> : BACKEND ? (
+        <Live usdcBalance={usdcBalance} />
+      ) : (
+        <p className={styles.unavailable}>Cash-out needs the ZenLo backend, which is not connected on this deployment.</p>
+      )}
     </section>
   );
 }

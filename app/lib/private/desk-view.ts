@@ -55,7 +55,7 @@ function nextDeadline(t: LoanTermsV2, now: number): { label: string; at: number 
     ["Due", maturity(t.terms)],
     ["Grace ends", graceEnd(t.terms)],
     ["Priced recovery opens", pricedRecoveryFrom(t.terms)],
-    ["Collateral can be claimed", terminalClaimFrom(t.terms)],
+    ["Final claim", terminalClaimFrom(t.terms)],
   ];
   const next = steps.find(([, at]) => at > now);
   return next ? { label: next[0], at: next[1] } : null;
@@ -78,12 +78,12 @@ export function deskLoanRow(e: BookEntry, me: PublicKey, now: number): DeskLoanR
         ? "Borrower to accept"
         : p && p !== "Active"
           ? p === "Grace"
-            ? "Past due, in grace"
+            ? "In grace"
             : p === "Overdue"
-              ? "Overdue: recovery is open"
+              ? "Grace has ended"
               : p === "PricedRecovery"
                 ? "Priced recovery is open"
-                : "Collateral can be claimed"
+                : "Final claim is open"
           : p === "Active" && due && due.at - now <= URGENT_WITHIN
             ? "Due soon"
             : null;

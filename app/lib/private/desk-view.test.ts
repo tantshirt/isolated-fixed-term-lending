@@ -40,7 +40,7 @@ test("past-due loans come first, sorted by the next deadline, and pending signat
   const o = deskOverview(state, lender, rows);
   assert.deepEqual(o.urgent.map((r) => r.seq), [1, 2]);
   const first = o.urgent[0];
-  assert.ok(first.access === "readable" && first.waiting === "Past due, in grace" && first.nextDeadline?.label === "Grace ends");
+  assert.ok(first.access === "readable" && first.waiting === "In grace" && first.nextDeadline?.label === "Grace ends");
   assert.deepEqual(o.pending.map((r) => r.seq), [3]);
   assert.equal(o.running, 3);
   assert.equal(o.bookTotal, 300_000_000n);

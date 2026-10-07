@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PHASE_WORDS } from "@/lib/phase-words";
 import { Button } from "@/components/ui/Button";
 import { Chips } from "@/components/ui/Chips";
 import { formatUsdc, formatWsol } from "@/lib/format";
@@ -22,7 +23,6 @@ const base = (policy: EarlyRepayment): TermsV2 => ({
   annualCeilingBps: 10_000,
 });
 const COLLATERAL = 1_020_000_000n;
-const PHASE_WORDS = { Active: "Waiting for repayment", Grace: "In grace", Overdue: "Grace has ended", PricedRecovery: "Priced recovery is open", Terminal: "Final claim is open" } as const;
 const SETTLE_WORDS = { "overdue-liquidation": "A liquidator settles after grace", "priced-recovery": "The lender takes wSOL worth the debt", "terminal-claim": "The lender takes all the wSOL" } as const;
 
 /**

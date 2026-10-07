@@ -3,6 +3,7 @@
 import { PublicKey } from "@solana/web3.js";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { Spot } from "@/components/brand/Spot";
 import { Button } from "@/components/ui/Button";
 import { formatDeadline, formatUsdc, shortKey } from "@/lib/format";
 import { pollAfterCompletion } from "@/lib/private/poll";
@@ -81,9 +82,11 @@ export function DeskWorkspace({ creator, deskId }: { creator: string; deskId: st
   if (!ref)
     return (
       <div className="page page-narrow">
+        <Spot kind="notFound" size={120} />
         <p role="alert" className={shared.error}>
           That desk link is not valid.
         </p>
+        <Link href="/devnet/private/desk">Back to your desks</Link>
       </div>
     );
 
