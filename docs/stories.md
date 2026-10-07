@@ -675,17 +675,74 @@ Acceptance:
 - Participants pass the comprehension check from 19.1. No critical custody, authorization or settlement defect is unresolved.
 - If the gate fails, activation and workflow fixes come before Epic 26.
 
-## Epic 26. Expansion backlog (Stage 6, prioritized by measured lender needs)
+## Epic 26. Expansion (Stage 6, pulled forward 2026-10-07)
 
-Each item becomes a full story when it is pulled forward.
+The owner waived the Epic 25 gate on 2026-10-07. Each story ships behind its own `NEXT_PUBLIC_*_ENABLED` flag and a capability entry in `app/lib/capabilities.ts`, in the V2 programs only, following [research.md § Expansion rules](research.md). Program changes to `isolated_loan_v2` go through the Squads vault and its 24-hour time lock.
 
-- Refinancing and rollover: atomic, borrower-consented, within one execution domain, with an explicit borrower contribution when needed. No implicit cash-out. Same-lender rollover uses a renewal offer only that borrower can accept. Recorded as Refinanced, separate from repayment history.
-- jitoSOL collateral: asset-specific mint, decimals, feed and risk configuration at provisional 60% max LTV and 70% liquidation, preferring a verified direct JITOSOL/USD feed.
-- Private liquidation operations beyond 22.2, and user automation mandates for top-up and repayment, bound to loan, action, source, destination, trigger, expiry, cumulative cap and fee cap.
-- MoneyGram cash-in as a separate repayment-funding journey.
-- Shielded deposits and withdrawals through Umbra (Privacy Cash as the evaluated alternative), enabled per asset only after exact-mint support and a full recovery test. Provider viewing keys use the narrowest scope.
-- Private repayment history, SAS credentials, Reclaim income proofs, and an invited wSOL credit pilot at 80% / 85% / 88%.
-- Secondary loan market with atomic purchase, and activity and tax-oriented transaction-record export with replayable cursors.
+### Story 26.1. Refinance and rollover
+
+Acceptance:
+
+- `refinance_into` on `isolated_loan_v2`, signed by the borrower, settles the old loan for exactly its payoff from the new principal plus the borrower's contribution, moves collateral vault to vault and opens the new loan, atomically. `new_principal > payoff` is rejected.
+- Only Active and Grace loans refinance. The old loan ends `Refinanced`, never `Repaid`. A renewal offer restricted to the same borrower covers same-lender rollover.
+- `private_loan_v2` refinances inside one rollup domain with fresh consent and auditor hash on the new terms.
+- LiteSVM: refinance racing repay and liquidation yields exactly one terminal state; contribution and cash-out rejection; a restricted renewal rejects other borrowers. Devnet evidence for one public and one private refinance.
+
+### Story 26.2. Per-asset collateral and jitoSOL
+
+Acceptance:
+
+- `isolated_loan_v2` gains a governance `Config` and a `CollateralConfig` per mint, written only by the Squads vault. Canonical wSOL keeps its constants; existing loans are unchanged.
+- `loan-core` reads any configured feed with every existing owner, verification, age and band check. Tests prove a foreign owner, wrong feed and stale price are still rejected.
+- jitoSOL (test) on Devnet at 60% / 70%, priced by JITOSOL/USD posted in the same transaction. The Jito logo appears only in asset selection.
+- Devnet evidence: config written through a Squads proposal and one jitoSOL loan through repayment.
+
+### Story 26.3. Automation mandates
+
+Acceptance:
+
+- Borrowers create, revoke and inspect one top-up or repay mandate per loan, bound as in research. Only `Config.keeper` executes; every bound is checked on-chain.
+- The Convex job `mandate-execute` runs public mandates; private mandates run in the rollup watcher, never in Convex. An originations pause never stops a mandate.
+- LiteSVM: cap, fee cap, expiry, hysteresis, wrong keeper, revoked delegate, and a mandate after settlement all fail closed.
+
+### Story 26.4. Private liquidation operations
+
+Acceptance:
+
+- The private liquidation pool admin can rotate quote parameters and drain unused liquidity through governance; watchers rebind when a position changes hands.
+- Private settle tests cover a quote racing repayment and a rebind after transfer.
+
+### Story 26.5. MoneyGram cash-in
+
+Acceptance:
+
+- "Fund this repayment with cash" lands Devnet USDC in the borrower's wallet through MoneyGram's sandbox. Repayment stays a separate, signed step.
+- The step says it is not private before it starts. Forged, replayed and wrong-mint deposit webhooks are rejected; refunds are handled.
+- Capability `cash-in` follows `NEXT_PUBLIC_MONEYGRAM_CASH_IN_ENABLED`.
+
+### Story 26.6. Shielded deposits and withdrawals
+
+Acceptance:
+
+- A one-day spike records which Devnet mints Umbra and Privacy Cash support. Shielding is enabled per provider and mint only after that support and a full recovery test (shield, clear storage, recover, unshield).
+- Shielding is a wallet step before deposit or after withdrawal; ZenLo's loan mint does not change. Viewing keys stay on the device with the narrowest scope; a test proves none reach Convex, telemetry or exports.
+
+### Story 26.7. Credit: history, credentials, income proofs and the invited pilot
+
+Acceptance:
+
+- A borrower can read and export their own private repayment history, built from rollup receipts.
+- A credential issuer in `Config` writes SAS attestations with only tier and expiry. Reclaim income proofs are verified server-side and discarded.
+- `accept_offer` allows the tier's max LTV (80% / 85% / 88%) with a valid credential, fixed on the loan at origination. The pilot is invite-only.
+- Tests: expired, revoked, wrong-issuer and wrong-borrower credentials fall back to the standard caps.
+
+### Story 26.8. Secondary market and activity export
+
+Acceptance:
+
+- `list_position` and `buy_position` sell a V2 position atomically; the buyer becomes `current_lender` and receives every later payment. Settlement voids listings. Private positions transfer inside the rollup with the reader permission swapped.
+- Every loan review says the position may be sold.
+- Activity export as specified in research, with replayable public cursors and browser-only private rows.
 
 ## Epic 27. Advanced privacy (Stage 7, research only)
 
