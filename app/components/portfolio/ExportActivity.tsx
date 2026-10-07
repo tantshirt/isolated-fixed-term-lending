@@ -76,7 +76,7 @@ export function ExportActivity({ wallet }: { wallet: string }) {
         `${rows.length} row${rows.length === 1 ? "" : "s"} exported.${positions ? "" : " Private loans were not included: open your private rooms first so this browser can read them."} This is an activity record, not tax advice.`,
       );
     } catch {
-      setNote("Devnet did not answer. Nothing was exported; try again.");
+      setNote("The complete transaction history could not be read. Nothing was exported. Try again with an archival Devnet RPC that provides historical transactions and block order.");
     } finally {
       setBusy(false);
     }
