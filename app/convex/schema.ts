@@ -76,7 +76,10 @@ export default defineSchema({
     payoff: v.optional(v.string()),
   })
     .index("by_at", ["at"])
-    .index("by_offer", ["offer"]),
+    .index("by_offer", ["offer"])
+    .index("by_result", ["result"])
+    .index("by_result_at", ["result", "at"])
+    .index("by_signature", ["signature"]),
 
   keeperCapital: defineTable({
     at: v.number(),
@@ -119,6 +122,7 @@ export default defineSchema({
       v.object({ maturity: v.number(), graceEnd: v.optional(v.number()), pricedFrom: v.optional(v.number()), terminalFrom: v.optional(v.number()) }),
     ),
     state: v.optional(v.any()),
+    revision: v.optional(v.number()),
     active: v.boolean(),
     consentedAt: v.number(),
   })

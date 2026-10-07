@@ -191,3 +191,39 @@ test("V2 loans rank grace and recovery as past due, with the next window as the 
   assert.match(at(terminalClaimFrom(terms)).headline, /take all your wSOL/);
   assert.equal(at(NOW + DAY).href, `/devnet/loans/${other}/1`);
 });
+
+
+test("V2 portfolio totals follow outstanding principal after a partial payment", async () => {
+  const { EarlyRepayment, openLedger, applyPayment } = await import("./loan-math-v2");
+  const terms = { principal: 100_000_000n, interestBps: 500, duration: 30 * DAY, startTs: NOW, earlyRepayment: EarlyRepayment.ProRata, minInterestBps: 2500, graceSeconds: DAY, lateFeeBps: 100, annualCeilingBps: 10_000 };
+  const ledger = applyPayment(terms, openLedger(terms), NOW + 15 * DAY, 42_500_000n)[0];
+  assert.equal(ledger.outstandingPrincipal, 60_000_000n);
+  const o = {
+    generation: "v2" as const, publicKey: Keypair.generate().publicKey.toBase58(), version: 2,
+    originLender: me, currentLender: me, borrower: other, restrictedBorrower: null, offerId: 1n,
+    usdcMint: "u", wsolMint: "w", terms, collateralRequired: 1_020_000_000n, collateralLocked: 1_020_000_000n,
+    maxLtvBps: 7000, liquidationLtvBps: 8000, status: "active" as const, ledger, shortfall: 0n, settledTs: 0,
+  };
+  const input = { offers: [], requests: [], offersV2: [o], price: null, now: NOW + 15 * DAY };
+  assert.equal(buildPortfolio({ ...input, me }).totals.lentOut, 60_000_000n);
+  assert.equal(buildPortfolio({ ...input, me: other }).totals.borrowed, 60_000_000n);
+});
+
+test("V2 borrower requests retain manage and close links without duplicating funded loans", async () => {
+  const { EarlyRepayment } = await import("./loan-math-v2");
+  const terms = { principal: 100_000_000n, interestBps: 500, duration: 30 * DAY, startTs: 0, earlyRepayment: EarlyRepayment.ProRata, minInterestBps: 2500, graceSeconds: DAY, lateFeeBps: 100, annualCeilingBps: 10_000 };
+  const r = {
+    generation: "v2" as const, publicKey: "open", borrower: me, requestId: 1n, usdcMint: "u", wsolMint: "w", terms,
+    collateralAmount: 1_000_000_000n, maxLtvBps: 7000, liquidationLtvBps: 8000, createdTs: NOW, status: "open" as const, lender: null, offer: null,
+  };
+  const { items, totals } = buildPortfolio({ me, offers: [], requests: [], price: null, now: NOW, requestsV2: [
+    r, { ...r, publicKey: "cancelled", requestId: 2n, status: "cancelled" },
+    { ...r, publicKey: "funded", requestId: 3n, status: "funded" },
+    { ...r, publicKey: "other", borrower: other },
+  ] });
+  assert.deepEqual(items.map((i) => [i.key, i.action, i.href, i.collateral]), [
+    ["open", "Manage request", `/devnet/loans/requests/${me}/1`, 1_000_000_000n],
+    ["cancelled", "Close request", `/devnet/loans/requests/${me}/2`, 0n],
+  ]);
+  assert.equal(totals.borrowed, 0n);
+});
