@@ -293,8 +293,22 @@ async function main() {
   await waitFor("desk in ER", () => deskAdmin.er.getAccountInfo(desk), () => true);
   const deskAccounts = { anchor: desk, state: deskState, statePermission: permissionPdaFromAccount(deskState), vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID };
   await send(deskAdmin, await program.methods.initDesk(1).accountsPartial({ admin: deskAdmin.kp.publicKey, ...deskAccounts }).instruction());
-  await send(deskAdmin, await program.methods.setDeskMember(lender2.kp.publicKey, 2).accountsPartial({ admin: deskAdmin.kp.publicKey, ...deskAccounts }).instruction());
-  await send(deskAdmin, await program.methods.setDeskMember(auditor.kp.publicKey, 4).accountsPartial({ admin: deskAdmin.kp.publicKey, ...deskAccounts }).instruction());
+  const updateDeskMember = async (member: PublicKey, roles: number) => {
+    const state = (await deskAdmin.er.getAccountInfo(deskState))!.data;
+    const policies = state.readUInt32LE(1 + 8);
+    const loans = state.readUInt32LE(1 + 8 + 4);
+    const records = [
+      ...Array.from({ length: policies }, (_, i) => pda(Buffer.from("desk-policy"), desk.toBuffer(), u32(i + 1))),
+      ...Array.from({ length: loans }, (_, i) => pda(Buffer.from("desk-loan"), desk.toBuffer(), u32(i))),
+    ];
+    const remaining = records.flatMap((pubkey) => [
+      { pubkey, isSigner: false, isWritable: false },
+      { pubkey: permissionPdaFromAccount(pubkey), isSigner: false, isWritable: true },
+    ]);
+    return send(deskAdmin, await program.methods.setDeskMember(member, roles)
+      .accountsPartial({ admin: deskAdmin.kp.publicKey, ...deskAccounts }).remainingAccounts(remaining).instruction());
+  };
+  await updateDeskMember(lender2.kp.publicKey, 2);
   const policy1 = pda(Buffer.from("desk-policy"), desk.toBuffer(), u32(1));
   const auditors = [auditor.kp.publicKey, PublicKey.default, PublicKey.default, PublicKey.default];
   await send(deskAdmin, await program.methods.publishPolicy({
@@ -325,6 +339,12 @@ async function main() {
   const pinned = await lender2.er.getAccountInfo(termsPda(D));
   const audHash = createHash("sha256").update(auditor.kp.publicKey.toBuffer()).digest();
   expect("desk-loan-pins-policy-and-audience", !!pinned && pinned.data.includes(audHash), "auditor hash recorded");
+  const book0 = pda(Buffer.from("desk-loan"), desk.toBuffer(), u32(0));
+  const missingMetadata = await rejects("InvalidRecord", async () => send(deskAdmin,
+    await program.methods.setDeskMember(auditor.kp.publicKey, 4).accountsPartial({ admin: deskAdmin.kp.publicKey, ...deskAccounts }).instruction()));
+  expect("membership-cannot-omit-metadata-permissions", missingMetadata.ok, missingMetadata.detail);
+  await updateDeskMember(auditor.kp.publicKey, 4);
+  expect("new-member-reads-existing-policy-and-book", !!(await auditor.er.getAccountInfo(policy1)) && !!(await auditor.er.getAccountInfo(book0)), "historical metadata visible");
   await send(lender2, await program.methods.fundLoan(2).accountsPartial(lenderMoves(lender2, D)).instruction());
   const wrongAudience = await rejects("AuditorMismatch", async () => send(borrower, await program.methods.acceptLoan(2, NO_AUDITORS).accountsPartial({ ...borrowerMoves(D, lender2.kp.publicKey, 4), termsPermission: permissionPdaFromAccount(termsPda(D)), deskPolicy: policy1 }).instruction()));
   expect("acceptance-must-name-the-shown-audience", wrongAudience.ok, wrongAudience.detail);
@@ -337,6 +357,8 @@ async function main() {
     lender: borrower.kp.publicKey, borrower: null, anchor: D, terms: termsPda(D), termsPermission: permissionPdaFromAccount(termsPda(D)), vault: EPHEMERAL_VAULT_ID, magicProgram: MAGIC_PROGRAM_ID, permissionProgram: PERMISSION_PROGRAM_ID,
   }).instruction());
   expect("removing-a-reader-ends-access", (await auditor.er.getAccountInfo(termsPda(D))) === null, "hidden again");
+  await updateDeskMember(auditor.kp.publicKey, 0);
+  expect("removed-member-cannot-read-policy-or-book", (await auditor.er.getAccountInfo(policy1)) === null && (await auditor.er.getAccountInfo(book0)) === null, "historical metadata hidden");
 
   await cashOut(lender, [USDC, WSOL]);
   await cashOut(owner, [USDC, WSOL]);
