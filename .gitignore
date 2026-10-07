@@ -1,5 +1,6 @@
 # Local-only tooling and planning notes.
 _*/
+!app/convex/_generated/
 !_bmad/
 _bmad/*
 !_bmad/custom/
