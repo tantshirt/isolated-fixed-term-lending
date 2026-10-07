@@ -130,6 +130,7 @@ export async function sendAddCollateralV2(signerLike: AnySigner, o: OfferV2, lam
  */
 export async function sendRefinanceV2(signerLike: AnySigner, old: OfferV2, next: OfferV2, maxContribution: bigint, priceUpdate = PYTH_PRICE_UPDATE_ACCOUNT, connection = getConnection()): Promise<string> {
   const signer = asSigner(signerLike);
+  priceUpdate = collateralPriceAccount(old.wsolMint, priceUpdate);
   const borrower = signer.publicKey;
   const oldOffer = new PublicKey(old.publicKey);
   const newOffer = new PublicKey(next.publicKey);
@@ -149,7 +150,7 @@ export async function sendRefinanceV2(signerLike: AnySigner, old: OfferV2, next:
     // A lender who closed their USDC account cannot block the payoff.
     .preInstructions([ensureAta(borrower, oldLender, old.usdcMint), ensureAta(borrower, borrower, old.usdcMint), ensureAta(borrower, borrower, mint)])
     .transaction();
-  return submitTransaction(connection, signer, tx);
+  return submitCollateralTx(connection, signer, old.wsolMint, tx);
 }
 
 /** Risk liquidation (`overdue: false`) or overdue liquidation after grace (`overdue: true`). */
