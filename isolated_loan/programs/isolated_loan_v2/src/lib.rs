@@ -1,8 +1,13 @@
-//! ZenLo V2 public loan (Stories 21.1 and 21.2).
+//! ZenLo V2 public loan (Stories 21.1, 21.2 and 26.2).
 //!
-//! The program has no admin keys. Its only authority is the upgrade authority, held by the
-//! Squads vault (docs/governance.md). All economics come from `loan_core::accounting`.
+//! The upgrade authority and the governance key in `Config` are the Squads vault
+//! (docs/governance.md). Governance writes only per-asset `CollateralConfig`s; it can never touch
+//! a loan. All economics come from `loan_core::accounting`.
+//!
+//! Collateral is canonical wSOL (built-in SOL/USD constants) or a mint with a `CollateralConfig`
+//! passed as the first remaining account of create, accept, fund, liquidation and priced recovery.
 
+pub mod config;
 pub mod contexts;
 pub mod error;
 pub mod state;
@@ -11,6 +16,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, CloseAccount, Transfer};
 use loan_core::accounting::{self as acc, Phase};
 
+use config::*;
 pub use contexts::*;
 pub use error::*;
 pub use state::*;
@@ -25,10 +31,19 @@ fn offer_seeds<'a>(offer: &'a OfferV2, id: &'a [u8; 8], bump: &'a [u8; 1]) -> [&
     [OFFER_SEED, offer.origin_lender.as_ref(), id, bump]
 }
 
-/// Value the collateral at the conservative spot price; the spot must pass every V1 check.
-fn spot_value(price_update: &AccountInfo, lamports: u64, clock: &Clock) -> Result<u64> {
-    let p = core(loan_core::oracle::read_sol_usd_price(price_update, clock))?;
-    core(loan_core::math::collateral_value_usdc(lamports, p.price, p.conf, p.exponent))
+/// Value the collateral at the conservative spot price of its own feed; the spot must pass every
+/// V1 check. For wSOL this is exactly the SOL/USD read and the 9-decimal valuation.
+fn spot_value(price_update: &AccountInfo, c: &Collateral, amount: u64, clock: &Clock) -> Result<u64> {
+    let p = core(loan_core::oracle::read_price(price_update, clock, &c.feed_id))?;
+    core(loan_core::math::collateral_value_usdc_decimals(amount, c.decimals, p.price, p.conf, p.exponent))
+}
+
+/// Origination checks for a new offer or request: the asset is wSOL or enabled, the mint's
+/// decimals match, and the terms sit within the asset's caps.
+fn check_new_collateral(mint: &Account<anchor_spl::token::Mint>, remaining: &[AccountInfo], args: &TermsArgs) -> Result<()> {
+    let c = config::resolve(&mint.key(), remaining, true)?;
+    require!(mint.decimals == c.decimals, LoanV2Error::InvalidWsolMint);
+    c.check_caps(args.max_ltv_bps, args.liquidation_ltv_bps)
 }
 
 #[program]
@@ -38,6 +53,7 @@ pub mod isolated_loan_v2 {
     pub fn create_offer(ctx: Context<CreateOffer>, offer_id: u64, args: TermsArgs, restricted_borrower: Pubkey) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
         args.validate(now)?;
+        check_new_collateral(&ctx.accounts.wsol_mint, ctx.remaining_accounts, &args)?;
         token::transfer(
             CpiContext::new(
                 ctx.accounts.token_program.key(),
@@ -122,7 +138,10 @@ pub mod isolated_loan_v2 {
         let core_terms = terms.core()?;
         core(core_terms.validate())?;
         let exposure = core(core_terms.max_exposure())?;
-        let value = spot_value(&ctx.accounts.price_update.to_account_info(), o.collateral_required, &clock)?;
+        // Governance may have tightened or disabled the asset since the offer was created.
+        let c = config::resolve(&o.wsol_mint, ctx.remaining_accounts, true)?;
+        c.check_caps(o.max_ltv_bps, o.liquidation_ltv_bps)?;
+        let value = spot_value(&ctx.accounts.price_update.to_account_info(), &c, o.collateral_required, &clock)?;
         let ltv = core(loan_core::math::current_ltv_bps(exposure, value))?;
         require!(ltv <= o.max_ltv_bps, LoanV2Error::InsufficientCollateral);
 
@@ -272,11 +291,14 @@ pub mod isolated_loan_v2 {
         require!(matches!(acc::phase(&terms, clock.unix_timestamp), Phase::Active | Phase::Grace), LoanV2Error::WrongStatus);
         let payoff = core(acc::payoff(&terms, &o.ledger.into(), clock.unix_timestamp))?;
         let lamports = ctx.accounts.wsol_vault.amount;
-        let (spot, ema) = core(loan_core::oracle::read_sol_usd_spot_and_ema(&ctx.accounts.price_update.to_account_info(), &clock))?;
-        let spot_value = core(loan_core::math::collateral_value_usdc(lamports, spot.price, spot.conf, spot.exponent))?;
+        // Servicing reads the asset's feed even if it was disabled for new loans.
+        let c = config::resolve(&o.wsol_mint, ctx.remaining_accounts, false)?;
+        let (spot, ema) = core(loan_core::oracle::read_spot_and_ema(&ctx.accounts.price_update.to_account_info(), &clock, &c.feed_id))?;
+        let value_at = |p: &loan_core::oracle::OraclePrice| core(loan_core::math::collateral_value_usdc_decimals(lamports, c.decimals, p.price, p.conf, p.exponent));
+        let spot_value = value_at(&spot)?;
         let spot_ltv = core(loan_core::math::current_ltv_bps(payoff, spot_value))?;
         let ema_ltv = match ema {
-            Some(e) => Some(core(acc::ltv_bps(payoff, lamports, e.price, e.conf, e.exponent))?),
+            Some(e) => Some(core(loan_core::math::current_ltv_bps(payoff, value_at(&e)?))?),
             None => None,
         };
         require!(acc::liquidation_trigger(spot_ltv, ema_ltv, o.liquidation_ltv_bps).is_some(), LoanV2Error::LoanHealthy);
@@ -293,7 +315,8 @@ pub mod isolated_loan_v2 {
         require!(clock.unix_timestamp >= terms.grace_end(), LoanV2Error::TooEarly);
         let payoff = core(acc::payoff(&terms, &o.ledger.into(), clock.unix_timestamp))?;
         let lamports = ctx.accounts.wsol_vault.amount;
-        let value = spot_value(&ctx.accounts.price_update.to_account_info(), lamports, &clock)?;
+        let c = config::resolve(&o.wsol_mint, ctx.remaining_accounts, false)?;
+        let value = spot_value(&ctx.accounts.price_update.to_account_info(), &c, lamports, &clock)?;
         let split = core(acc::liquidation_split(payoff, lamports, value))?;
         settle_by_caller(ctx, clock.unix_timestamp, payoff, split, StatusV2::OverdueLiquidated)
     }
@@ -307,7 +330,8 @@ pub mod isolated_loan_v2 {
         require!(clock.unix_timestamp >= terms.priced_recovery_from(), LoanV2Error::TooEarly);
         let payoff = core(acc::payoff(&terms, &o.ledger.into(), clock.unix_timestamp))?;
         let lamports = ctx.accounts.wsol_vault.amount;
-        let value = spot_value(&ctx.accounts.price_update.to_account_info(), lamports, &clock)?;
+        let c = config::resolve(&o.wsol_mint, ctx.remaining_accounts, false)?;
+        let value = spot_value(&ctx.accounts.price_update.to_account_info(), &c, lamports, &clock)?;
         let split = core(acc::priced_recovery_split(payoff, lamports, value))?;
         settle_by_lender(ctx, clock.unix_timestamp, split, StatusV2::PricedRecovered)
     }
@@ -330,6 +354,7 @@ pub mod isolated_loan_v2 {
     pub fn create_request(ctx: Context<CreateRequest>, request_id: u64, args: TermsArgs) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
         args.validate(now)?;
+        check_new_collateral(&ctx.accounts.wsol_mint, ctx.remaining_accounts, &args)?;
         token::transfer(
             CpiContext::new(
                 ctx.accounts.token_program.key(),
@@ -405,7 +430,9 @@ pub mod isolated_loan_v2 {
         core(core_terms.validate())?;
         let exposure = core(core_terms.max_exposure())?;
         let collateral = ctx.accounts.request_vault.amount;
-        let value = spot_value(&ctx.accounts.price_update.to_account_info(), collateral, &clock)?;
+        let c = config::resolve(&r.wsol_mint, ctx.remaining_accounts, true)?;
+        c.check_caps(r.max_ltv_bps, r.liquidation_ltv_bps)?;
+        let value = spot_value(&ctx.accounts.price_update.to_account_info(), &c, collateral, &clock)?;
         let ltv = core(loan_core::math::current_ltv_bps(exposure, value))?;
         require!(ltv <= r.max_ltv_bps, LoanV2Error::InsufficientCollateral);
 
@@ -478,6 +505,21 @@ pub mod isolated_loan_v2 {
 
     pub fn close_request(_ctx: Context<CloseRequest>) -> Result<()> {
         Ok(())
+    }
+
+    /// Once, by the upgrade authority (Story 26.2, same shape as `private_loan_v2`).
+    pub fn init_config(ctx: Context<InitConfig>, authorities: governance::Authorities) -> Result<()> {
+        config::init_config(ctx, authorities)
+    }
+
+    /// Governance only.
+    pub fn rotate_authorities(ctx: Context<RotateAuthorities>, next: governance::Authorities) -> Result<()> {
+        config::rotate_authorities(ctx, next)
+    }
+
+    /// Governance only: create or update one asset's `CollateralConfig`.
+    pub fn set_collateral_config(ctx: Context<SetCollateralConfig>, args: CollateralConfigArgs) -> Result<()> {
+        config::set_collateral_config(ctx, args)
     }
 }
 

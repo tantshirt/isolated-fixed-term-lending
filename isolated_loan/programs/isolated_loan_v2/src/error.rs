@@ -24,7 +24,7 @@ pub enum LoanV2Error {
     TooEarly,
     #[msg("Price feed owner is invalid")]
     InvalidPriceOwner,
-    #[msg("Price feed id does not match SOL/USD")]
+    #[msg("Price feed id does not match the collateral's feed")]
     InvalidFeedId,
     #[msg("Price is stale")]
     StalePrice,
@@ -50,6 +50,19 @@ pub enum LoanV2Error {
     ZeroAmount,
     #[msg("Payment exceeds the slippage bound the borrower signed")]
     PaymentAboveLimit,
+    // Story 26.2. Appended so existing error codes do not move.
+    #[msg("This collateral mint has no governance CollateralConfig")]
+    CollateralNotConfigured,
+    #[msg("This collateral is disabled for new loans")]
+    CollateralDisabled,
+    #[msg("Collateral config is invalid")]
+    InvalidCollateralConfig,
+    #[msg("Signer does not hold the required authority")]
+    WrongAuthority,
+    #[msg("Authorities are unset or share a key")]
+    InvalidAuthorities,
+    #[msg("Only the program upgrade authority can initialize the config")]
+    NotUpgradeAuthority,
 }
 
 pub fn core_error(e: loan_core::CoreError) -> Error {

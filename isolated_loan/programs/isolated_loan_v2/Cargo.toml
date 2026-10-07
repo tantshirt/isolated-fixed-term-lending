@@ -21,10 +21,11 @@ custom-panic = []
 local-mints = ["loan-core/local-mints"]
 
 [dependencies]
-anchor-lang = "1.0.2"
+anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }
 anchor-spl = "1.0.2"
 pyth-solana-receiver-sdk = "2.0.0"
 loan-core = { path = "../../crates/loan-core" }
+governance = { path = "../../crates/governance" }
 
 [dev-dependencies]
 proptest = "1"

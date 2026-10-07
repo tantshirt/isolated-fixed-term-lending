@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Keypair } from "@solana/web3.js";
 import { legacyLoanView } from "./loan-view";
-import { collateralAsset, COLLATERAL_ASSETS } from "./collateral";
+import { collateralAsset, COLLATERAL_ASSETS, JITOSOL_USD_FEED_ID_HEX, selectableCollateral } from "./collateral";
+import { capabilityFor } from "../capabilities";
 import type { Offer } from "../offers";
 import type { PriceSnapshot } from "../offer-status";
 
@@ -56,6 +57,18 @@ test("only enabled collateral resolves", () => {
   const jito = COLLATERAL_ASSETS.find((a) => a.symbol === "jitoSOL")!;
   assert.equal(collateralAsset(jito.mint), null);
   assert.ok(jito.liquidationLtvBps - jito.maxLtvBps >= 500);
+});
+
+test("jitoSOL (test) has its own feed and caps and stays off without the flag", () => {
+  const jito = COLLATERAL_ASSETS.find((a) => a.symbol === "jitoSOL")!;
+  assert.equal(jito.label, "jitoSOL (test)");
+  assert.equal(jito.feedIdHex, JITOSOL_USD_FEED_ID_HEX);
+  assert.notEqual(jito.feedIdHex, COLLATERAL_ASSETS[0].feedIdHex);
+  assert.deepEqual([jito.decimals, jito.maxLtvBps, jito.liquidationLtvBps], [9, 6_000, 7_000]);
+  assert.equal(jito.enabled, false);
+  assert.deepEqual(selectableCollateral().map((a) => a.symbol), ["wSOL"]);
+  const origination = capabilityFor("zenlo-public", "devnet", jito.mint || "jitosol-test-unset", "originate");
+  assert.equal(origination.available, false);
 });
 
 import { v2LoanView } from "./loan-view";
