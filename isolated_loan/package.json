@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@magicblock-labs/ephemeral-rollups-sdk": "0.17.3",
+    "@sqds/multisig": "^2.1.4",
     "@types/bn.js": "^5.1.0",
     "@types/chai": "^4.3.0",
     "@types/mocha": "^9.0.0",
