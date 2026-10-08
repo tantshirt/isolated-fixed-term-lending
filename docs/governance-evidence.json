@@ -51,6 +51,18 @@
       "at": "2026-10-07T07:56:48.659Z",
       "step": "execute 2 refused",
       "error": "Program log: AnchorError thrown in programs/squads_multisig_program/src/instructions/config_transaction_execute.rs:82. Error Code: TimeLockNotReleased. Error Number: 6021. Error Message: Proposal time lock has not been released."
+    },
+    {
+      "at": "2026-10-08T08:42:11.670Z",
+      "step": "execute 1",
+      "signature": "5e2uFeP7zJ9TeaaCzjjzQLw3DtzPnCaSZJQs9csGpt4sni3CFADn6gtFgyGzrczPGfGcpyFZR7w4XVjKobGzq3g1",
+      "result": "executed"
+    },
+    {
+      "at": "2026-10-08T08:42:26.872Z",
+      "step": "execute 2",
+      "signature": "2snv6gqyQn7JfhhEX459fvMXyLHM4kCJ6XD5XmuutJJJF7fzQkq2bdNqjTFHhqtez2B5wtzWcLDstx6UiXaMhbzx",
+      "result": "executed"
     }
   ],
   "multisig": "9aAiYToZ4ZrHMcyAoNDDnMiswobn3TxtJ1dGXgKkBkU5",
@@ -67,12 +79,19 @@
     {
       "label": "b",
       "key": "G72n8kaTXXqdpnTsDBiGd2m56YgvoPSFRzdh3Tu1EAbC",
-      "note": "rehearsal key on the developer machine; rotate before pilot"
+      "note": "removed 2026-10-08 by executed proposal 2",
+      "removed": "2026-10-08T08:42:26Z"
     },
     {
       "label": "c",
       "key": "2BsUD47dif7i6swE3VcbSdKB6u4E35RzPYzu2JAn8gbr",
       "note": "rehearsal key on the developer machine; rotate before pilot"
+    },
+    {
+      "label": "d",
+      "key": "HAd3rsh7wXUJ4effxXTmHPRzHVpKnY3W5qLvgo2LpFJC",
+      "note": "added 2026-10-08 by executed proposal 2; rehearsal key on the developer machine, not yet independent",
+      "added": "2026-10-08T08:42:26Z"
     }
   ]
 }

@@ -65,6 +65,16 @@
           "step": "accepted",
           "signature": "KrBg4Y2vx3cN7JLnYUmWFF9jqjzTr2dp96LTbHqhofrp8fJoFfTZF9fnxXkuNbfsC4zTxio4Kh63cjH2keLAQDN",
           "note": "collateral 15227463 lamports"
+        },
+        {
+          "at": "2026-10-08T08:42:54.134Z",
+          "step": "overdue liquidation",
+          "signature": "4Ww4HyeDEiiBoB3kNBFL9fJeWDN5wzXmKdRcinyLzDPxLEAL9Df1EdkTfxLQCVxxJdnZQU1X9jkcTJRYfezNFkWF",
+          "note": "lender 3dh3Bxu1\u2026 received the payoff, 1010966 USDC atoms; liquidator ATWV4Dam\u2026 received 9253691 lamports (payoff \u00d7 1.05); surplus 5978776 lamports returned to the borrower 2atfkt6j\u2026"
+        },
+        {
+          "at": "2026-10-08T08:42:54.173Z",
+          "step": "status overdueLiquidated"
         }
       ]
     },
@@ -151,6 +161,11 @@
           "at": "2026-10-07T08:49:01.198Z",
           "step": "adopted",
           "note": "created and accepted in a run whose confirmation was lost"
+        },
+        {
+          "at": "2026-10-08T08:43:30.000Z",
+          "step": "reference keeper pass: not settled",
+          "note": "keeper-once scanned 3 overdue loans (keeper, priced, terminal) and returned no-funds for each: its wallet ATWV4Dam\u2026 held 989034 USDC atoms, below one payoff, because the overdue fixture step had just used the same wallet as liquidator (1010966 atoms). Retry after funding the keeper; funding it fully would also let it liquidate the priced and terminal fixtures, whose plans say untouched."
         }
       ]
     }
