@@ -1,0 +1,12 @@
+[package]
+name = "encrypted-ixs"
+version = "0.1.0"
+description = "ZenLo Story 27.1: the Arcis circuit for the credit tier (zenlo_credit_mxe)"
+edition = "2021"
+
+[dependencies]
+arcis = "0.15.0"
+
+[dev-dependencies]
+credit-tier = { path = "../../../crates/credit-tier" }
+proptest = "1"

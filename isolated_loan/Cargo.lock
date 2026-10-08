@@ -1093,6 +1093,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "credit-tier"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "private_loan_v2",
+ "proptest",
+]
+
+[[package]]
 name = "crunchy"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1919,6 +1928,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "credit-tier",
  "governance",
  "litesvm",
  "loan-core",

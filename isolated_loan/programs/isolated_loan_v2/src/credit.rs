@@ -197,19 +197,60 @@ pub fn tier_of(a: &SasAttestation, issuer: &Pubkey, credit: &CreditConfig, subje
     tier
 }
 
-/// Tier proven by `[config, credit_config, sas_attestation]` for `subject` now, or 0 for any
-/// failure: pilot disabled, wrong or fake config accounts, attestation not owned by the SAS
-/// program (a revoked attestation is closed, so it fails here), malformed data, wrong issuer,
-/// credential, schema or subject, or expired.
-pub fn credential_tier(accounts: &[AccountInfo], subject: &Pubkey, now: i64) -> u8 {
-    let Some((config, credit)) = load_configs(accounts) else { return 0 };
-    let Some(att) = accounts.get(2) else { return 0 };
+/// The SAS credential's tier and the time it stops being valid (the earlier of the SAS expiry and
+/// the schema's own expiry), from `[config, credit_config, sas_attestation]` for `subject` now, or
+/// `None` for any failure: pilot disabled, wrong or fake config accounts, attestation not owned by
+/// the SAS program (a revoked attestation is closed, so it fails here), malformed data, wrong
+/// issuer, credential, schema or subject, or expired. `zenlo_credit_mxe` reads the income band
+/// through this function (Story 27.1).
+pub fn sas_credential(accounts: &[AccountInfo], subject: &Pubkey, now: i64) -> Option<(u8, i64)> {
+    let (config, credit) = load_configs(accounts)?;
+    let att = accounts.get(2)?;
     if !credit.enabled || *att.owner != credit.sas_program || att.lamports() == 0 {
+        return None;
+    }
+    let raw = att.try_borrow_data().ok()?;
+    let parsed = parse_sas_attestation(&raw)?;
+    let tier = tier_of(&parsed, &config.authorities.credential_issuer, &credit, subject, now);
+    if tier == 0 {
+        return None;
+    }
+    let data_expiry = i64::from_le_bytes(parsed.data[1..9].try_into().ok()?);
+    let until = if parsed.expiry == 0 { data_expiry } else { data_expiry.min(parsed.expiry) };
+    Some((tier, until))
+}
+
+/// Tier proven by `[config, credit_config, credential]` for `subject` now, or 0 for any failure.
+/// The credential is either an SAS attestation ([`sas_credential`]) or, from Story 27.1, a
+/// `TierResult` written by `zenlo_credit_mxe` (owner = `credit_tier::CREDIT_MXE_ID`, at
+/// `["arcium-tier", subject]`, computed from a fresh history attestation, income credential still
+/// valid; [`credit_tier::read_tier_result`]). Either way the pilot must be enabled.
+pub fn credential_tier(accounts: &[AccountInfo], subject: &Pubkey, now: i64) -> u8 {
+    let Some((_, credit)) = load_configs(accounts) else { return 0 };
+    let Some(att) = accounts.get(2) else { return 0 };
+    if !credit.enabled {
         return 0;
     }
-    let Ok(raw) = att.try_borrow_data() else { return 0 };
-    let Some(parsed) = parse_sas_attestation(&raw) else { return 0 };
-    tier_of(&parsed, &config.authorities.credential_issuer, &credit, subject, now)
+    if *att.owner == credit_tier::CREDIT_MXE_ID {
+        let Ok(raw) = att.try_borrow_data() else { return 0 };
+        return credit_tier::read_tier_result(att.owner, att.key, att.lamports(), &raw, subject, now);
+    }
+    sas_credential(accounts, subject, now).map(|(tier, _)| tier).unwrap_or(0)
+}
+
+/// Story 27.1: the credential account is a `zenlo_credit_mxe` `TierResult`.
+fn is_tier_result(accounts: &[AccountInfo]) -> bool {
+    accounts.get(2).map(|a| *a.owner == credit_tier::CREDIT_MXE_ID).unwrap_or(false)
+}
+
+/// The refusal for a credential below `required`: `ArciumTierInvalid` when it was a `TierResult`
+/// (forged, stale, another borrower's or too low), `CreditTierRequired` otherwise.
+pub fn tier_shortfall(accounts: &[AccountInfo]) -> Error {
+    if is_tier_result(accounts) {
+        error!(LoanV2Error::ArciumTierInvalid)
+    } else {
+        error!(LoanV2Error::CreditTierRequired)
+    }
 }
 
 /// Accept or fund: the tier to record on the loan, checking credit-tier caps against the
@@ -220,8 +261,11 @@ pub fn origination_tier(max_ltv_bps: u16, liquidation_ltv_bps: u16, mint: &Pubke
         return Ok(0);
     }
     require!(invited && *mint == WSOL_MINT, LoanV2Error::CreditNotInvited);
-    let tier = credential_tier(credit_accounts(mint, remaining), subject, now);
-    require!(tier >= required, LoanV2Error::CreditTierRequired);
+    let accounts = credit_accounts(mint, remaining);
+    let tier = credential_tier(accounts, subject, now);
+    if tier < required {
+        return Err(tier_shortfall(accounts));
+    }
     Ok(tier)
 }
 

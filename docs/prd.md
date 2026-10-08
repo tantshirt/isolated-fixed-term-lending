@@ -68,6 +68,6 @@ Decisions:
 - Identity is the wallet. There is no email registration. A desk is a set of individual lender wallets, not a pooled treasury.
 - Existing loans keep their original programs, terms and servicing. New economics ship in separate V2 programs with versioned accounts and clients.
 - Desk pricing caps are product controls, not legal-compliance guarantees. Licensing, sanctions and jurisdiction analysis are deferred beyond this Devnet build. The business location and countries are undecided.
-- MoneyGram uses the existing sandbox access and the official Ramps documentation. Advanced privacy is progressive and disclosed accurately; confidential settlement and Arcium stay research-only until a paying desk needs them.
+- MoneyGram uses the existing sandbox access and the official Ramps documentation. Advanced privacy is progressive and disclosed accurately; confidential settlement stays research-only until a paying desk needs it. Arcium is used only to compute the private credit tier from rollup-signed history (Story 27.1).
 
 The stories are Epics 19–27 in [stories.md](stories.md), and the order is the desk lane in [sprint-plan.md](sprint-plan.md). V2 lifts several week-1 exclusions for the V2 programs only: per-second (pro-rata) accrual, topping up collateral, partial repayment and a grace period.

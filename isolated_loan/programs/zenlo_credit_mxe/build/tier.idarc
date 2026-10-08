@@ -1,0 +1,1 @@
+{"name":"tier","inputs":[{"size_in_bits":32,"type":"u32"},{"size_in_bits":32,"type":"u32"},{"size_in_bits":32,"type":"u32"},{"size_in_bits":32,"type":"u32"},{"size_in_bits":8,"type":"u8"}],"outputs":[{"size_in_bits":8,"type":"u8"}]}

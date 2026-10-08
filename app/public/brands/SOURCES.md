@@ -25,10 +25,14 @@ Added on 2026-10-07 for the landing page and use cases (Story 19.7). Each appear
 
 Helius has no logo because nothing in the app uses Helius yet.
 
-Added on 2026-10-07 for Story 26.6:
-
-- Umbra: the logo mark from the header of [umbraprivacy.com](https://umbraprivacy.com) (`/assets/umbra-logo-mark.svg`), shown only beside the Shield wSOL panel and always with the word Umbra.
 Added on 2026-10-07 for the credit pilot (Story 26.7). Both appear only on credential screens:
 
 - Solana Attestation Service: the header logo from [attest.solana.com](https://attest.solana.com/logo.svg), always shown with the words "Solana Attestation Service".
 - Reclaim: the official logo from [reclaimprotocol.org](https://www.reclaimprotocol.org/reclaim-logo.png), shown only on the income-proof step.
+
+Added on 2026-10-07 for the private tier (Story 27.1). It appears only on the credit screen's "Private tier via Arcium" option:
+
+- Arcium: the tertiary wordmark embedded in [arcium.com/brand](https://www.arcium.com/brand) (section 1.3, the same artwork as its "Download wordmark" folder). Only the page's `class` and framework attributes were removed and `role="img"` added; paths, viewBox and proportions are unchanged. It has no fill, so it renders black, as on the light brand page.
+Added on 2026-10-07 for Story 26.6:
+
+- Umbra: the logo mark from the header of [umbraprivacy.com](https://umbraprivacy.com) (`/assets/umbra-logo-mark.svg`), shown only beside the Shield wSOL panel and always with the word Umbra.

@@ -16,6 +16,8 @@ import { issuanceHandoff } from "@/lib/credit/issuance-handoff";
 import { AsyncScope } from "@/lib/async-scope";
 import { formatBpsAsPercent, formatDeadline, shortKey } from "@/lib/format";
 import { getConnection } from "@/lib/program";
+import { ARCIUM_ENABLED } from "@/lib/credit/arcium";
+import { ArciumTierPanel } from "./ArciumTierPanel";
 import { HistoryPanel } from "./HistoryPanel";
 import styles from "./Credit.module.css";
 
@@ -219,6 +221,9 @@ function WalletCreditPanel() {
       </section>
 
       <HistoryPanel />
+
+      {/* Story 27.1: behind NEXT_PUBLIC_ARCIUM_ENABLED. */}
+      {ARCIUM_ENABLED && <ArciumTierPanel />}
     </div>
   );
 }

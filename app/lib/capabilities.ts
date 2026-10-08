@@ -3,7 +3,7 @@
  * capability but never enable one that was not proven. Unsupported actions carry a reason.
  */
 export type Network = "devnet" | "localnet" | "mainnet";
-export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra" | "privacy-cash" | "sas" | "reclaim";
+export type Provider = "zenlo-public" | "zenlo-private" | "moneygram" | "telegram" | "umbra" | "sas" | "reclaim" | "arcium" | "privacy-cash";
 export type Operation = "originate" | "service" | "refinance" | "automate" | "cash-out" | "cash-in" | "notify" | "shield" | "credential" | "resell" | "export";
 
 export type Capability = {
@@ -22,15 +22,15 @@ export type Capability = {
 export const DEVNET_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 export const WSOL = "So11111111111111111111111111111111111111112";
 
-/** Cash-in needs MoneyGram connected and its own switch; either alone is not enough. */
-export function cashInEnabled(moneygram: string | undefined, cashIn: string | undefined): boolean {
-  return moneygram === "1" && cashIn === "1";
-}
 /** ZenLo's Devnet "jitoSOL (test)" mint, when this deployment has one (Story 26.2). */
 export const JITOSOL_TEST_MINT = process.env.NEXT_PUBLIC_JITOSOL_MINT ?? "";
 
 /** Story 26.7: the invited credit pilot ("1" or "true"). */
 const CREDIT_PILOT = process.env.NEXT_PUBLIC_CREDIT_PILOT_ENABLED === "1" || process.env.NEXT_PUBLIC_CREDIT_PILOT_ENABLED === "true";
+/** Cash-in needs MoneyGram connected and its own switch; either alone is not enough. */
+export function cashInEnabled(moneygram: string | undefined, cashIn: string | undefined): boolean {
+  return moneygram === "1" && cashIn === "1";
+}
 
 export const CAPABILITIES: Capability[] = [
   { provider: "zenlo-public", network: "devnet", mint: DEVNET_USDC, operation: "originate", available: true },
@@ -160,16 +160,6 @@ export const CAPABILITIES: Capability[] = [
     available: false,
     reason: "Umbra's Devnet supports wSOL only.",
   },
-  ...[WSOL, DEVNET_USDC].map(
-    (mint): Capability => ({
-      provider: "privacy-cash",
-      network: "devnet",
-      mint,
-      operation: "shield",
-      available: false,
-      reason: "Privacy Cash has no public Devnet relayer, and its official SDK is mainnet-only.",
-    }),
-  ),
   {
     provider: "sas",
     network: "devnet",
@@ -190,6 +180,28 @@ export const CAPABILITIES: Capability[] = [
     available: CREDIT_PILOT && !!process.env.NEXT_PUBLIC_RECLAIM_APP_ID,
     reason: "Income verification is not connected on this deployment yet.",
   },
+  {
+    provider: "arcium",
+    network: "devnet",
+    // Story 27.1: a private tier computed by zenlo_credit_mxe from the borrower's rollup-signed
+    // history attestation and SAS income band; isolated_loan_v2 accepts its TierResult (wSOL only).
+    mint: WSOL,
+    operation: "credential",
+    // On once zenlo_credit_mxe is deployed on Arcium cluster 456 with its computation definition
+    // and the isolated_loan_v2 upgrade that reads TierResult has passed the Squads vault.
+    available: CREDIT_PILOT && (process.env.NEXT_PUBLIC_ARCIUM_ENABLED === "1" || process.env.NEXT_PUBLIC_ARCIUM_ENABLED === "true"),
+    reason: "The private tier via Arcium is not enabled on this deployment yet.",
+  },
+  ...[WSOL, DEVNET_USDC].map(
+    (mint): Capability => ({
+      provider: "privacy-cash",
+      network: "devnet",
+      mint,
+      operation: "shield",
+      available: false,
+      reason: "Privacy Cash has no public Devnet relayer, and its official SDK is mainnet-only.",
+    }),
+  ),
 ];
 
 export type Availability = { available: true } | { available: false; reason: string; simulationOnly: boolean };

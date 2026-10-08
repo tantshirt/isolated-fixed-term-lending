@@ -1,0 +1,23 @@
+{
+  "license": "ISC",
+  "private": true,
+  "scripts": {
+    "fixtures": "tsx tests/fixtures/write-localnet-accounts.ts",
+    "test:integration": "npm run fixtures && arcium test"
+  },
+  "dependencies": {
+    "@arcium-hq/client": "0.15.0",
+    "@anchor-lang/core": "^1.0.2"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "mocha": "^9.0.3",
+    "ts-mocha": "^10.0.0",
+    "tsx": "^4.19.0",
+    "@types/bn.js": "^5.1.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.3"
+  }
+}

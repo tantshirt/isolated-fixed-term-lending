@@ -329,6 +329,30 @@ Decisions made while building 26.7 (2026-10-07):
 - **Income bands (pilot).** Verified monthly income below $2,000 is ineligible; $2,000–4,999 is tier 1; $5,000–9,999 is tier 2; $10,000 and above is tier 3 (`app/lib/credit/bands.ts`). Only the band and tier leave the route.
 - **History.** On time = repaid at or before maturity; late = repaid after maturity; defaulted = overdue liquidation, priced recovery or terminal claim; a risk liquidation and a refinance are counted separately and are never repayments.
 
+### Arcium credit tier (27.1)
+
+A second way to prove a tier: an Arcium MXE (`zenlo_credit_mxe`) computes it from the borrower's repayment history and income band and reveals only the tier. Decided 2026-10-07.
+
+**Inputs.** Only from accounts, never from arguments:
+
+- `on_time`, `late`, `liquidated`, `defaulted` from the borrower's `HistoryAttestation` (rollup-signed by `private_loan_v2`, § Credit tiers, History).
+- `income_band` 0–3 from the borrower's valid SAS credit credential: the band is the credential's tier (entry 1, middle 2, upper 3). No credential, an expired one or another wallet's is refused before anything is computed.
+
+**Rule** (`crates/credit-tier::tier`; the circuit `tier_rule` is tested equal to it on every threshold and on random inputs):
+
+| Tier | On time | Late | Risk liquidations | Defaults | Income band |
+| --- | --- | --- | --- | --- | --- |
+| 3 | ≥ 6 | 0 | 0 | 0 | ≥ 3 |
+| 2 | ≥ 3 | ≤ 1 | 0 | 0 | ≥ 2 |
+| 1 | ≥ 1 | late + liquidated ≤ 1 | | 0 | ≥ 1 |
+| 0 | anything else | | | | |
+
+Any default, or no income band, is tier 0. Counts are lifetime totals: the attestation carries no dates per loan, so "in the last N loans" is not expressible yet. The tier never exceeds the income band, so an Arcium tier is never higher than the borrower's SAS tier; it adds a history requirement on top of income.
+
+**Freshness.** An attestation is accepted only when it was written by the rollup (`rollup_slot > 0`), its `attested_at` is at most 30 days old and no more than 300 s in the future. A `TierResult` counts for a loan only while the attestation it used is within those 30 days and the SAS credential it used is unexpired (`income_valid_until`). A request never moves back to an older attestation than the one last used.
+
+**Privacy, honestly.** Today both inputs are already public: the borrower chose to publish the counts, and the SAS tier byte is public. The circuit takes them as plaintext and the MPC adds no input privacy yet. What it fixes now is the input path (counts only from the rollup) and the output (only the tier). Encrypting the attestation for the MXE inside the rollup is a follow-up.
+
 ### Secondary market (26.8)
 
 A lender may sell a V2 position. Every V2 position is transferable; the borrower's terms never change, only who is paid.
