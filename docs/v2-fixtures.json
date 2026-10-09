@@ -43,6 +43,16 @@
           "step": "accepted",
           "signature": "3tqPT6Nq32Sbj5qScEVC23gLN6vKqDengSN5m7YDLt5X1U5MCVtLjJnvzA5ahxFBpHBNf5mJWuuQciz2Jckr4QKC",
           "note": "collateral 15232467 lamports"
+        },
+        {
+          "at": "2026-10-09T08:43:18.320Z",
+          "step": "priced recovery",
+          "signature": "5uGUbBePByqDebktnoWmWQwwrXwzWK67Adspo839U5z74pa7YXpmeMmHuFGmcZnwQ4a3T9TJmYtdf9JY7FXxJCzx",
+          "note": "vault 4joUotsG\u2026 held 15240260 lamports: lender 3dh3Bxu1\u2026 received 9184369 (payoff-equivalent at a valid price, no bonus), surplus 6055891 returned to the borrower 2atfkt6j\u2026; no shortfall (payoff 0 after settlement)"
+        },
+        {
+          "at": "2026-10-09T08:43:18.357Z",
+          "step": "status pricedRecovered"
         }
       ]
     },
