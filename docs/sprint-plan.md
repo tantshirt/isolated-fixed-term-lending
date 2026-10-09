@@ -104,10 +104,10 @@ The desk-first roadmap, Stages 0–4. One pull request per row, built, reviewed 
 | 1 | [19.1 Lender pilot kit](stories.md) | — | Done |
 | 2 | [19.2 Convex and wallet sign-in](stories.md) | — | Open (code done; hosted Convex waits on Marketplace terms) |
 | 3 | [19.3 Durable jobs, capabilities and operations](stories.md) and [19.4 Versioned models](stories.md) | 19.2 | Open (code done; cutover after 7 clean days on hosted Convex; screens adopt `LoanView` as V2 lands) |
-| 4 | [19.5 Governance](stories.md) and [19.6 Asset registry](stories.md) | — | 19.6 Done; 19.5 Open (time-locked executions due 2026-10-08, independent signers, V2 deploys under the vault) |
+| 4 | [19.5 Governance](stories.md) and [19.6 Asset registry](stories.md) | — | 19.6 Done; 19.5 Open (time-locked executions done 2026-10-08: vault transfer and the b→d rotation both executed after the 24-hour lock, see `governance-evidence.json`; still needs two independent signers, since c and d are rehearsal keys on the developer machine) |
 | 5 | [20.1 Accounting engine](stories.md), [20.2 Pricing ceilings](stories.md), [20.3 Spot and EMA](stories.md) | — | Done |
 | 6 | [21.1 `isolated_loan_v2` core](stories.md) | 19.5, 20.x | Done |
-| 7 | [21.2 Grace, recovery and surplus](stories.md) and [21.3 Reference liquidator](stories.md) | 21.1 | Open (code and tests done; Devnet evidence as fixture windows open, 2026-10-08 to 2026-10-15) |
+| 7 | [21.2 Grace, recovery and surplus](stories.md) and [21.3 Reference liquidator](stories.md) | 21.1 | Open (overdue liquidation proven on Devnet 2026-10-08 and priced recovery 2026-10-09, surplus returned both times; the reference keeper pass found 3 overdue loans but its wallet is below one payoff, so the keeper fixture is not yet settled; the final claim opens 2026-10-15 08:26 UTC) |
 | 8 | [22.1 Multi-loan rooms](stories.md) | 19.5 | Done (Devnet TEE proof in `docs/magicblock-evidence.json` under `v2`) |
 | 9 | [22.2 Private V2 protections](stories.md) | 20.x, 22.1 | Done (program and LiteSVM in row 8; browser client proven live in `docs/magicblock-evidence.json` under `v2Client`) |
 | 10 | [23.1 Desk accounts, roles and policies](stories.md) | 22.2 | Done (Devnet TEE proof in `docs/magicblock-evidence.json` under `v2`) |
